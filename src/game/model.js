@@ -1212,8 +1212,11 @@
         this.face.lashes.push(lash);
         this.face.brows.push(brow);
       }
-      this.face.mouth = this.add(hc, G.box(), 0x4a1616, { pos: [0, -0.062, R * 0.83], scale: [0.03, 0.005, 0.01], outline: 0, shadow: false });
-      this.face.teeth = this.add(hc, G.box(), this.mat(0xf6f2ea, { basic: true }), { pos: [0, -0.058, R * 0.845], scale: [0.026, 0.0045, 0.006], outline: 0, basic: true, shadow: false });
+      // face.mouthY / face.mouthZ: where the mouth sits (a muzzle or a deeper skull — Beerus — buried it in the head)
+      this._mouthY = -0.062 + (f.mouthY || 0);
+      this._mouthZ = R * (f.mouthZ || 0.83);
+      this.face.mouth = this.add(hc, G.box(), 0x4a1616, { pos: [0, this._mouthY, this._mouthZ], scale: [0.03, 0.005, 0.01], outline: 0, shadow: false });
+      this.face.teeth = this.add(hc, G.box(), this.mat(0xf6f2ea, { basic: true }), { pos: [0, this._mouthY + 0.004, this._mouthZ + R * 0.015], scale: [0.026, 0.0045, 0.006], outline: 0, basic: true, shadow: false });
       this.face.teeth.visible = false;
       if (f.scar) this.add(hc, G.box(), 0x9a4040, { pos: [0.068, -0.03, R * 0.82], rot: [0, 0.5, 0.35], scale: [0.004, 0.03, 0.006], outline: 0, shadow: false });
 
@@ -1820,11 +1823,12 @@
       });
       const m = this.face.mouth;
       m.scale.set(0.03 * e.mouthW, 0.005 * e.mouthH, 0.01);
-      m.position.y = -0.062 - (e.mouthH - 1) * 0.0015;
-      m.position.z = R * 0.83;
+      m.position.y = (this._mouthY === undefined ? -0.062 : this._mouthY) - (e.mouthH - 1) * 0.0015;
+      m.position.z = this._mouthZ === undefined ? R * 0.83 : this._mouthZ;
       m.rotation.z = e.mouthRot || 0;
       this.face.teeth.visible = !!e.teeth;
       this.face.teeth.position.y = m.position.y + 0.005 * e.mouthH * 0.35;
+      this.face.teeth.position.z = m.position.z + R * 0.015;
       this.face.teeth.scale.x = 0.026 * e.mouthW;
       this._applyEyes();
     }

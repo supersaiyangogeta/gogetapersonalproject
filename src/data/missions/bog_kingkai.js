@@ -562,6 +562,7 @@
         hold: 2.2,
       },
       {
+        pose: [{ who: 'whis', pose: 'w_finger', face: 'grin', speed: 6 }],
         cam: { subject: 'whis', focus: 'upper', angle: 'three', side: -1 },
         say: { who: 'whis', line: 'Earth! I hear the food there is wonderful.', duration: 2.4 },
         hold: 2.4,

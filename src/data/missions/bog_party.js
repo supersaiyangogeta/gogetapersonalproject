@@ -596,7 +596,7 @@
         hold: 4,
       },
       {
-        pose: [{ who: 'whis', pose: 'w_bow', face: 'calm' }],
+        pose: [{ who: 'whis', pose: 'w_bow', face: 'soft' }],
         cam: { subject: 'whis', focus: 'upper', angle: 'three' },
         say: { who: 'whis', to: 'bulma', line: 'How kind. My name is Whis, and this is Lord Beerus. We heard there might be... food?', duration: 3.6 },
         hold: 3.6,
@@ -948,6 +948,7 @@
           s.tray.on(s.buu);
           ctx.m.onDispose(() => s.tray && s.tray.dispose());
         },
+        pose: [{ who: 'whis', pose: 'w_eat', face: 'grin', speed: 6 }],
         cam: { subject: 'whis', focus: 'upper', angle: 'three' },
         say: { who: 'whis', to: 'beerus', line: 'Lord Beerus! You simply must try this — Earth\'s cooking is extraordinary!', duration: 3.4 },
         hold: 3.4,

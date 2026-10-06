@@ -3,7 +3,7 @@
 **Current playable build:** 0.2.0 — "Goku Showcase", frozen copy in `builds/v0.2/`
 **In development:** 0.3.0 — "Saiyan Saga" (main folder; in-game footer says *Version 0.3 (in development)*)
 **Previous versions:** 0.1.0 frozen in `builds/v0.1/`
-**Last updated:** 2026-10-05
+**Last updated:** 2026-10-06
 
 **Documents:** `MASTER_SPEC.md` = what the game is supposed to become · `HANDOFF.md` = where development is and what happens next (start there in a new session) · `STATUS.md` (this file) = detailed factual status and testing record · `README.md` = how to run and use it. If they disagree, check the source code and tests, then fix the wrong document.
 
@@ -24,6 +24,7 @@
 
 | Content / system | Automated tested | Human playtested |
 |---|---|---|
+| **Chapter 16 polish / rebuild pass** (2026-10-06) — the owner's Battle of Gods full polish brief: Beerus' arrival on King Kai's planet, Whis never behind the bed (stage camera occluders), the Beerus redesign (no reference image reached the session), cinematic transformations and SSJ3 hair, Super-era Goku lines, the one-finger block, party facing / food clarity / Bingo, the SSG ritual film, the first God clash over the ocean, the cavern as a closed room, the burial and breakout, the 360° melee, the clash over the Earth, the void's layered voices / blue streak / roar / wrist catch, the Galick Gun played | Partly — all seven missions bot-played headless with every scene watched (success, no errors, no warnings); `--fast` 51/0; the played Galick Gun probed both ways; **full suite not run**; key shots browser-captured by Claude (problems found there fixed) | **Not human playtested — HUMAN PLAYTEST REQUIRED** |
 | **Buu Saga pass 6: Vegito and Buuhan** (2026-09-26) — Chapter 13, six missions: *The Potara* (the Old Kai's life, Kibitoshin), *The Earring* (Destructo Disc, Gotenks defusing inside Buutenks → **Buuccolo**, the dig for the earring, Gohan absorbed → **Buuhan**), *The Prince Returns* (Gokule, survive, the canyon reunion, cover, the plea), *Vegito* (the Potara fusion, **Base Vegito**, base Vegito vs Buuhan), *Super Vegito* (transformation, speed display, arms-crossed beatdown, Spirit Sword, Banshee Rapid Fire, Vice Shout, Candy Vegito), *Inside Buu* (the trap and barrier, the Potara breaking, the pods, a Kid Buu tease); Ultimate Gohan's pose set, gut punch, elbow and Masenko | Partly — no new tests; every new mission (+ *Ultimate Gohan*) played to the end by the bots with every scene in full, no errors or missing poses; `--fast` unit tests 50/50; `buu-ultimate-tests` + `wardrobe-tests` 28/28; **full suite not run**; browser-checked by Claude (≈20 framing/staging problems found and fixed) | **Not human playtested — HUMAN PLAYTEST REQUIRED** |
 | **Buu Saga reference pass 5: the Z Sword, the Old Kai and Ultimate Gohan** (2026-09-25) — Chapter 12: *The Z Sword* on the new Sacred World of the Kai (the pull, the swings, the Katchin, the sword breaking, the Old Kai, the ritual, **the unlocking as stillness**, the Ultimate reveal) and *Ultimate Gohan* (the fist caught, the reversal against Super Buu, the bluff, the absorption, **Buutenks**, the overturn); the Ultimate as a new form (not a Super Saiyan); the Old Kai; Buutenks | Yes — 7 tests in `tests/buu-ultimate-tests.js` (both missions watched in full); **browser-verified by Claude** (every beat; 10 problems found and fixed) | **Not human playtested — HUMAN PLAYTEST REQUIRED** |
 | **Buu Saga reference pass 4: the Human Extinction Attack and the Room of Spirit and Time** (2026-09-25) — mission *The Room of Spirit and Time* (Super Buu on the Lookout; the Human Extinction Attack as a world-state cinematic with a save flag; the new Time Chamber stage; Super Saiyan Gotenks outclassed, Super Saiyan 3 held through; SSJ3 Gotenks vs a regenerating, angrier and angrier Super Buu; Piccolo destroys the door; the scream tears the dimension) | Yes — 5 tests in `tests/buu-chamber-tests.js`; Chapter 11 watched-in-full run includes it; **browser-verified by Claude** (every beat; 4 problems found and fixed) | **Not human playtested — HUMAN PLAYTEST REQUIRED** |
@@ -547,6 +548,81 @@ Short checklists for a person to play through. Tick what feels right; write down
 This file is the honest, detailed status of the project. The README explains how to play; this file explains what exists, what does not, and what blocks the next steps.
 
 Everything stays local. There is no git repository, no remote, and nothing is uploaded or published.
+
+---
+
+## Chapter 16 polish / rebuild pass (2026-10-06, the owner's "BATTLE OF GODS — FULL POLISH / REBUILD PASS" brief) — **FUNCTIONAL PROTOTYPE · ALL SEVEN MISSIONS BOT-PLAYED HEADLESS WITH EVERY SCENE WATCHED · KEY SHOTS BROWSER-CAPTURED BY CLAUDE · `--fast` 51/0 · FULL SUITE NOT RUN (by instruction) · HUMAN PLAYTEST REQUIRED**
+
+Worked directly on the existing Chapter 16 code, in the brief's priority order (playable → cinematic → staging → camera → animation → clarity → polish). Nothing below has been played by a person.
+
+### What changed, against the owner's list of problems
+| The owner saw | What was done | Where |
+|---|---|---|
+| Beerus never appears on King Kai's planet | The arrival phase is self-sufficient (changes stage, builds the house, unhides Goku and King Kai, hides the gods until they land). The training rocks crumble at the "that ki" beat and the landing spot is recomputed. The reveal is chest-up and front-on. Whis lands beside him; King Kai scurries and bows (over Beerus' shoulder). Goku appears in the opened doorway (`kkHouse.open/doorway`) and walks up | `bog_awaken.js` `P.arrival`, `bga_arrival` |
+| Whis hidden behind the bed | Stages can declare camera occluders (`stage.occluders`: cylinders and boxes); `Cinema.occluded` tests them and solid props in the safety pass. Beerus' bed declares its posts, canopy and frame. The temple dialogue is shot over the shoulder | `cinema.js`, `stage_gods.js`, `bog_awaken.js` |
+| The camera looking at Beerus' crotch | The reveals use `upper`/`closeup`, front-on with a slight negative height. The space wrist catch is level with the grip. Nothing of his is framed from below | scenes across the chapter |
+| Beerus redesign | Slimmer build and a long neck. Tall skull, big set-high ears with gold bands, pale inner ears, cheekbones, whisker pads and kohl wings. Usekh collar; white sash with a gold-edged blue panel; navy harem trousers gathered at the ankle; pointed shoes; long thin tail. **No reference image reached this session**: built from the owner's written notes. Compare against the reference. Fixed after: his mouth was buried inside the deeper skull (invisible in every expression but "shout"). New face options `mouthY`/`mouthZ` place it, and his brows are thicker | `characters/beerus.js`, `model.js` (`pantsStyle 'harem'`, `apron.edges`, `face.skull`, `face.mouthY/mouthZ`) |
+| Transformations not cinematic | A shared transformation film (gameplay → film → gameplay). The aura is held thin in close shots (`f.auraViewCap`). Violet mood (the old green cast was grass-coloured dust plus a darkened yellow sky). Pale dust. Detail shots (feet, face, hair) are no longer re-aimed at the chest (`aimFree`) | `bog_kit.js` `transformCine`, `battle.js`, `mission.js` |
+| SSJ3 hair sliding over the torso | Hair gravity swings each long lock about its own root and leaves the scalp alone. The growth stages carry their own gravity | `animator.js`, `model.js` `setHair`, `hair.js` |
+| "I won't let you hurt anyone else" (Namek Goku) | Every Chapter 16 mission routes Goku's SSJ/SSJ2/SSJ3 lines to new Super-era lines | `bogKit.superVoice`, `dialogue.js` |
+| (brief) the one-finger block | Rebuilt: the charge from the player's position, knuckles meeting the fingertip (`bogKit.touch`, per tick), an extreme profile lens, rings across the punch axis, the shockwave, Goku straining against Beerus' boredom | `bog_kingkai.js` |
+| Bulma and Vegeta facing the wrong way, the bow | Spacing and facing fixed; Vegeta's bow faces Beerus | `bog_party.js` |
+| Bingo lacking detail | Water-gun trigger and panic, the stage dive, beats 1–11 choreographed (glances, forced smile, sweat each beat), the audience gathered in an arc in front of the stage (Beerus, Whis and Bulma front row), staged reactions (jaws, facepalms, cringes), reverse-angle crowd cameras | `bog_party.js` |
+| "What food? Where do I take it?" | Glowing marker and path on the tray. A 3-second preview shot (tray → Beerus). Carrying is slower with no boost or dodge. The prompt says why | `bog_party.js` host phase |
+| (brief) the SSG ritual | Tight inward ring holding hands (children closer), blue-white donor glow (no white hair), Videl's gold resonance, a gold → red vortex overhead, light along the chain, donors levitating, Goku rising alone in a sphere in the cross pose, slimming, the hair darkening, the vortex collapsing into his chest, flash, silence, red eyes, descent, reveal | `bog_ritual.js`, `bogKit.vortex/shell/slim/chain/spikeHair` |
+| (brief) the first God clash | Both vanish → empty sky → they reappear already flying → accelerate → knuckles on knuckles → a short enormous flash → a ring of cloud → a ring of spray racing over the sea → shake → recoil (shared `clashEvents`). The same clash later over the curve of the Earth (rings of light, no cloud) | `bog_battle.js` `bgb_rise`, `bgb_launch` |
+| (brief) cavern containment | The cavern is a closed room: `Stage.keepInDome`/`domeOut` keep fighters, blasts (they burst on the roof) and the camera (gameplay and story) under the dome. Crystals flare on heavy blows; the roof sheds shards. Objectives tagged **AIR / UNDERGROUND / SPACE** | `stage_gods.js`, `stage.js`, `bog_battle.js` |
+| (brief) burial and breakout | New scene `bgb_buried`. Beerus' barrage (over his shoulder, then from the floor). The roof brought down on Goku (a rubble mound). Silence (the music stops). Beerus turns his back. A tremor, a rock lifting, magenta light through the gaps and **cracks drawn on the rocks themselves**, the pile shaking. The echoing "I... WON'T LET YOU... DESTROY... MY... WORRRRRRRRLLLDD!!" intercut with Beerus turning back. The pile blown outward, the God aura, the charge. Then a **360° melee** in the middle of the cave (the lens orbits; a crystal behind them shatters every other blow) before the clash that breaks the cavern | `bog_battle.js` (`rubble`, `kiShot`, `settleDust`, `whirl`), CSS `.subline.echo` |
+| (brief) the void, the voices, the blue light, the roar | The friends' voices are an **overlapping chorus** (`bogKit.whispers`: lines surfacing and sinking all over the dark, each still a voice cue). The blue line is a real streak across the dark (`blueLine` rebuilt). The roar is framed on the face (not the chin). The God flame turns the void red. A lens rises with him into the sphere; his palms on its surface | `bog_sphere.js`, `bog_kit.js`, CSS `.void-voices` |
+| (brief) the space aftermath | The wrist catch is framed level with the grip, on the side where the raised arm actually is, tracking it every frame; then a chest-up two-shot, then the pull-away over the Earth. Fixed: the roar crashed if the run entered the void without a sphere (restart path) | `bog_sphere.js` `bgs_quiet`, `bgs_roar` |
+| (brief) Vegeta's rage must stay playable | The rage fight was already played. **The Galick Gun is now played too**: Vegeta's own special, held and released by the player, fired at a god who lets it hit. The scripted beam (`bgw_galick`) plays only if nobody fires within 12 s. Then `bgw_smoke` | `bog_wrath.js` |
+| (brief) expressions, music | Beerus' expressions now read (mouth fix above). Whis has more than calm/smirk (delight at the food, a warm bow, amused, not shocked, while watching the fight). Music: silence before the first clash; the hit lands with the fists; silence while Goku is buried; `final_clash` at the breakout | across the chapter |
+
+### TESTED (automated — not human playtesting)
+- `node tests/run-tests.js --fast`: **51 passed, 0 failed** (it caught one load-time crash in the new clash helper, fixed and re-run).
+- Scratchpad bot runner, **every scene watched** (not skipped): `bog_awaken` 200 s, `bog_kingkai` 120 s, `bog_party` 161 s, `bog_wrath` 140 s, `bog_ritual` 146 s, `bog_battle` 321 s, `bog_sphere` 144 s. All **success, 0 engine errors, 0 warnings**.
+- The played Galick Gun, probed both ways: a player who holds and releases special 1 fires the real beam and it hits Beerus (`flags.galick = 'player'`); a player who does nothing gets the story's beam (`'story'`).
+- The first clash's contact measured headless: fist to fist **4 cm** apart.
+- **Full suite NOT run** (the brief: development first). The audit at the start of this session ran it on the untouched code; that run **did not finish** (its log stops partway through), and up to that point it had found **three failing tests, all from before this pass and not touched by it**: *"Vegeta transforms to Super Saiyan and powers down"* (the lab scenario expects the old SSJ timing/revert), *"the Majin form is a story decision, not something the wheel offers"* (Vegeta's form list now also has `super_vegeta`) and *"Super Saiyan 3 is an event, not a menu entry"* (Goku's form list now also has `god`, `godki`). Stale expectations, not engine faults; update them in a test pass.
+
+### BROWSER-CAPTURED BY CLAUDE (Playwright, swiftshader, fake-clock stepping — **not human playtesting**)
+- **Arrival:** establishing, yard, antennae and rocks, the pillar, the reveal, Whis, the bow, the peek.
+- **Temple:** sleep, Whis, the visions.
+- **Beerus:** the new model (front, 3/4, side, back, face) and a 15-expression face sheet.
+- **Transformations:** the SSJ3 film with its growth stages; the one-finger contact.
+- **Party:** the food marker and path; Bingo with the gathered audience.
+- **Ritual:** the full God film, 17 frames.
+- **Battle:** the first clash (10 frames); the burial and breakout (21); the 360° melee and the cavern clash (6); the clash over the Earth (8).
+- **Void and aftermath:** the voices, the blue streak, the roar (12 frames), the wrist catch.
+- **Problems found in captures and fixed:**
+  - Close-ups were on the side where the bodies hid the fists, and later the grip.
+  - Blasts went off in the lens.
+  - Crack lines floated off the rubble.
+  - The roar was framed on the chin.
+  - The barrage over-the-shoulder shot showed only Beerus' legs.
+  - The grip tracked a stale hand position.
+  - The God aura read as a wall.
+  - Beerus had no mouth.
+
+### HUMAN PLAYTEST REQUIRED — checklist for the owner
+1. **Beerus' look** against your reference image (it never reached this session): ears, collar, sash/panel, trousers, shoes, face.
+2. The arrival on King Kai's planet: does Beerus' entrance land? Is Whis always visible in the temple?
+3. Transformations: the films' pacing; is SSJ3 hair growth right (no hair over the chest)? Goku's new lines.
+4. One finger: the contact and the shockwave.
+5. Party: is it obvious what food to carry and where? Bingo: funny, readable, too long?
+6. Ritual: the ring, Videl's gold, the rise and the reveal.
+7. Battle: the first clash's speed and flash (is the white too strong?); the cavern never letting the camera into the rock; the burial's silence and the roar (too long or right?); the 360° melee; the clash over the Earth.
+8. The void: do the layered voices read? The blue streak, the roar, the explosion; the wrist catch.
+9. *That's My Bulma!*: is the played Galick Gun clear (prompt, charge, the hit)? Is 12 s right before the story fires it?
+
+### Known limitations (honest)
+- The Beerus redesign is from the written notes only.
+- Beerus asleep on the bed: the shots still look somewhat awkward.
+- The Bingo audience is moved into its arc at the THUD (behind a camera cut).
+- The God film's touchdown lens was fixed and not re-captured.
+- The rubble mound is primitive rocks (dodecahedra and boxes).
+- HUD text timing (titles, subtitles, the voice chorus) was not verified: CSS animations don't follow the fake clock in captures.
+- The clash flash washes the colours out for a moment on purpose. Check taste.
 
 ---
 

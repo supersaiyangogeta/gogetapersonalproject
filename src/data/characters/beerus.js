@@ -212,7 +212,7 @@
         upperArmR: 0.044, foreArmR: 0.04, fist: 0.05, thighR: 0.074, shinR: 0.054, neckR: 0.043, neckLen: 0.116, headR: HR, footLen: 1.18,
       },
       headExtras: HEAD,
-      face: { noEars: true, skull: [1, 1.13, 0.96], jaw: 1.04, jawW: 0.6, cheeks: 0, eyeX: 0.058, eyeW: 1.55, eyeH: 1.12, pupil: 0x0c0c0c, sclera: 0xf6de62, lashWing: true, lash: 0x0a080c, brow: LINE, browThick: 0.3, browW: 0.95, nose: 0.4 } /* the brow is the ridge: no hair, a dark line */,
+      face: { noEars: true, skull: [1, 1.13, 0.96], jaw: 1.04, jawW: 0.6, cheeks: 0, eyeX: 0.058, eyeW: 1.55, eyeH: 1.12, pupil: 0x0c0c0c, sclera: 0xf6de62, lashWing: true, lash: 0x0a080c, brow: LINE, browThick: 0.42, browW: 0.95, nose: 0.4, mouthY: -0.013, mouthZ: 0.895 } /* the brow is the ridge: no hair, a dark line */,
       outfit: {
         // the black top: fitted, blue-black so its shape reads under light (a flat black slab read as his back)
         topStyle: 'shirt', top: DARK, abs: DARK, arms: SKIN, pecs: DARK,

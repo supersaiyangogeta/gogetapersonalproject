@@ -64,7 +64,8 @@
       if (!f || !f.setState || f === s.goku || f === s.beerus || f.hidden) continue;
       f.controller = K().scripted();
       f.untargetable = f.intangible = true;
-      if (f.state !== 'scripted' || pose) f.setState('scripted', { pose: k === 'whis' ? 'w_idle' : pose, expression: 'shock' });
+      // everybody stunned — except Whis, who is enjoying himself
+      if (f.state !== 'scripted' || pose) f.setState('scripted', { pose: k === 'whis' ? 'w_idle' : pose, expression: k === 'whis' ? 'smirk' : 'shock' });
     }
   }
   function hideWatchers(m) {
@@ -669,18 +670,25 @@
    *   gap       how far apart they reappear (m)   approach  seconds to close it
    */
   function clashEvents(o) {
-    const axis = (o.axis || new V3(1, 0, 0)).clone().normalize();
-    // the lens on the side of the punching arms (Goku's right, Beerus' left): on the other side the bodies hide the fists
-    const side = new V3(axis.z, 0, -axis.x);
+    // (built on first use: scene data is loaded long before there is a 3D engine to make vectors with)
+    let axis = null, side = null;
+    const geo = () => {
+      if (axis) return;
+      const a = o.axis || [1, 0, 0];
+      axis = new V3(a[0], a[1], a[2]).normalize();
+      // the lens on the side of the punching arms (Goku's right, Beerus' left): on the other side the bodies hide the fists
+      side = new V3(axis.z, 0, -axis.x);
+    };
     const gap = o.gap || 18, approach = o.approach || 0.55;
     const CH = 1.15; // feet to fist height
     const at = (ctx) => ctx.cast.cx.pos;
-    const home = (ctx, who, d) => at(ctx).clone().addScaledVector(axis, who === 'goku' ? -d : d).add(new V3(0, -CH, 0));
+    const home = (ctx, who, d) => (geo(), at(ctx).clone().addScaledVector(axis, who === 'goku' ? -d : d).add(new V3(0, -CH, 0)));
     return [
       // they look at each other... and they are gone
       {
         call: (ctx) => {
           const s = st(ctx), b = ctx.b;
+          geo();
           const c = o.at(ctx);
           pt(ctx, 'cx', c);
           const w = o.wide(c);
@@ -694,6 +702,7 @@
         },
         cam: { from: { at: 'cxWide' }, look: { at: 'cxWideLook' }, fov: 46, raw: true },
         sfx: { name: 'wind', vol: 0.7, pitch: 0.5 },
+        music: { level: 0 },
         hold: 0.5 + (o.empty === undefined ? 0.85 : o.empty),
       },
       // ...back, already flying at each other, faster every frame
@@ -764,6 +773,8 @@
           ctx.cast.tip.pos.copy(tip);
         },
         cam: { from: { at: 'tipCam' }, look: { at: 'tip' }, fov: 30, raw: true },
+        // the music hits with the fists
+        music: o.music || { song: 'ssj_god', level: 3 },
         hold: 1.15,
       },
       // THE WORLD ANSWERS: the ring of cloud racing out, the sea thrown up under it (or the light over the Earth)
@@ -1615,6 +1626,7 @@
         wide: (c) => ({ from: c.clone().add(new V3(-8, 10, 74)), look: c.clone().add(new V3(0, -22, 0)) }),
         react: (c) => ({ from: c.clone().add(new V3(52, 12, 64)), look: c.clone().add(new V3(0, -22, 0)) }),
         line: { who: 'goku', line: 'Hah... I\'ve never felt anything like this!', duration: 2.4 },
+        music: { song: 'final_clash', level: 3 },
       }),
     ],
     end(ctx) {
