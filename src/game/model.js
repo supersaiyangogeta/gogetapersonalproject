@@ -259,6 +259,9 @@
         for (const s of [1, -1]) this.add(chest, S, pc, { pos: [s * 0.075, 0.16, b.chestD * 0.62], scale: [0.075, 0.055, 0.045], outline: 0.4 });
       }
       this.add(neck, G.limb(b.neckR, b.neckLen + 0.05), skin, { pos: [0, b.neckLen + 0.04, 0], outline: 0.7 });
+      // outfit.choker: a band hugging the bottom of the neck, just over the collar (Beerus' gold choker);
+      // chokerAt is how far up the neck it sits (0 the base, 1 the head)
+      if (o.choker !== undefined) this.add(neck, G.tube(b.neckR * 1.16, b.neckR * 1.16, o.chokerH || 0.02), o.choker, { pos: [0, b.neckLen * (o.chokerAt === undefined ? 0.32 : o.chokerAt), 0], outline: 0.5 });
       // trapezius gives a heavier, more heroic neck line
       const trapMesh = this.add(chest, S, o.topStyle === 'gi' && o.under !== undefined ? o.under : top, { pos: [0, b.chestTop - 0.035, -0.01], scale: [b.chestW * 0.55, 0.05, b.chestD * 0.62], outline: 0.5 });
       // what a form's look.muscle thickens (Majin Vegeta's heavier arms and legs): see setForm
@@ -324,10 +327,40 @@
           const g = new THREE.Group();
           g.position.set(0, -0.03, side * b.waistD * (harem ? 1.46 : baggy ? 1.3 : 1.1)); // outside a gi's (or harem trousers') baggy front
           spine.add(g);
-          this.add(g, G.box(), ap.color, { pos: [0, -len / 2, side * 0.008], rot: [side * 0.06, 0, 0], scale: [w, len, 0.014], outline: 0.5 });
-          if (ap.trim !== undefined) this.add(g, G.box(), ap.trim, { pos: [0, -len + 0.014, side * 0.011], rot: [side * 0.06, 0, 0], scale: [w * 1.04, 0.026, 0.016], outline: 0.4, shadow: false });
-          // apron.edges: gold piping down both long sides (Beerus' tabard)
-          if (ap.edges && ap.trim !== undefined) for (const e of [1, -1]) this.add(g, G.box(), ap.trim, { pos: [e * w * 0.5, -len / 2, side * 0.011], rot: [side * 0.06, 0, 0], scale: [0.012, len, 0.016], outline: 0, shadow: false });
+          if (ap.point) {
+            // apron.point: the panel cut to a point at the bottom and edged all the way round in the trim colour
+            // (Beerus' tabard); apron.motif: [colour, ...] diamonds down the middle, top to bottom
+            const tip = ap.tip || w * 0.55, edge = ap.edge || 0.011;
+            const panel = (ww, ll, tt, d) => {
+              const sh2 = new THREE.Shape();
+              sh2.moveTo(-ww / 2, 0);
+              sh2.lineTo(ww / 2, 0);
+              sh2.lineTo(ww / 2, -ll + tt);
+              sh2.lineTo(0, -ll);
+              sh2.lineTo(-ww / 2, -ll + tt);
+              sh2.closePath();
+              const geo2 = new THREE.ExtrudeGeometry(sh2, { depth: d, bevelEnabled: false, curveSegments: 1 });
+              geo2.translate(0, 0, -d / 2);
+              (this.geos = this.geos || []).push(geo2);
+              return geo2;
+            };
+            // it hangs a little out from the body, the point furthest out (clear of the trousers' fullness)
+            const ry = side > 0 ? 0 : Math.PI, flare = ap.flare === undefined ? 0.1 : ap.flare;
+            if (ap.trim !== undefined) this.add(g, panel(w + edge * 2, len + edge * 2.2, tip + edge * 1.1, 0.012), ap.trim, { pos: [0, edge * 0.2, side * 0.006], rot: [-side * flare, ry, 0], outline: 0.5 });
+            this.add(g, panel(w, len, tip, 0.012), ap.color, { pos: [0, -edge * 0.2, side * 0.011], rot: [-side * flare, ry, 0], outline: ap.trim !== undefined ? 0 : 0.5, shadow: false });
+            if (ap.motif && side > 0) {
+              const n2 = ap.motif.length, top0 = len * 0.16, span = len - tip - top0;
+              ap.motif.forEach((c, i) => {
+                const y = -(top0 + (span * (i + 0.5)) / n2 + (i === n2 - 1 ? tip * 0.35 : 0));
+                this.add(g, G.box(), c, { pos: [0, y, 0.019 - y * Math.sin(flare)], rot: [-flare, 0, Math.PI / 4], scale: [w * 0.27, w * 0.27, 0.006], outline: 0, shadow: false });
+              });
+            }
+          } else {
+            this.add(g, G.box(), ap.color, { pos: [0, -len / 2, side * 0.008], rot: [side * 0.06, 0, 0], scale: [w, len, 0.014], outline: 0.5 });
+            if (ap.trim !== undefined) this.add(g, G.box(), ap.trim, { pos: [0, -len + 0.014, side * 0.011], rot: [side * 0.06, 0, 0], scale: [w * 1.04, 0.026, 0.016], outline: 0.4, shadow: false });
+            // apron.edges: gold piping down both long sides
+            if (ap.edges && ap.trim !== undefined) for (const e of [1, -1]) this.add(g, G.box(), ap.trim, { pos: [e * w * 0.5, -len / 2, side * 0.011], rot: [side * 0.06, 0, 0], scale: [0.012, len, 0.016], outline: 0, shadow: false });
+          }
           this.cloth.push({ node: g, sx: new Spring(30, 4), sz: new Spring(30, 4), amount: 1.6 });
         }
       }
@@ -376,6 +409,9 @@
         if (sleeves === 'long') (this.sleeveMeshes = this.sleeveMeshes || []).push(upperArm);
         // bicep bulge
         if (sleeves !== 'long') grow(this.add(sh, S, upperColor, { pos: [0, -b.upperArmLen * 0.45, 0.012], scale: [b.upperArmR * 1.02, b.upperArmLen * 0.28, b.upperArmR * 1.12], outline: 0.4 }));
+        // outfit.armBands: a band round each upper arm under the shoulder (Beerus' gold armlets); armBandAt is
+        // how far down the upper arm (0 the shoulder, 1 the elbow), armBandW its width
+        if (o.armBands !== undefined) this.add(sh, G.tube(b.upperArmR * 1.2, b.upperArmR * 1.24, o.armBandW || 0.03), o.armBands, { pos: [0, -b.upperArmLen * (o.armBandAt === undefined ? 0.3 : o.armBandAt), 0.004], outline: 0.6 });
         if (sleeves === 'short') {
           const sl = this.add(sh, G.tube(b.upperArmR * 1.35, b.upperArmR * 1.22, b.upperArmLen * 0.42), sleeveColor, { pos: [0, 0.02, 0], outline: 0.8 });
           sl.userData.side = side;
@@ -418,7 +454,8 @@
         } else if (baggy) this.add(kn, G.tube(b.shinR * 1.55, b.shinR * 1.15, b.shinLen * 0.6), pants, { pos: [0, 0.03, 0] });
         else this.add(kn, G.limb(b.shinR, b.shinLen), o.legs !== undefined ? o.legs : pants, {});
         const boots = o.boots !== undefined ? o.boots : 0x333333;
-        const bootTop = o.bootStyle === 'saiyan' ? 0.62 : o.bootStyle === 'shoe' ? 0.16 : 0.5;
+        // outfit.bootTop overrides the style's height (a fraction of the shin: Beerus' ankle boots)
+        const bootTop = o.bootTop !== undefined ? o.bootTop : o.bootStyle === 'saiyan' ? 0.62 : o.bootStyle === 'shoe' ? 0.16 : 0.5;
         this.add(kn, G.tube(b.shinR * 1.32, b.shinR * 1.12, b.shinLen * bootTop + 0.03), boots, { pos: [0, -b.shinLen * (1 - bootTop), 0] });
         if (o.bootTrim !== undefined) this.add(kn, G.tube(b.shinR * 1.38, b.shinR * 1.36, 0.028), o.bootTrim, { pos: [0, -b.shinLen * (1 - bootTop) + 0.012, 0], outline: 0.6 });
         // a sock showing over the top of the boot (Videl's)
@@ -427,7 +464,11 @@
         const fl = b.footLen;
         // outfit.shoes: the foot in its own colour under wraps or a boot shaft (Gogeta's black shoes under blue wraps)
         this.add(ft, S, o.shoes !== undefined ? o.shoes : boots, { pos: [0, -0.045, 0.04 * fl], scale: [0.068, 0.056, 0.13 * fl] });
-        if (o.bootTip !== undefined) this.add(ft, S, o.bootTip, { pos: [0, -0.05, 0.12 * fl], scale: [0.06, 0.05, 0.056], outline: 0.7 });
+        if (o.bootTip !== undefined) {
+          // bootPoint: the toe drawn out to a point, turned up a little at the end (Beerus' shoes)
+          if (o.bootPoint) this.add(ft, G.cone(), o.bootTip, { pos: [0, -0.06, 0.12 * fl], rot: [Math.PI / 2 - 0.32, 0, 0], scale: [0.052, 0.13 * fl, 0.04], outline: 0.7 });
+          else this.add(ft, S, o.bootTip, { pos: [0, -0.05, 0.12 * fl], scale: [0.06, 0.05, 0.056], outline: 0.7 });
+        }
         // a thick sole in its own colour (Future Trunks' brown treads under yellow boots)
         if (o.bootSole !== undefined) this.add(ft, S, o.bootSole, { pos: [0, -0.088, 0.04 * fl], scale: [0.07, 0.022, 0.134 * fl], outline: 0.6 });
       }
@@ -943,14 +984,67 @@
         };
         const r0 = 0.07, r1 = o.collarReach || 0.2;
         const n = bands.length;
+        // o.collarDrop (m): a real usekh drapes — the front hangs lower on the chest than the back sits on the
+        // shoulders. Each vertex drops by how far forward and how far out it is, and is pushed back out of the
+        // chest wherever the drop would bury it (the chest's own profile, CHEST_PTS, gives its radius at a height)
+        const drop = o.collarDrop || 0;
+        const chestR = (yy) => {
+          for (let i = 0; i < CHEST_PTS.length - 1; i++) {
+            const [ra, ya] = CHEST_PTS[i], [rb, yb] = CHEST_PTS[i + 1];
+            if (yy >= ya && yy <= yb) return ra + ((rb - ra) * (yy - ya)) / Math.max(1e-6, yb - ya);
+          }
+          return yy > CHEST_PTS[CHEST_PTS.length - 1][1] ? 0 : CHEST_PTS[0][0];
+        };
+        const drape = (geo, cy) => {
+          if (!drop) return geo;
+          const pa = geo.attributes.position;
+          for (let k = 0; k < pa.count; k++) {
+            const x = pa.getX(k), z = pa.getZ(k), r = Math.hypot(x, z);
+            if (r < 1e-5) continue;
+            const f = Math.max(0, z / r), q = U.clamp01((r - r0) / Math.max(1e-6, r1 - r0));
+            const dy = -drop * f * f * (0.35 + 0.65 * q);
+            const y = pa.getY(k) + dy;
+            const need = chestR(cy + y) + 0.01;
+            const k2 = r < need ? need / r : 1;
+            pa.setXYZ(k, x * k2, y, z * k2);
+          }
+          pa.needsUpdate = true;
+          geo.computeVertexNormals();
+          return geo;
+        };
         for (let i = 0; i < n; i++) {
           const ra = r0 + ((r1 - r0) * i) / n, rb = r0 + ((r1 - r0) * (i + 1)) / n;
           // a gentle slope out from the neck (a broad flat collar, not a turtleneck): never inside the chest
           const y0 = onChest(r0) + 0.012;
           const ya = Math.max(onChest(ra) + 0.012, y0 - (ra - r0) * 0.36), yb = Math.max(onChest(rb) + 0.012, y0 - (rb - r0) * 0.36);
           // one sloped band: an open frustum from ra (top) down and out to rb
-          const geo = new THREE.CylinderGeometry(ra, rb, Math.max(0.004, ya - yb), 44, 1, true);
+          const geo = drape(new THREE.CylinderGeometry(ra, rb, Math.max(0.004, ya - yb), 44, drop ? 4 : 1, true), (ya + yb) / 2);
+          (this.geos = this.geos || []).push(geo);
           parts.push(this.add(chest, geo, bands[i], { pos: [0, (ya + yb) / 2, 0.004], scale: [sx * 1.04, 1, dz], outline: i === n - 1 ? 0.7 : 0 }));
+          // o.collarStripes = { color, count, bands: [index, ...], width (of each stripe's share, 0..1) }: short
+          // stripes across the chosen bands, all the way round (Beerus' teal bars on the black)
+          const cs = o.collarStripes;
+          if (cs && (cs.bands || [i]).includes(i)) {
+            const cnt = cs.count || 18, wk = cs.width === undefined ? 0.32 : cs.width;
+            const per = (Math.PI * 2) / cnt;
+            for (let k = 0; k < cnt; k++) {
+              const sg = drape(new THREE.CylinderGeometry(ra * 1.003, rb * 1.003, Math.max(0.004, ya - yb), 3, drop ? 4 : 1, true, k * per - (per * wk) / 2, per * wk), (ya + yb) / 2 + 0.0015);
+              this.geos.push(sg);
+              parts.push(this.add(chest, sg, cs.color, { pos: [0, (ya + yb) / 2 + 0.0015, 0.004], scale: [sx * 1.04, 1, dz], outline: 0, shadow: false }));
+            }
+          }
+        }
+        // o.collarJewel = { color, rim, size, band }: a diamond on the front of the collar, in a rim of its own
+        if (o.collarJewel) {
+          const cj = o.collarJewel, k2 = cj.band === undefined ? n * 0.55 : cj.band + 0.5;
+          const r = r0 + ((r1 - r0) * k2) / n, sz2 = cj.size || 0.026;
+          let yj = Math.max(onChest(r) + 0.012, onChest(r0) + 0.012 - (r - r0) * 0.36) + 0.004;
+          // dropped with the front of the collar, and kept out of the chest like it
+          yj -= drop * (0.35 + 0.65 * U.clamp01((r - r0) / Math.max(1e-6, r1 - r0)));
+          const rj = Math.max(r, chestR(yj) + 0.014);
+          const at = [0, yj, rj * dz + 0.004];
+          if (cj.rim !== undefined) parts.push(this.add(chest, G.box(), cj.rim, { pos: at, rot: [-0.95, 0, Math.PI / 4], scale: [sz2 * 1.45, sz2 * 1.45, 0.006], outline: 0.3, shadow: false }));
+          parts.push(this.add(chest, G.box(), cj.color, { pos: [at[0], at[1] + 0.002, at[2] + 0.002], rot: [-0.95, 0, Math.PI / 4], scale: [sz2, sz2, 0.008], outline: 0, shadow: false }));
         }
         // the stones on the rim: drops in the gem colour all the way round
         if (o.collarGems !== undefined) {
