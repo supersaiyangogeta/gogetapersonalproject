@@ -25,6 +25,27 @@
     return g;
   }
   const f3 = (n) => n.toFixed(3);
+  /** One indexed geometry out of several (position, normal, uv): the collar's bars are one mesh, not forty. */
+  function mergeGeos(list) {
+    const out = new THREE.BufferGeometry();
+    const names = ['position', 'normal', 'uv'];
+    const arrs = {}, idx = [];
+    for (const n of names) arrs[n] = [];
+    let base = 0;
+    for (const g of list) {
+      for (const n of names) arrs[n].push(...g.attributes[n].array);
+      const gi = g.index ? g.index.array : Array.from({ length: g.attributes.position.count }, (_, i) => i);
+      for (const i of gi) idx.push(i + base);
+      base += g.attributes.position.count;
+      g.dispose();
+    }
+    out.setAttribute('position', new THREE.Float32BufferAttribute(arrs.position, 3));
+    out.setAttribute('normal', new THREE.Float32BufferAttribute(arrs.normal, 3));
+    out.setAttribute('uv', new THREE.Float32BufferAttribute(arrs.uv, 2));
+    out.setIndex(idx);
+    return out;
+  }
+
   const CHEST_PTS = [[0.0, -0.07], [0.135, -0.065], [0.165, 0.0], [0.195, 0.1], [0.212, 0.19], [0.205, 0.25], [0.165, 0.3], [0.09, 0.335], [0.0, 0.345]];
   const ABS_PTS = [[0.0, -0.05], [0.118, -0.045], [0.128, 0.03], [0.134, 0.13], [0.15, 0.22], [0.0, 0.25]];
   const G = {
@@ -344,15 +365,23 @@
               (this.geos = this.geos || []).push(geo2);
               return geo2;
             };
-            // it hangs a little out from the body, the point furthest out (clear of the trousers' fullness)
-            const ry = side > 0 ? 0 : Math.PI, flare = ap.flare === undefined ? 0.1 : ap.flare;
-            if (ap.trim !== undefined) this.add(g, panel(w + edge * 2, len + edge * 2.2, tip + edge * 1.1, 0.012), ap.trim, { pos: [0, edge * 0.2, side * 0.006], rot: [-side * flare, ry, 0], outline: 0.5 });
-            this.add(g, panel(w, len, tip, 0.012), ap.color, { pos: [0, -edge * 0.2, side * 0.011], rot: [-side * flare, ry, 0], outline: ap.trim !== undefined ? 0 : 0.5, shadow: false });
+            // it hangs a little out from the body, the point furthest out (clear of the trousers' fullness): every
+            // layer hangs from one tilted pivot, so the motif stays on the cloth whatever the flare
+            const flare = ap.flare === undefined ? 0.1 : ap.flare;
+            const fl = new THREE.Group();
+            fl.rotation.set(-side * flare, side > 0 ? 0 : Math.PI, 0);
+            g.add(fl);
+            // an ink line all the way round (an extruded panel's own outline only shows from the side)
+            const ink = 0.012;
+            this.add(fl, panel(w + edge * 2 + ink, len + edge * 2.2 + ink * 1.2, tip + edge * 1.1 + ink * 0.6, 0.004), 0x0b0b12, { pos: [0, edge * 0.2 + ink * 0.5, 0.001], outline: 0, shadow: false });
+            if (ap.trim !== undefined) this.add(fl, panel(w + edge * 2, len + edge * 2.2, tip + edge * 1.1, 0.012), ap.trim, { pos: [0, edge * 0.2, 0.006], outline: 0 });
+            this.add(fl, panel(w, len, tip, 0.012), ap.color, { pos: [0, -edge * 0.2, 0.011], outline: 0, shadow: false });
             if (ap.motif && side > 0) {
-              const n2 = ap.motif.length, top0 = len * 0.16, span = len - tip - top0;
+              // motifSize (× width) and motifDrop (how far the last one is pulled toward the point, × tip)
+              const n2 = ap.motif.length, top0 = len * 0.16, span = len - tip - top0, ms = ap.motifSize || 0.27, md = ap.motifDrop === undefined ? 0.35 : ap.motifDrop;
               ap.motif.forEach((c, i) => {
-                const y = -(top0 + (span * (i + 0.5)) / n2 + (i === n2 - 1 ? tip * 0.35 : 0));
-                this.add(g, G.box(), c, { pos: [0, y, 0.019 - y * Math.sin(flare)], rot: [-flare, 0, Math.PI / 4], scale: [w * 0.27, w * 0.27, 0.006], outline: 0, shadow: false });
+                const y = -(top0 + (span * (i + 0.5)) / n2 + (i === n2 - 1 ? tip * md : 0));
+                this.add(fl, G.box(), c, { pos: [0, y, 0.0185], rot: [0, 0, Math.PI / 4], scale: [w * ms, w * ms, 0.004], outline: 0, shadow: false });
               });
             }
           } else {
@@ -361,7 +390,8 @@
             // apron.edges: gold piping down both long sides
             if (ap.edges && ap.trim !== undefined) for (const e of [1, -1]) this.add(g, G.box(), ap.trim, { pos: [e * w * 0.5, -len / 2, side * 0.011], rot: [side * 0.06, 0, 0], scale: [0.012, len, 0.016], outline: 0, shadow: false });
           }
-          this.cloth.push({ node: g, sx: new Spring(30, 4), sz: new Spring(30, 4), amount: 1.6 });
+          // (a pointed tabard in front rides up off a thigh that comes forward through it: see tick)
+          this.cloth.push({ node: g, sx: new Spring(30, 4), sz: new Spring(30, 4), amount: 1.6, apron: ap.point && side > 0 ? 1 : 0 });
         }
       }
       if (o.emblem) {
@@ -411,7 +441,7 @@
         if (sleeves !== 'long') grow(this.add(sh, S, upperColor, { pos: [0, -b.upperArmLen * 0.45, 0.012], scale: [b.upperArmR * 1.02, b.upperArmLen * 0.28, b.upperArmR * 1.12], outline: 0.4 }));
         // outfit.armBands: a band round each upper arm under the shoulder (Beerus' gold armlets); armBandAt is
         // how far down the upper arm (0 the shoulder, 1 the elbow), armBandW its width
-        if (o.armBands !== undefined) this.add(sh, G.tube(b.upperArmR * 1.2, b.upperArmR * 1.24, o.armBandW || 0.03), o.armBands, { pos: [0, -b.upperArmLen * (o.armBandAt === undefined ? 0.3 : o.armBandAt), 0.004], outline: 0.6 });
+        if (o.armBands !== undefined) this.add(sh, G.tube(b.upperArmR * (o.armBandR || 1.2), b.upperArmR * ((o.armBandR || 1.2) + 0.04), o.armBandW || 0.03), o.armBands, { pos: [0, -b.upperArmLen * (o.armBandAt === undefined ? 0.3 : o.armBandAt), 0.004], outline: 0.6 });
         if (sleeves === 'short') {
           const sl = this.add(sh, G.tube(b.upperArmR * 1.35, b.upperArmR * 1.22, b.upperArmLen * 0.42), sleeveColor, { pos: [0, 0.02, 0], outline: 0.8 });
           sl.userData.side = side;
@@ -426,7 +456,9 @@
         if (o.wrist !== undefined && o.wrist !== null) {
           // wristLen: a longer guard up the forearm (Bardock's), ending at the same place at the wrist
           const wl = o.wristLen || 0.085;
-          this.add(el, G.tube(b.foreArmR * 1.3, b.foreArmR * 1.24, wl), o.wrist, { pos: [0, -b.foreArmLen * 0.7 - (0.085 - wl), 0], outline: 0.8 });
+          // wristFlare: a bracer that widens toward the hand (Beerus' gold cuffs)
+          const wf = o.wristFlare ? [1.22, 1.36] : [1.3, 1.24];
+          this.add(el, G.tube(b.foreArmR * wf[0], b.foreArmR * wf[1], wl), o.wrist, { pos: [0, -b.foreArmLen * 0.7 - (0.085 - wl), 0], outline: 0.8 });
         }
         const handColor = o.gloves !== undefined && o.gloves !== null ? o.gloves : skin;
         // fingerless gloves (Videl's): the glove is the palm and the back of the hand, the fingers are bare
@@ -445,9 +477,20 @@
         const th = J('thigh' + side, hips, s * b.hipX, -0.05, 0);
         const kn = J('knee' + side, th, 0, -b.thighLen, 0);
         const ft = J('foot' + side, kn, 0, -b.shinLen, 0);
-        const pw = harem ? 1.5 : baggy ? 1.38 : 1;
+        // outfit.harem = { thigh, balloon, at, cuff }: the shape of harem trousers — the thigh's width, the balloon's
+        // width over the lower leg (× shinR), where its middle is and where the cuff gathers it (fractions of the shin)
+        const hm = harem && o.harem ? Object.assign({ thigh: 1.5, balloon: 2.2, at: 0.4, cuff: 0.9 }, o.harem) : null;
+        const pw = hm ? hm.thigh : harem ? 1.5 : baggy ? 1.38 : 1;
         grow(this.add(th, G.limb(b.thighR * pw, b.thighLen), pants, {}));
-        if (harem) {
+        if (hm) {
+          // one bell from the hip to the gather: the thigh flaring into a balloon over the knee and the shin, drawn
+          // into a cuff with a rolled edge; below it bare leg (outfit.legs, or skin) down into the boot
+          this.add(th, G.tube(b.thighR * pw, b.shinR * hm.balloon * 0.85, b.thighLen * 0.62), pants, { pos: [0, -b.thighLen * 0.4, 0.004] });
+          this.add(kn, S, pants, { pos: [0, -b.shinLen * hm.at, 0.008], scale: [b.shinR * hm.balloon, b.shinLen * Math.max(0.12, hm.cuff - hm.at), b.shinR * hm.balloon * 0.95] });
+          this.add(kn, G.tube(b.shinR * hm.balloon * 0.66, b.shinR * 1.25, b.shinLen * 0.14), pants, { pos: [0, -b.shinLen * (hm.cuff - 0.14), 0] });
+          this.add(kn, G.torus(1, 0.32), pants, { pos: [0, -b.shinLen * hm.cuff, 0], rot: [Math.PI / 2, 0, 0], scale: [b.shinR * 1.32, b.shinR * 1.32, b.shinR * 1.1], outline: 0.5 });
+          if (hm.cuff < 0.85) this.add(kn, G.limb(b.shinR, b.shinLen), o.legs !== undefined ? o.legs : skin, {});
+        } else if (harem) {
           // the balloon: full over the knee and the shin, then drawn in to the ankle (the band is bootTrim)
           this.add(kn, S, pants, { pos: [0, -b.shinLen * 0.4, 0.008], scale: [b.shinR * 2.2, b.shinLen * 0.5, b.shinR * 2.1] });
           this.add(kn, G.tube(b.shinR * 1.9, b.shinR * 1.18, b.shinLen * 0.32), pants, { pos: [0, -b.shinLen * 0.58, 0] });
@@ -457,7 +500,8 @@
         // outfit.bootTop overrides the style's height (a fraction of the shin: Beerus' ankle boots)
         const bootTop = o.bootTop !== undefined ? o.bootTop : o.bootStyle === 'saiyan' ? 0.62 : o.bootStyle === 'shoe' ? 0.16 : 0.5;
         this.add(kn, G.tube(b.shinR * 1.32, b.shinR * 1.12, b.shinLen * bootTop + 0.03), boots, { pos: [0, -b.shinLen * (1 - bootTop), 0] });
-        if (o.bootTrim !== undefined) this.add(kn, G.tube(b.shinR * 1.38, b.shinR * 1.36, 0.028), o.bootTrim, { pos: [0, -b.shinLen * (1 - bootTop) + 0.012, 0], outline: 0.6 });
+        // bootTrimAt: how far below the boot's rim its band sits (Beerus' gold band a little way down the shaft)
+        if (o.bootTrim !== undefined) this.add(kn, G.tube(b.shinR * 1.38, b.shinR * 1.36, 0.028), o.bootTrim, { pos: [0, -b.shinLen * (1 - bootTop) + 0.012 - (o.bootTrimAt || 0), 0], outline: 0.6 });
         // a sock showing over the top of the boot (Videl's)
         if (o.socks !== undefined) this.add(kn, G.tube(b.shinR * 1.2, b.shinR * 1.17, 0.07), o.socks, { pos: [0, -b.shinLen * (1 - bootTop) + 0.062, 0], outline: 0.6 });
         if (o.legBands !== undefined) this.add(kn, G.tube(b.shinR * 1.18, b.shinR * 1.16, 0.05), o.legBands, { pos: [0, -0.06, 0], outline: 0.6 });
@@ -826,6 +870,8 @@
       const base = this.joint('tailBase', hips, 0, -0.02, -b.pelvisD * 0.85);
       // positive x tilts the tail back from the hips; the segments then curl upward
       base.rotation.x = lt.lift !== undefined ? lt.lift : 1.1;
+      // lt.side: the whole tail swung out to one side (Beerus' sweeps out to his right, past his hand)
+      base.rotation.z = lt.side || 0;
       let parent = base;
       this.tailSegs = [];
       for (let i = 0; i < n; i++) {
@@ -995,17 +1041,22 @@
           }
           return yy > CHEST_PTS[CHEST_PTS.length - 1][1] ? 0 : CHEST_PTS[0][0];
         };
-        const drape = (geo, cy) => {
+        // o.collarDropBack (0..1, × collarDrop): the back drapes too, a little, onto the shoulder blades; and where
+        // the collar hangs (front and back) it hugs the body instead of standing off it. lift: a layer laid on top
+        // (the bars) sits that much further out, so it never ties with the band under it
+        const dropBack = o.collarDropBack || 0;
+        const drape = (geo, cy, lift = 0) => {
           if (!drop) return geo;
           const pa = geo.attributes.position;
           for (let k = 0; k < pa.count; k++) {
             const x = pa.getX(k), z = pa.getZ(k), r = Math.hypot(x, z);
             if (r < 1e-5) continue;
-            const f = Math.max(0, z / r), q = U.clamp01((r - r0) / Math.max(1e-6, r1 - r0));
+            const f = z >= 0 ? z / r : dropBack * (-z / r), q = U.clamp01((r - r0) / Math.max(1e-6, r1 - r0));
             const dy = -drop * f * f * (0.35 + 0.65 * q);
             const y = pa.getY(k) + dy;
-            const need = chestR(cy + y) + 0.01;
-            const k2 = r < need ? need / r : 1;
+            const need = chestR(cy + y) + 0.01 + lift;
+            const hug = dropBack ? q * ((z * z) / (r * r)) : 0;
+            const k2 = r < need ? need / r : 1 + (Math.min(1, (need + 0.004) / r) - 1) * hug;
             pa.setXYZ(k, x * k2, y, z * k2);
           }
           pa.needsUpdate = true;
@@ -1018,20 +1069,21 @@
           const y0 = onChest(r0) + 0.012;
           const ya = Math.max(onChest(ra) + 0.012, y0 - (ra - r0) * 0.36), yb = Math.max(onChest(rb) + 0.012, y0 - (rb - r0) * 0.36);
           // one sloped band: an open frustum from ra (top) down and out to rb
-          const geo = drape(new THREE.CylinderGeometry(ra, rb, Math.max(0.004, ya - yb), 44, drop ? 4 : 1, true), (ya + yb) / 2);
+          // (the seam of the band, where its normals do not quite meet, is put at the back, not under the jewel)
+          const geo = drape(new THREE.CylinderGeometry(ra, rb, Math.max(0.004, ya - yb), 44, drop ? 4 : 1, true, Math.PI, Math.PI * 2), (ya + yb) / 2);
           (this.geos = this.geos || []).push(geo);
           parts.push(this.add(chest, geo, bands[i], { pos: [0, (ya + yb) / 2, 0.004], scale: [sx * 1.04, 1, dz], outline: i === n - 1 ? 0.7 : 0 }));
           // o.collarStripes = { color, count, bands: [index, ...], width (of each stripe's share, 0..1) }: short
           // stripes across the chosen bands, all the way round (Beerus' teal bars on the black)
           const cs = o.collarStripes;
           if (cs && (cs.bands || [i]).includes(i)) {
-            const cnt = cs.count || 18, wk = cs.width === undefined ? 0.32 : cs.width;
-            const per = (Math.PI * 2) / cnt;
-            for (let k = 0; k < cnt; k++) {
-              const sg = drape(new THREE.CylinderGeometry(ra * 1.003, rb * 1.003, Math.max(0.004, ya - yb), 3, drop ? 4 : 1, true, k * per - (per * wk) / 2, per * wk), (ya + yb) / 2 + 0.0015);
-              this.geos.push(sg);
-              parts.push(this.add(chest, sg, cs.color, { pos: [0, (ya + yb) / 2 + 0.0015, 0.004], scale: [sx * 1.04, 1, dz], outline: 0, shadow: false }));
-            }
+            // phase: where the first bar sits (0.5 leaves the front centre clear for the jewel). One mesh per band.
+            const cnt = cs.count || 18, wk = cs.width === undefined ? 0.32 : cs.width, ph = cs.phase || 0;
+            const per = (Math.PI * 2) / cnt, secs = [];
+            for (let k = 0; k < cnt; k++) secs.push(drape(new THREE.CylinderGeometry(ra * 1.003, rb * 1.003, Math.max(0.004, ya - yb), 3, drop ? 4 : 1, true, (k + ph) * per - (per * wk) / 2, per * wk), (ya + yb) / 2 + 0.0015, 0.002));
+            const sg = mergeGeos(secs);
+            this.geos.push(sg);
+            parts.push(this.add(chest, sg, cs.color, { pos: [0, (ya + yb) / 2 + 0.0015, 0.004], scale: [sx * 1.04, 1, dz], outline: 0, shadow: false }));
           }
         }
         // o.collarJewel = { color, rim, size, band }: a diamond on the front of the collar, in a rim of its own
@@ -1043,8 +1095,10 @@
           yj -= drop * (0.35 + 0.65 * U.clamp01((r - r0) / Math.max(1e-6, r1 - r0)));
           const rj = Math.max(r, chestR(yj) + 0.014);
           const at = [0, yj, rj * dz + 0.004];
-          if (cj.rim !== undefined) parts.push(this.add(chest, G.box(), cj.rim, { pos: at, rot: [-0.95, 0, Math.PI / 4], scale: [sz2 * 1.45, sz2 * 1.45, 0.006], outline: 0.3, shadow: false }));
-          parts.push(this.add(chest, G.box(), cj.color, { pos: [at[0], at[1] + 0.002, at[2] + 0.002], rot: [-0.95, 0, Math.PI / 4], scale: [sz2, sz2, 0.008], outline: 0, shadow: false }));
+          // tilt: how far it lies back (0.95 suits a flat collar; a draped one hangs near upright on the chest)
+          const tl = cj.tilt === undefined ? 0.95 : cj.tilt;
+          if (cj.rim !== undefined) parts.push(this.add(chest, G.box(), cj.rim, { pos: at, rot: [-tl, 0, Math.PI / 4], scale: [sz2 * 1.45, sz2 * 1.45, 0.006], outline: 0.3, shadow: false }));
+          parts.push(this.add(chest, G.box(), cj.color, { pos: [at[0], at[1] + 0.003 * Math.sin(tl), at[2] + 0.003 * Math.cos(tl)], rot: [-tl, 0, Math.PI / 4], scale: [sz2, sz2, 0.008], outline: cj.rim === undefined ? 0.3 : 0, shadow: false }));
         }
         // the stones on the rim: drops in the gem colour all the way round
         if (o.collarGems !== undefined) {
@@ -1254,17 +1308,22 @@
       // face.skin: a face in a different colour from the body (Cell's pale lilac face on a green body)
       const skin = f.skin !== undefined ? f.skin : a.skin;
       const hc = new THREE.Group();
-      hc.position.set(0, R * 0.95, 0);
+      // build.headScale: the whole head (skull, face, extras, hair) smaller or larger round the neck, every face
+      // value keeping its tuning (Beerus' head is smaller against his body than headR's face sizes allow)
+      const hs = b.headScale || 1;
+      hc.position.set(0, R * 0.95 * hs, 0);
+      if (hs !== 1) hc.scale.setScalar(hs);
       head.add(hc);
       this.headCenter = hc;
       // face.skull: the skull's own proportions (Beerus' tall sphinx head) as multiples of the default ellipsoid
       const sk = f.skull || [1, 1, 1];
-      this.skull = this.add(hc, S, skin, { scale: [R * SKULL[0] * sk[0], R * SKULL[1] * sk[1], R * SKULL[2] * sk[2]], skin: true });
+      // face.skullY lifts the cranium off the jaw (a long, pointed lower face under broad temples: Beerus)
+      this.skull = this.add(hc, S, skin, { pos: [0, R * (f.skullY || 0), 0], scale: [R * SKULL[0] * sk[0], R * SKULL[1] * sk[1], R * SKULL[2] * sk[2]], skin: true });
       // the jaw and cheeks carry the face's age and build (all opt-in, 1 = as before): face.jaw
       // lengthens the chin (an adult, a hard face), face.jawW narrows it, face.cheeks rounds (>1),
       // flattens (<1) or drops (0) the cheekbones
       const jaw = f.jaw || 1, jawW = f.jawW || 1;
-      this.add(hc, S, skin, { pos: [0, -R * (0.42 + (jaw - 1) * 0.3), R * (0.12 + (jaw - 1) * 0.08)], scale: [R * 0.66 * jawW, R * 0.56 * jaw, R * 0.7], outline: 0, skin: true });
+      this.add(hc, S, skin, { pos: [0, -R * (0.42 + (jaw - 1) * 0.3), R * (0.12 + (jaw - 1) * 0.08)], scale: [R * 0.66 * jawW, R * 0.56 * jaw, R * 0.7], outline: f.jawLine || 0, skin: true });
       // cheekbones give the face a more angular anime shape
       const ck = f.cheeks === undefined ? 1 : f.cheeks;
       if (ck > 0) for (const s of [1, -1]) this.add(hc, S, skin, { pos: [s * R * 0.52 * Math.min(1, jawW + 0.04), -R * 0.2, R * 0.55], scale: [R * 0.3 * ck, R * 0.26 * ck, R * 0.3 * ck], outline: 0 });
@@ -1292,12 +1351,18 @@
       const ew = f.eyeW || 1;
       // taller or narrower eyes (face.eyeH): the expressions scale from this, not from a constant
       this._eyeH = f.eyeH || 1;
+      // face.eyeTilt (radians): the whole eye slanted, inner corner low (a cat's eye, a scowl); face.browY moves the
+      // brow line up or down onto the lid; face.eyeRim: the eye ringed in a colour (black) all the way round
+      const tilt = (this._eyeTilt = f.eyeTilt || 0);
+      this._browY = f.browY || 0;
+      if (f.eyeRim !== undefined) this.face.rims = [];
       for (const s of [1, -1]) {
-        const eye = this.add(hc, S, eyeWhite, { pos: [s * eyeX, 0.004, R * 0.9], rot: [0, s * 0.38, 0], scale: [0.028 * ew, 0.02, 0.011], outline: 0, basic: true, shadow: false });
-        const pup = this.add(hc, G.sphereLo(), this.face.pupilMat, { pos: [s * (eyeX - 0.005), 0.001, R * 0.99], scale: [0.0105, 0.0145, 0.005], outline: 0, basic: true, shadow: false });
+        const eye = this.add(hc, S, eyeWhite, { pos: [s * eyeX, 0.004, R * 0.9], rot: [0, s * 0.38, s * tilt], scale: [0.028 * ew, 0.02, 0.011], outline: 0, basic: true, shadow: false });
+        if (f.eyeRim !== undefined) this.face.rims.push(this.add(hc, S, this.mat(f.eyeRim, { basic: true }), { pos: [s * eyeX, 0.004, R * 0.9 - 0.0015], rot: [0, s * 0.38, s * tilt], scale: [0.028 * ew * 1.12, 0.02 * 1.12, 0.011], outline: 0, basic: true, shadow: false }));
+        const pup = this.add(hc, G.sphereLo(), this.face.pupilMat, { pos: [s * (eyeX - 0.005), 0.001, R * 0.99], rot: [0, 0, s * tilt], scale: [0.0105, 0.0145, 0.005], outline: 0, basic: true, shadow: false });
         const hl = this.add(hc, G.sphereLo(), highlight, { pos: [s * (eyeX - 0.009) + 0.002, 0.007, R * 1.01], scale: [0.0034, 0.0034, 0.002], outline: 0, basic: true, shadow: false });
         const lash = this.add(hc, G.box(), lashMat, { pos: [s * eyeX, 0.02, R * 0.945], rot: [0, s * 0.38, s * 0.12], scale: [0.036 * ew, 0.0048, 0.009], outline: 0, basic: true, shadow: false });
-        const brow = this.add(hc, G.box(), this.face.browMat, { pos: [s * eyeX, 0.036, R * 0.93], rot: [0, s * 0.35, 0], scale: [0.042 * (f.browW || 1), 0.0105 * (f.browThick || 1), 0.014], outline: 0, shadow: false });
+        const brow = this.add(hc, G.box(), this.face.browMat, { pos: [s * eyeX, 0.036 + this._browY, R * 0.93], rot: [0, s * 0.35, 0], scale: [0.042 * (f.browW || 1), 0.0105 * (f.browThick || 1), 0.014], outline: 0, shadow: false });
         // a flick at the outer corner of the lash line (face.lashWing): the lashes of a woman's eye
         if (f.lashWing) this.add(hc, G.box(), lashMat, { pos: [s * (eyeX + 0.019 * ew), 0.021, R * 0.925], rot: [0, s * 0.62, s * 0.62], scale: [0.013, 0.0042, 0.008], outline: 0, basic: true, shadow: false });
         this.face.eyes.push(eye);
@@ -1309,7 +1374,7 @@
       // face.mouthY / face.mouthZ: where the mouth sits (a muzzle or a deeper skull — Beerus — buried it in the head)
       this._mouthY = -0.062 + (f.mouthY || 0);
       this._mouthZ = R * (f.mouthZ || 0.83);
-      this.face.mouth = this.add(hc, G.box(), 0x4a1616, { pos: [0, this._mouthY, this._mouthZ], scale: [0.03, 0.005, 0.01], outline: 0, shadow: false });
+      this.face.mouth = this.add(hc, G.box(), f.mouthColor !== undefined ? f.mouthColor : 0x4a1616, { pos: [0, this._mouthY, this._mouthZ], scale: [0.03, 0.005, 0.01], outline: 0, shadow: false });
       this.face.teeth = this.add(hc, G.box(), this.mat(0xf6f2ea, { basic: true }), { pos: [0, this._mouthY + 0.004, this._mouthZ + R * 0.015], scale: [0.026, 0.0045, 0.006], outline: 0, basic: true, shadow: false });
       this.face.teeth.visible = false;
       if (f.scar) this.add(hc, G.box(), 0x9a4040, { pos: [0.068, -0.03, R * 0.82], rot: [0, 0.5, 0.35], scale: [0.004, 0.03, 0.006], outline: 0, shadow: false });
@@ -1908,12 +1973,12 @@
       const R = this.b.headR;
       this.face.brows.forEach((br, i) => {
         const s = i === 0 ? 1 : -1;
-        br.rotation.set(0, s * 0.35, s * e.brow);
-        br.position.y = 0.036 + e.browY;
+        br.rotation.set(0, s * 0.35, s * (e.brow + (this._eyeTilt || 0)));
+        br.position.y = 0.036 + e.browY + (this._browY || 0);
       });
       this.face.lashes.forEach((l, i) => {
         const s = i === 0 ? 1 : -1;
-        l.rotation.set(0, s * 0.38, s * e.lash);
+        l.rotation.set(0, s * 0.38, s * (e.lash + (this._eyeTilt || 0)));
       });
       const m = this.face.mouth;
       m.scale.set(0.03 * e.mouthW, 0.005 * e.mouthH, 0.01);
@@ -1933,6 +1998,7 @@
       const h = e.eyeH * blink;
       const eh = this._eyeH || 1;
       this.face.eyes.forEach((ey) => (ey.scale.y = 0.02 * h * eh));
+      if (this.face.rims) this.face.rims.forEach((rm) => (rm.scale.y = 0.02 * h * eh * 1.12));
       // a scene's shrink (setPupilScale) times the form's own size (look.pupilScale: Super Saiyan 3's points)
       const ps = (this._pupilS || 1) * (this._pupilBase || 1);
       this.face.pupils.forEach((p) => {
@@ -1989,7 +2055,12 @@
       for (const c of this.cloth) {
         const cx = c.sx.step(U.clamp(mo.fwd * 0.03 * c.amount + mo.up * 0.02, -0.9, 1.1), dt);
         const cz = c.sz.step(U.clamp(-mo.side * 0.03 * c.amount, -0.8, 0.8), dt);
-        c.node.rotation.set(c.cape ? cx * 0.8 : cx, 0, cz);
+        if (c.apron) {
+          // the front tabard: a thigh swinging forward lifts it out of the way instead of passing through it
+          const j = this.joints;
+          const lift = Math.min(0.9, Math.max(0, (j.spine ? j.spine.rotation.x : 0) - Math.min(j.thighL.rotation.x, j.thighR.rotation.x)));
+          c.node.rotation.set(Math.min(cx, 0.12) - lift, 0, cz);
+        } else c.node.rotation.set(c.cape ? cx * 0.8 : cx, 0, cz);
       }
     }
 

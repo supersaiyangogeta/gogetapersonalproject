@@ -36,46 +36,47 @@
   // the collar black with teal bars and a thick white rim, an orange stone in a white diamond at its front; gold
   // choker, armlets and cuffs (#ffec58); a navy sash; the tabard black, edged in gold, cut to a point, white /
   // white / orange diamonds; sky-blue trousers (#02abec lit); brown boots with gold bands
-  const SKIN = 0x9e829c, GOLD = 0xf2d244, WHITE = 0xf6f4ea, BLACK = 0x17141c, TEAL = 0x5cc4d4, GEM = 0xf07812, SASH = 0x1c2662, PANEL = 0x17131a, PANTS = 0x1f9ade, BOOT = 0x6e4626, INNER = 0x6e4c66, LINE = 0x3e2238;
+  // (second pass, after a four-lens review against the image: skin redder and duskier, red above blue; the collar's
+  // bars the same azure as the trousers; the sash a near-black navy; the ear insides darker)
+  const SKIN = 0x9c7c8e, TAIL = 0x8c6e80, GOLD = 0xf2d244, WHITE = 0xf6f4ea, BLACK = 0x17141c, BAR = 0x1a9fe0, GEM = 0xf07812, SASH = 0x0a1754, PANEL = 0x17131a, PANTS = 0x1f9ade, BOOT = 0x6e4626, INNER = 0x5a3a52, LINE = 0x2a1426;
 
   /*
-   * THE HEAD (the owner, 2026-10-06, second pass: "face → ears → eyes → collar → torso silhouette → trousers → tail"; it
-   * read as a purple ball with ears). A sphinx cat: a tall skull, broad at the temples, tapering to a small chin; high
-   * angular cheekbones; big wide-set gold eyes under heavy black lids with kohl wings; a brow ridge instead of brows;
-   * two small whisker pads for a muzzle. The ears are the silhouette: huge, wide at the base, set on the top corners of
-   * the skull and leaning out, pale inside, a gold ring round each.
+   * THE HEAD (to the owner's reference image). A sphinx cat: broad at the temples, the cranium lifted off a long jaw
+   * that narrows to a small pointed chin (face.skullY / jaw / jawLine); narrow, heavy-lidded gold eyes, slanted, ringed
+   * in black (eyeTilt, eyeRim) with a short kohl wing; a dark brow ridge lying on the lid, not floating brows; a small
+   * dark nose and a short dark mouth close under it — no cheek or whisker lumps. The ears are the silhouette: huge
+   * leaves taller than the head, flaring out past the temples, dark inside, a gold cuff high on each.
    */
   const HR = 0.14; // build.headR, in metres (the extras are placed in it)
   const norm = (v) => {
     const l = Math.hypot(v[0], v[1], v[2]);
     return [v[0] / l, v[1] / l, v[2] / l];
   };
-  // tall and pointed, nearly upright (leaning out about 18°), their bases across the whole crown
-  const EAR = (s) => ({ a: [s * 0.46, 0.86, -0.08], d: [s * 0.33, 1, -0.05], l: 0.33, r: 0.096, flat: 0.46, depth: 0.85 });
+  // huge and pointed, taller than the head, leaning out, their bases across the whole crown
+  const EAR = (s) => ({ a: [s * 0.54, 0.8, -0.08], d: [s * 0.32, 1, -0.05], l: 0.48, r: 0.108, flat: 0.42, depth: 0.85 });
   // a ring k of the way up an ear: an extra centred on that point of the ear's axis, as wide as the ear is there
   const ring = (s, k) => {
     const e = EAR(s), n = norm(e.a), d = norm(e.d);
     const p = [n[0] * HR * e.depth + d[0] * e.l * k, n[1] * HR * e.depth + d[1] * e.l * k, n[2] * HR * e.depth + d[2] * e.l * k];
-    return { shape: 'ball', a: p, d: e.d, l: 0.014, r: e.r * (1 - k) * 1.06, flat: e.flat * 1.25, depth: Math.hypot(p[0], p[1], p[2]) / HR, color: GOLD, outline: 0.4 };
+    return { shape: 'ball', a: p, d: e.d, l: 0.02, r: e.r * (1 - k) * 1.1, flat: e.flat * 1.5, depth: Math.hypot(p[0], p[1], p[2]) / HR, color: GOLD, outline: 0.4 };
   };
   const HEAD = [
     EAR(1),
     EAR(-1),
-    // the insides, dark (the reference: shadowed mauve), on the front of each ear
-    { a: [0.46, 0.88, 0.02], d: [0.33, 1, -0.03], l: 0.26, r: 0.062, flat: 0.22, depth: 0.9, color: INNER, outline: 0 },
-    { a: [-0.46, 0.88, 0.02], d: [-0.33, 1, -0.03], l: 0.26, r: 0.062, flat: 0.22, depth: 0.9, color: INNER, outline: 0 },
+    // the insides, dark, on the front of each ear and along its length (a lighter rim of skin shows round them)
+    { a: [0.46, 0.86, 0.16], d: [0.28, 1, -0.11], l: 0.4, r: 0.07, flat: 0.26, depth: 0.9, color: INNER, outline: 0 },
+    { a: [-0.46, 0.86, 0.16], d: [-0.28, 1, -0.11], l: 0.4, r: 0.07, flat: 0.26, depth: 0.9, color: INNER, outline: 0 },
     // a gold cuff high on each ear
-    ring(1, 0.74),
-    ring(-1, 0.74),
-    // high cheekbones: two hard planes under the outer corners of the eyes
-    { shape: 'ball', a: [0.62, -0.12, 0.76], d: [0.5, 0.45, 1], l: 0.034, r: 0.028, flat: 0.4, depth: 0.9, outline: 0 },
-    { shape: 'ball', a: [-0.62, -0.12, 0.76], d: [-0.5, 0.45, 1], l: 0.034, r: 0.028, flat: 0.4, depth: 0.9, outline: 0 },
-    // the muzzle: two small whisker pads under the nose
-    { shape: 'ball', a: [0.1, -0.36, 1], d: [0.2, -0.3, 1], l: 0.016, r: 0.019, flat: 0.42, depth: 0.975, outline: 0 },
-    { shape: 'ball', a: [-0.1, -0.36, 1], d: [-0.2, -0.3, 1], l: 0.016, r: 0.019, flat: 0.42, depth: 0.975, outline: 0 },
-    // the kohl: a black wing from the outer corner of each eye, up and back
-    { shape: 'line', a: [0.52, 0.05, 0.86], d: [1, 0.5, -0.3], l: 0.05, r: 0.0075, depth: 1.012, color: 0x0c0a10 },
-    { shape: 'line', a: [-0.52, 0.05, 0.86], d: [-1, 0.5, -0.3], l: 0.05, r: 0.0075, depth: 1.012, color: 0x0c0a10 },
+    ring(1, 0.66),
+    ring(-1, 0.66),
+    // a small dark nose
+    { shape: 'ball', a: [0, -0.435, 1], d: [0, -0.25, 1], l: 0.008, r: 0.011, flat: 0.6, depth: 0.985, color: 0x4e2e44, outline: 0 },
+    // the kohl: a short black wing from the outer corner of each eye, up and back (seated on his deeper skull)
+    { shape: 'line', a: [0.55, 0.2, 0.82], d: [1, 0.45, -0.3], l: 0.04, r: 0.0075, depth: 0.975, color: 0x0c0a10 },
+    { shape: 'line', a: [-0.55, 0.2, 0.82], d: [-1, 0.45, -0.3], l: 0.04, r: 0.0075, depth: 0.975, color: 0x0c0a10 },
+    // two faint creases over the bridge of the nose
+    { shape: 'line', a: [0.07, 0.2, 1], d: [0.3, 1, 0], l: 0.022, r: 0.0035, depth: 0.97, color: LINE },
+    { shape: 'line', a: [-0.07, 0.2, 1], d: [-0.3, 1, 0], l: 0.022, r: 0.0035, depth: 0.97, color: LINE },
   ];
 
   // THE WAIT: both hands clasped behind the small of his back
@@ -210,33 +211,44 @@
       height: 1.05,
       skin: SKIN,
       build: {
-        // lean and long: broad shoulders over a narrow waist, thin arms, a long thin neck that shows above the collar
+        // lanky (to the reference: legs over half his height, a short wiry torso, a small head for the shoulders):
+        // long thighs and shins, the hips raised to match, a short belly; the head scaled down whole (headScale) so
+        // every face value keeps its tuning; rootScale sinks his sitting and lying poses as far as the longer legs need
         chestW: 0.178, chestD: 0.112, chestTop: 0.27, shoulderX: 0.2, delt: 0.054, waistW: 0.098, waistD: 0.092, pelvisW: 0.116,
-        upperArmR: 0.044, foreArmR: 0.04, fist: 0.05, thighR: 0.074, shinR: 0.054, neckR: 0.043, neckLen: 0.116, headR: HR, footLen: 1.18,
+        upperArmR: 0.044, foreArmR: 0.04, fist: 0.05, thighR: 0.074, shinR: 0.05, neckR: 0.043, neckLen: 0.116, headR: HR, footLen: 1.18,
+        thighLen: 0.5, shinLen: 0.48, hipY: 1.12, absLen: 0.14, headScale: 0.86, rootScale: 1.14,
       },
       headExtras: HEAD,
-      face: { noEars: true, skull: [1, 1.13, 0.96], jaw: 1.04, jawW: 0.6, cheeks: 0, eyeX: 0.058, eyeW: 1.55, eyeH: 1.12, pupil: 0x0c0c0c, sclera: 0xf6de62, lashWing: true, lash: 0x0a080c, brow: LINE, browThick: 0.42, browW: 0.95, nose: 0.4, mouthY: -0.013, mouthZ: 0.895 } /* the brow is the ridge: no hair, a dark line */,
+      // the brow is the ridge: no hair, a heavy dark line lying on the lid
+      face: {
+        noEars: true, skull: [1, 1.02, 0.96], skullY: 0.15, jaw: 1.15, jawW: 0.8, jawLine: 0.8, cheeks: 0,
+        eyeX: 0.058, eyeW: 1.15, eyeH: 0.75, eyeTilt: 0.3, eyeRim: 0x0a080c, pupil: 0x0c0c0c, sclera: 0xf6de62, lashWing: false, lash: 0x0a080c,
+        brow: LINE, browThick: 0.8, browW: 1.1, browY: -0.009, nose: 0.001, mouthY: -0.02, mouthZ: 0.85, mouthColor: 0x2a1622,
+      },
       outfit: {
         // bare-chested: the skin is the top (pecs and the lean belly in skin)
         topStyle: 'bare', top: SKIN, arms: SKIN, pecs: SKIN,
         choker: GOLD, chokerAt: 0.86,
-        // the usekh on the bare shoulders: black bands barred in teal, a thick white rim, the orange stone in a white
-        // diamond at the front
-        collar: WHITE, collarStyle: 'usekh', collarBands: [BLACK, BLACK, BLACK, WHITE], collarReach: 0.24, collarDrop: 0.075,
-        collarStripes: { color: TEAL, count: 14, bands: [0, 1, 2], width: 0.2 },
-        collarJewel: { color: GEM, rim: WHITE, size: 0.021, band: 2 },
-        armBands: GOLD, armBandAt: 0.26, armBandW: 0.03,
-        wrist: GOLD, wristLen: 0.1,
-        // the navy sash; the black tabard hanging from it to the knee, gold-edged, cut to a point
+        // the usekh on the bare shoulders, draped deep over the chest and capping the shoulders: a thin white edge at
+        // the neck, the black field with azure bars set across it like rungs (none at the front), a thick white rim;
+        // the orange stone straight on the black
+        collar: WHITE, collarStyle: 'usekh', collarBands: [WHITE, BLACK, BLACK, BLACK, BLACK, BLACK, WHITE, WHITE], collarReach: 0.265, collarDrop: 0.115, collarDropBack: 0.5,
+        collarStripes: { color: BAR, count: 10, bands: [1, 2, 3], width: 0.34, phase: 0.5 },
+        collarJewel: { color: GEM, size: 0.032, band: 2, tilt: 0.44 },
+        // gold armlets at mid upper arm, clear of the biceps; long gold bracers widening to the hand
+        armBands: GOLD, armBandAt: 0.42, armBandW: 0.04, armBandR: 1.38,
+        wrist: GOLD, wristLen: 0.13, wristFlare: true,
+        // the near-black navy sash; the black tabard hanging from it to just below the knee, gold-edged, cut to a point
         belt: SASH, beltStyle: 'sash',
-        apron: { color: PANEL, trim: GOLD, len: 0.46, width: 0.13, point: true, tip: 0.07, motif: [WHITE, WHITE, GEM] },
-        // wide sky-blue harem trousers ballooning over the shins; brown ankle boots, gold bands, pointed toes
-        pants: PANTS, pantsStyle: 'harem',
-        boots: BOOT, bootTop: 0.3, bootTrim: GOLD, shoes: BOOT, bootTip: BOOT, bootPoint: true, bootStyle: 'shoe',
-        // the tail: long and thin, out from under the sash, curling up at the end
-        longTail: { length: 0.9, radius: 0.024, segments: 10, color: SKIN, lift: 0.55, curl: 0.32 },
+        apron: { color: PANEL, trim: GOLD, len: 0.53, width: 0.16, edge: 0.015, point: true, tip: 0.09, motif: [WHITE, WHITE, GEM], motifSize: 0.32, motifDrop: 0 },
+        // sky-blue harem trousers: one bell from the hip to a huge balloon over the knee, gathered in a cuff at mid-shin;
+        // bare shin under it; brown ankle boots with a gold band a little way down the shaft, pointed toes
+        pants: PANTS, pantsStyle: 'harem', harem: { thigh: 1.6, balloon: 3.2, at: 0.25, cuff: 0.55 }, legs: SKIN,
+        boots: BOOT, bootTop: 0.22, bootTrim: GOLD, bootTrimAt: 0.03, shoes: BOOT, bootTip: BOOT, bootPoint: true, bootStyle: 'shoe',
+        // the tail: thick, a long gentle sweep out to his right (not a hook behind him), a little darker than his body
+        longTail: { length: 1.0, radius: 0.034, segments: 10, color: TAIL, lift: 0.95, curl: 0.12, side: -0.7 },
       },
-      portraitColor: '#9e829c',
+      portraitColor: '#9c7c8e',
     },
     vfx: { ghost: 0xd8b0ff, trail: 0xe8d0ff },
     audio: { strikePitch: 1.0, heavyPitch: 0.86 },
@@ -244,6 +256,8 @@
       {
         id: 'base', name: 'Base',
         aura: { color: 0xc89aff, core: 0xf2e0ff, particles: 0xd8b8ff, speed: 0.9 },
+        // narrow, bored eyes: small pupils
+        look: { pupilScale: 0.7 },
         mult: {},
       },
     ],

@@ -215,7 +215,9 @@
 
       const pivot = this.model.pivot;
       const baseY = this.model.b.hipY;
-      pivot.position.y = baseY + this.root.y;
+      // build.rootScale: a body with longer legs than the poses were made for (Beerus) sinks further into a
+      // sitting, kneeling or lying pose, so it still reaches the seat, the floor, the bed
+      pivot.position.y = baseY + this.root.y * (this.model.b.rootScale || 1);
       pivot.rotation.set(this.root.rx, this.root.ry, this.root.rz);
 
       // additive layers
