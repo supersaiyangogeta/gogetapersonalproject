@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "saiyan-legacy",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "tools/serve.js",
+        "5173"
+      ],
+      "port": 5173
+    },
+    {
+      "name": "saiyan-legacy-5175",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "tools/serve.js",
+        "5175"
+      ],
+      "port": 5175
+    }
+  ]
+}

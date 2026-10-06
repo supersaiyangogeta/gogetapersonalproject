@@ -1,0 +1,1220 @@
+{
+  ".claude/launch.json": {
+    "mtime": 1789619602.7771118,
+    "seen": 1789703142.0472653,
+    "ast_hash": "c6022d70750cec23ecd65208c5ca240b",
+    "semantic_hash": ""
+  },
+  "assets/models/test_dummy.glb.js": {
+    "mtime": 1789389471.1285162,
+    "seen": 1789703142.0472653,
+    "ast_hash": "137bf485d673e7d422b9ba7f079c0be1",
+    "semantic_hash": ""
+  },
+  "src/core/audio.js": {
+    "mtime": 1789756695.360829,
+    "seen": 1789795652.2242744,
+    "ast_hash": "2b9303f17f68c98bec15b636649b2901",
+    "semantic_hash": ""
+  },
+  "src/core/input.js": {
+    "mtime": 1789737506.19561,
+    "seen": 1789739436.2964084,
+    "ast_hash": "3b658e9b72b07e6c560a3a58990aa39e",
+    "semantic_hash": ""
+  },
+  "src/core/music.js": {
+    "mtime": 1789512092.2095683,
+    "seen": 1789703142.0472653,
+    "ast_hash": "7eae097e0fba3555acf9fead6ec01623",
+    "semantic_hash": ""
+  },
+  "src/core/namespace.js": {
+    "mtime": 1789324309.6770842,
+    "seen": 1789703142.0472653,
+    "ast_hash": "e7aa1b8f1d6cf6a250ee3a82f37c747c",
+    "semantic_hash": ""
+  },
+  "src/core/save.js": {
+    "mtime": 1789757731.7648785,
+    "seen": 1789795652.2242744,
+    "ast_hash": "d2cf3695ce8199fe9abe051cab708e36",
+    "semantic_hash": ""
+  },
+  "src/core/settings.js": {
+    "mtime": 1790193728.6351006,
+    "seen": 1790195482.5277884,
+    "ast_hash": "f5d71a4ee05652001f62e1feb9037c3d",
+    "semantic_hash": ""
+  },
+  "src/core/voice.js": {
+    "mtime": 1789586479.5271907,
+    "seen": 1789703142.0472653,
+    "ast_hash": "cd9763b59fa129aaa34df7aa8f18f3c0",
+    "semantic_hash": ""
+  },
+  "src/data/characters/adult_gohan.js": {
+    "mtime": 1789677058.3458357,
+    "seen": 1789703142.0472653,
+    "ast_hash": "1c1e09a947317c16c5ae3048776bbc1a",
+    "semantic_hash": ""
+  },
+  "src/data/characters/androids_gero.js": {
+    "mtime": 1789614256.9224021,
+    "seen": 1789703142.0472653,
+    "ast_hash": "12d0b045250e6d7d65ef948d06d10ae9",
+    "semantic_hash": ""
+  },
+  "src/data/characters/androids_pair.js": {
+    "mtime": 1789614751.3689375,
+    "seen": 1789703142.0472653,
+    "ast_hash": "4acf25c95a4dbfbd448090772bc9d350",
+    "semantic_hash": ""
+  },
+  "src/data/characters/bardock.js": {
+    "mtime": 1789512954.460656,
+    "seen": 1789703142.0472653,
+    "ast_hash": "84dcc8ec371c3f6022ccb921f6c96be9",
+    "semantic_hash": ""
+  },
+  "src/data/characters/buu_kids.js": {
+    "mtime": 1789755981.8832777,
+    "seen": 1789795652.2242744,
+    "ast_hash": "8b6fcc2245c18936c723049ecff6f140",
+    "semantic_hash": ""
+  },
+  "src/data/characters/cell.js": {
+    "mtime": 1789756007.993024,
+    "seen": 1789795652.2242744,
+    "ast_hash": "9cb47dfd02ee9e3e7832f526836f7399",
+    "semantic_hash": ""
+  },
+  "src/data/characters/cell_junior.js": {
+    "mtime": 1789648004.989607,
+    "seen": 1789703142.0472653,
+    "ast_hash": "ba84f7a0bf432d6389d78441529c87cd",
+    "semantic_hash": ""
+  },
+  "src/data/characters/chichi.js": {
+    "mtime": 1789647922.8280523,
+    "seen": 1789703142.0472653,
+    "ast_hash": "30d767dfc92bad1272db2f4d88a367d6",
+    "semantic_hash": ""
+  },
+  "src/data/characters/cold_force.js": {
+    "mtime": 1789601648.3695214,
+    "seen": 1789703142.0472653,
+    "ast_hash": "6f62a8edf0215b1a35d5d100352b06b1",
+    "semantic_hash": ""
+  },
+  "src/data/characters/frieza_force.js": {
+    "mtime": 1790177922.8238268,
+    "seen": 1790192109.3554394,
+    "ast_hash": "6290ec305525a60fe7ba3c836c53aeed",
+    "semantic_hash": ""
+  },
+  "src/data/characters/future_trunks.js": {
+    "mtime": 1789601199.4179485,
+    "seen": 1789703142.0472653,
+    "ast_hash": "d94b3b08c91d6bae2d316a3807541fbb",
+    "semantic_hash": ""
+  },
+  "src/data/characters/ginyu_force.js": {
+    "mtime": 1789755981.8882778,
+    "seen": 1789795652.2242744,
+    "ast_hash": "9488a73f25100862618861c540224962",
+    "semantic_hash": ""
+  },
+  "src/data/characters/goku.js": {
+    "mtime": 1789938445.6646924,
+    "seen": 1789941263.5754604,
+    "ast_hash": "f2fa8945b571101f74ace4c4695422cb",
+    "semantic_hash": ""
+  },
+  "src/data/characters/great_ape.js": {
+    "mtime": 1789497677.0652082,
+    "seen": 1789703142.0472653,
+    "ast_hash": "99a33a0acb1523bb12121e49411aa8c7",
+    "semantic_hash": ""
+  },
+  "src/data/characters/great_saiyaman.js": {
+    "mtime": 1789700230.6843677,
+    "seen": 1789703142.0472653,
+    "ast_hash": "e86090f9ea63e6bd4c1d71ee262a1ea3",
+    "semantic_hash": ""
+  },
+  "src/data/characters/kid_gohan.js": {
+    "mtime": 1789755031.1792867,
+    "seen": 1789795652.2242744,
+    "ast_hash": "5bab648abbdf6cbbb52c36ab5c411195",
+    "semantic_hash": ""
+  },
+  "src/data/characters/namek_force.js": {
+    "mtime": 1789514360.6483479,
+    "seen": 1789703142.0472653,
+    "ast_hash": "45c67c1340c96136d37a5d0824cfc2a3",
+    "semantic_hash": ""
+  },
+  "src/data/characters/namek_locals.js": {
+    "mtime": 1789755896.1810465,
+    "seen": 1789795652.2242744,
+    "ast_hash": "08ababa034aaea1f34ab281085fc0baa",
+    "semantic_hash": ""
+  },
+  "src/data/characters/nappa.js": {
+    "mtime": 1789755031.1812859,
+    "seen": 1789795652.2242744,
+    "ast_hash": "e0fc8ecf1246b17d299a13ae088a8f92",
+    "semantic_hash": ""
+  },
+  "src/data/characters/other_world.js": {
+    "mtime": 1789397157.439869,
+    "seen": 1789703142.0472653,
+    "ast_hash": "94f130900c332b6c84f97509a2a0a169",
+    "semantic_hash": ""
+  },
+  "src/data/characters/piccolo.js": {
+    "mtime": 1789757382.0852475,
+    "seen": 1789795652.2242744,
+    "ast_hash": "9acbfa40cc2cc4dde9bc8a9041122c40",
+    "semantic_hash": ""
+  },
+  "src/data/characters/raditz.js": {
+    "mtime": 1789397435.1520164,
+    "seen": 1789703142.0472653,
+    "ast_hash": "0a8d48f0e6c55ebe46f842f9d8effa6d",
+    "semantic_hash": ""
+  },
+  "src/data/characters/saibaman.js": {
+    "mtime": 1789397157.4763746,
+    "seen": 1789703142.0472653,
+    "ast_hash": "9ce73fad979341ba00053f88940b8f6c",
+    "semantic_hash": ""
+  },
+  "src/data/characters/saiyan_allies.js": {
+    "mtime": 1789399156.0829506,
+    "seen": 1789703142.0472653,
+    "ast_hash": "10f4528d186229fc1368ac0329a4b5c3",
+    "semantic_hash": ""
+  },
+  "src/data/characters/satan_city.js": {
+    "mtime": 1789704112.4900286,
+    "seen": 1789722696.7828548,
+    "ast_hash": "1ce591ee0b6ec72350374c5325a8c4d4",
+    "semantic_hash": ""
+  },
+  "src/data/characters/teen_gohan.js": {
+    "mtime": 1789647780.2323167,
+    "seen": 1789703142.0472653,
+    "ast_hash": "d490d10c60f1e1fd8cdfa4584f7f203e",
+    "semantic_hash": ""
+  },
+  "src/data/characters/test_dummy.js": {
+    "mtime": 1789939771.3957205,
+    "seen": 1789941263.5754604,
+    "ast_hash": "5dd8321cee7a42310de304f137690d69",
+    "semantic_hash": ""
+  },
+  "src/data/characters/vegeta.js": {
+    "mtime": 1789755031.1822834,
+    "seen": 1789795652.2242744,
+    "ast_hash": "56027e99458e319415435b52d29b1511",
+    "semantic_hash": ""
+  },
+  "src/data/characters/videl.js": {
+    "mtime": 1789755981.8852773,
+    "seen": 1789795652.2242744,
+    "ast_hash": "80c1b1f0a72df5df9e4bb542f7e2f377",
+    "semantic_hash": ""
+  },
+  "src/data/characters/z_fighters.js": {
+    "mtime": 1789536969.3822162,
+    "seen": 1789703142.0472653,
+    "ast_hash": "7f1d0bc24353a527ffb8a9ab403476fc",
+    "semantic_hash": ""
+  },
+  "src/data/characters/zarbon.js": {
+    "mtime": 1789534507.2817848,
+    "seen": 1789703142.0472653,
+    "ast_hash": "cec830b2de0abb0732e1f42039446e63",
+    "semantic_hash": ""
+  },
+  "src/data/dialogue.js": {
+    "mtime": 1790028264.8563325,
+    "seen": 1790153418.749898,
+    "ast_hash": "da324893b458468525b9650b43dd123f",
+    "semantic_hash": ""
+  },
+  "src/data/hair.js": {
+    "mtime": 1789704047.8531458,
+    "seen": 1789722696.7828548,
+    "ast_hash": "beb7a91f6909605c72221f311ae143e4",
+    "semantic_hash": ""
+  },
+  "src/data/missions/android_fever.js": {
+    "mtime": 1789648879.612611,
+    "seen": 1789703142.0472653,
+    "ast_hash": "81038ca8b532fbbc0459a0a10daab565",
+    "semantic_hash": ""
+  },
+  "src/data/missions/android_lab.js": {
+    "mtime": 1790193811.845716,
+    "seen": 1790195482.5277884,
+    "ast_hash": "450bd7605212d5543519adb77bc79652",
+    "semantic_hash": ""
+  },
+  "src/data/missions/android_nineteen.js": {
+    "mtime": 1789756743.6611462,
+    "seen": 1789795652.2242744,
+    "ast_hash": "9cbf7deca08a752e5871b136cf441263",
+    "semantic_hash": ""
+  },
+  "src/data/missions/android_road.js": {
+    "mtime": 1789756743.6631472,
+    "seen": 1789795652.2242744,
+    "ast_hash": "a88c0717c55570e795c238913cf1e972",
+    "semantic_hash": ""
+  },
+  "src/data/missions/android_trunks.js": {
+    "mtime": 1789756743.6651466,
+    "seen": 1789795652.2242744,
+    "ast_hash": "7f15aa463e5141de55228489538a77fd",
+    "semantic_hash": ""
+  },
+  "src/data/missions/android_warning.js": {
+    "mtime": 1789756743.667146,
+    "seen": 1789795652.2242744,
+    "ast_hash": "3938ccb4633637f2bf366af068735782",
+    "semantic_hash": ""
+  },
+  "src/data/missions/buu_kids.js": {
+    "mtime": 1789718582.7934258,
+    "seen": 1789722696.7828548,
+    "ast_hash": "bcfc379f3240bae4afd4ca7bbf3a3a10",
+    "semantic_hash": ""
+  },
+  "src/data/missions/buu_majin.js": {
+    "mtime": 1789756743.6721504,
+    "seen": 1789795652.2242744,
+    "ast_hash": "4a782fc563f043f3d6c3fa5e081428d0",
+    "semantic_hash": ""
+  },
+  "src/data/missions/buu_saiyaman.js": {
+    "mtime": 1789718583.40323,
+    "seen": 1789722696.7828548,
+    "ast_hash": "ab07598d4f6b64031f2c951df110da32",
+    "semantic_hash": ""
+  },
+  "src/data/missions/buu_years.js": {
+    "mtime": 1790193811.8596232,
+    "seen": 1790195482.5277884,
+    "ast_hash": "6f8cd9b3f69fcb40fe8d97a2e12ea8d1",
+    "semantic_hash": ""
+  },
+  "src/data/missions/cell_first.js": {
+    "mtime": 1789756743.6761477,
+    "seen": 1789795652.2242744,
+    "ast_hash": "8368191f416d166819fff4ac6c03b637",
+    "semantic_hash": ""
+  },
+  "src/data/missions/cell_games.js": {
+    "mtime": 1790193811.8641315,
+    "seen": 1790195482.5277884,
+    "ast_hash": "1bd15e30efb6cd33feef2ff0b83f3892",
+    "semantic_hash": ""
+  },
+  "src/data/missions/cell_perfect.js": {
+    "mtime": 1789756743.6791553,
+    "seen": 1789795652.2242744,
+    "ast_hash": "1ee3acc5381be6ebf821266e29675496",
+    "semantic_hash": ""
+  },
+  "src/data/missions/cell_semi.js": {
+    "mtime": 1789756743.6821496,
+    "seen": 1789795652.2242744,
+    "ast_hash": "6a997b5b6b45e8301da60c01cadd3a30",
+    "semantic_hash": ""
+  },
+  "src/data/missions/frieza_cinematics.js": {
+    "mtime": 1789582089.8215985,
+    "seen": 1789703142.0472653,
+    "ast_hash": "4dc052b5ca77b0e218df2b774d6d6f26",
+    "semantic_hash": ""
+  },
+  "src/data/missions/namek_aftermath.js": {
+    "mtime": 1790193811.8641315,
+    "seen": 1790195482.5277884,
+    "ast_hash": "52467e1048cc8bbf3a68a0f04dd688d7",
+    "semantic_hash": ""
+  },
+  "src/data/missions/namek_end.js": {
+    "mtime": 1790193811.869093,
+    "seen": 1790195482.5277884,
+    "ast_hash": "027fcca34941ed5c1132c9ff267c9ad5",
+    "semantic_hash": ""
+  },
+  "src/data/missions/namek_frieza1.js": {
+    "mtime": 1789924225.4397843,
+    "seen": 1789941263.5754604,
+    "ast_hash": "90ae23dd7718e7dc0b8669c8469ffaf0",
+    "semantic_hash": ""
+  },
+  "src/data/missions/namek_frieza2.js": {
+    "mtime": 1789583125.976497,
+    "seen": 1789703142.0472653,
+    "ast_hash": "ae7a282df53f88bba68082596e472a49",
+    "semantic_hash": ""
+  },
+  "src/data/missions/namek_frog.js": {
+    "mtime": 1789756824.3072984,
+    "seen": 1789795652.2242744,
+    "ast_hash": "703e0bd60dc726d47de587aae4566d63",
+    "semantic_hash": ""
+  },
+  "src/data/missions/namek_ginyu.js": {
+    "mtime": 1789937162.1939468,
+    "seen": 1789941263.5754604,
+    "ast_hash": "9ac52f0314fa8e7cfb0ff25329de6766",
+    "semantic_hash": ""
+  },
+  "src/data/missions/namek_ginyu_pair.js": {
+    "mtime": 1789937162.1966114,
+    "seen": 1789941263.5754604,
+    "ast_hash": "5bf05cd0271d4638f573b2e68f621797",
+    "semantic_hash": ""
+  },
+  "src/data/missions/namek_gohan_frieza2.js": {
+    "mtime": 1790193811.869093,
+    "seen": 1790195482.5277884,
+    "ast_hash": "d1b4b16d29691e8c29428a583f46ac34",
+    "semantic_hash": ""
+  },
+  "src/data/missions/namek_goku.js": {
+    "mtime": 1790193811.8744578,
+    "seen": 1790195482.5277884,
+    "ast_hash": "e6f7503adeedf68986ee65d9ce83d00b",
+    "semantic_hash": ""
+  },
+  "src/data/missions/namek_guldo.js": {
+    "mtime": 1789758119.427512,
+    "seen": 1789795652.2242744,
+    "ast_hash": "2c4e2533c45c1ee0e24617e186b785c9",
+    "semantic_hash": ""
+  },
+  "src/data/missions/namek_guru.js": {
+    "mtime": 1790193811.8779233,
+    "seen": 1790195482.5277884,
+    "ast_hash": "5803d2915669cba6bbcdeed2dcf85cce",
+    "semantic_hash": ""
+  },
+  "src/data/missions/namek_hunted.js": {
+    "mtime": 1790193811.8779233,
+    "seen": 1790195482.5277884,
+    "ast_hash": "14d0efcc2d1cd02b0b0a2949f012cb66",
+    "semantic_hash": ""
+  },
+  "src/data/missions/namek_nail.js": {
+    "mtime": 1789757423.5312068,
+    "seen": 1789795652.2242744,
+    "ast_hash": "3fc82be2459c0e6e664f887e6a793838",
+    "semantic_hash": ""
+  },
+  "src/data/missions/namek_recoome.js": {
+    "mtime": 1789756780.7905753,
+    "seen": 1789795652.2242744,
+    "ast_hash": "653e3da7317c380451a60f03172ee0bb",
+    "semantic_hash": ""
+  },
+  "src/data/missions/namek_rematch.js": {
+    "mtime": 1789758119.4295158,
+    "seen": 1789795652.2242744,
+    "ast_hash": "28666244b0c458c44b486038d19d52c4",
+    "semantic_hash": ""
+  },
+  "src/data/missions/namek_spirit_bomb.js": {
+    "mtime": 1790158111.127462,
+    "seen": 1790162839.76118,
+    "ast_hash": "2c3b35bee91d8cfa5b7c63fc5c0e08e6",
+    "semantic_hash": ""
+  },
+  "src/data/missions/namek_super_saiyan.js": {
+    "mtime": 1790178663.847011,
+    "seen": 1790192109.355881,
+    "ast_hash": "847adbcc833b510140a54bea0fd5daa9",
+    "semantic_hash": ""
+  },
+  "src/data/missions/namek_vegeta.js": {
+    "mtime": 1789756754.0541992,
+    "seen": 1789795652.2242744,
+    "ast_hash": "74a07aa6d07560b6bb8e6be37b8d5dc1",
+    "semantic_hash": ""
+  },
+  "src/data/missions/namek_vegeta_end.js": {
+    "mtime": 1790029016.8111584,
+    "seen": 1790153418.749898,
+    "ast_hash": "d62b4c7262f3df3ab61f3e6893e8edd2",
+    "semantic_hash": ""
+  },
+  "src/data/missions/namek_zarbon.js": {
+    "mtime": 1789757539.262914,
+    "seen": 1789795652.2242744,
+    "ast_hash": "52ad96bd0a32d829414ff03baf7a2a30",
+    "semantic_hash": ""
+  },
+  "src/data/missions/prologue_bardock.js": {
+    "mtime": 1790193811.8857021,
+    "seen": 1790195482.5277884,
+    "ast_hash": "d1c82ea8a5d7d4a61dc9619c9a154caf",
+    "semantic_hash": ""
+  },
+  "src/data/missions/prologue_ending.js": {
+    "mtime": 1789737316.3824787,
+    "seen": 1789739436.2964084,
+    "ast_hash": "5f63d583146b244001171b812b9da43b",
+    "semantic_hash": ""
+  },
+  "src/data/missions/saiyan_arrival.js": {
+    "mtime": 1790195174.489158,
+    "seen": 1790195482.5277884,
+    "ast_hash": "66134b0014479711a4a5a984c3427c5d",
+    "semantic_hash": ""
+  },
+  "src/data/missions/saiyan_nappa.js": {
+    "mtime": 1789793457.553282,
+    "seen": 1789795652.2242744,
+    "ast_hash": "64e5e744b5b4e986795eed4abfe063d8",
+    "semantic_hash": ""
+  },
+  "src/data/missions/saiyan_raditz.js": {
+    "mtime": 1790193811.8940609,
+    "seen": 1790195482.5277884,
+    "ast_hash": "1418834799bec995d7c39779256619e4",
+    "semantic_hash": ""
+  },
+  "src/data/missions/saiyan_snakeway.js": {
+    "mtime": 1789736928.0001283,
+    "seen": 1789739436.2964084,
+    "ast_hash": "f6325ed11ad9ef33ad96615d0f9745a9",
+    "semantic_hash": ""
+  },
+  "src/data/missions/saiyan_training.js": {
+    "mtime": 1790193811.8968813,
+    "seen": 1790195482.5277884,
+    "ast_hash": "3c451e09da9fb18e579cc55f4439bc06",
+    "semantic_hash": ""
+  },
+  "src/data/missions/saiyan_vegeta.js": {
+    "mtime": 1790193811.90186,
+    "seen": 1790195482.5277884,
+    "ast_hash": "94aefc27bb948e5ac8261484226a1974",
+    "semantic_hash": ""
+  },
+  "src/data/missions/whatif_piccolo.js": {
+    "mtime": 1790193811.90186,
+    "seen": 1790195482.5277884,
+    "ast_hash": "1a471c45684a6ccfb3c0db711b1a5f26",
+    "semantic_hash": ""
+  },
+  "src/data/poses_common.js": {
+    "mtime": 1789924638.1391544,
+    "seen": 1789941263.5754604,
+    "ast_hash": "dd2ae38a539c897c2499d899f14bd818",
+    "semantic_hash": ""
+  },
+  "src/data/scenes/android_arrival.js": {
+    "mtime": 1789601450.0190265,
+    "seen": 1789703142.0472653,
+    "ast_hash": "d5fa790c9929d5e65489486334ad08fd",
+    "semantic_hash": ""
+  },
+  "src/data/scenes/android_fever.js": {
+    "mtime": 1789667689.9503992,
+    "seen": 1789703142.0472653,
+    "ast_hash": "6a60580ba1936926636da8e49b44253a",
+    "semantic_hash": ""
+  },
+  "src/data/scenes/android_lab.js": {
+    "mtime": 1789614815.6921067,
+    "seen": 1789703142.0472653,
+    "ast_hash": "bd5b5999943d4f10fc3235392a3e885b",
+    "semantic_hash": ""
+  },
+  "src/data/scenes/android_nineteen.js": {
+    "mtime": 1789614362.8666494,
+    "seen": 1789703142.0472653,
+    "ast_hash": "45057011c92e1e3eea854d87f1471954",
+    "semantic_hash": ""
+  },
+  "src/data/scenes/android_road.js": {
+    "mtime": 1789615164.0306354,
+    "seen": 1789703142.0472653,
+    "ast_hash": "9c46cef287ecc7fc4654a8167fe13165",
+    "semantic_hash": ""
+  },
+  "src/data/scenes/android_warning.js": {
+    "mtime": 1789613788.6923716,
+    "seen": 1789703142.0472653,
+    "ast_hash": "8c1afdd4c3f977b604eb9924c6cfe38e",
+    "semantic_hash": ""
+  },
+  "src/data/scenes/buu_era.js": {
+    "mtime": 1789700404.6400683,
+    "seen": 1789703142.0472653,
+    "ast_hash": "0efa0a52fee871ea25a703ad83314c39",
+    "semantic_hash": ""
+  },
+  "src/data/scenes/buu_majin.js": {
+    "mtime": 1789619121.5490143,
+    "seen": 1789703142.0472653,
+    "ast_hash": "8171373d09f48d6aae29678990562587",
+    "semantic_hash": ""
+  },
+  "src/data/scenes/cell_absorb.js": {
+    "mtime": 1789615834.9289048,
+    "seen": 1789703142.0472653,
+    "ast_hash": "17a6349ecc2aafdb46beb2de309aa999",
+    "semantic_hash": ""
+  },
+  "src/data/scenes/cell_first.js": {
+    "mtime": 1789615663.2544763,
+    "seen": 1789703142.0472653,
+    "ast_hash": "44ee0d3bc0464c4f78311df4b3244ae9",
+    "semantic_hash": ""
+  },
+  "src/data/scenes/cell_games.js": {
+    "mtime": 1789737045.9014778,
+    "seen": 1789739436.2964084,
+    "ast_hash": "c81804bd14fce5917d7d5dda5789481e",
+    "semantic_hash": ""
+  },
+  "src/data/scenes/namek_aftermath.js": {
+    "mtime": 1789599852.0251572,
+    "seen": 1789703142.0472653,
+    "ast_hash": "c0df4aedd579408076d5c3b84899dfbc",
+    "semantic_hash": ""
+  },
+  "src/data/scenes/namek_arrival.js": {
+    "mtime": 1790029447.987104,
+    "seen": 1790153418.749898,
+    "ast_hash": "1b47d88e6983284752e1426b0ec5b046",
+    "semantic_hash": ""
+  },
+  "src/data/scenes/namek_destruction.js": {
+    "mtime": 1790028429.1343837,
+    "seen": 1790153418.749898,
+    "ast_hash": "f47b56bf7b088a7c7f85ea3869114e60",
+    "semantic_hash": ""
+  },
+  "src/data/scenes/namek_gohan_rage.js": {
+    "mtime": 1789597727.623943,
+    "seen": 1789703142.0472653,
+    "ast_hash": "2d005bcea6cf65abd425bf9822a13368",
+    "semantic_hash": ""
+  },
+  "src/data/scenes/namek_kaioken.js": {
+    "mtime": 1789924999.591653,
+    "seen": 1789941263.576466,
+    "ast_hash": "c6410f7e28e10b75350422ae0a22de45",
+    "semantic_hash": ""
+  },
+  "src/data/scenes/namek_rage.js": {
+    "mtime": 1790028106.9434564,
+    "seen": 1790153418.749898,
+    "ast_hash": "2be7ae017d055e30ca6dca74e7eaa589",
+    "semantic_hash": ""
+  },
+  "src/data/scenes/namek_spirit_bomb.js": {
+    "mtime": 1790158111.1215656,
+    "seen": 1790162839.76118,
+    "ast_hash": "d04c18e39d089a0ae539df4b42b11852",
+    "semantic_hash": ""
+  },
+  "src/data/scenes/namek_super_saiyan.js": {
+    "mtime": 1790157497.9920676,
+    "seen": 1790162839.76118,
+    "ast_hash": "90213cd1516adab30315c76f3e030497",
+    "semantic_hash": ""
+  },
+  "src/data/scenes/namek_vegeta_end.js": {
+    "mtime": 1790026684.8030317,
+    "seen": 1790153418.749898,
+    "ast_hash": "15bdae3e908b7802aebc107375dfef16",
+    "semantic_hash": ""
+  },
+  "src/data/schema.js": {
+    "mtime": 1789755981.8902786,
+    "seen": 1789795652.2242744,
+    "ast_hash": "cbf4da338401df79de5a500d4fc7dcf4",
+    "semantic_hash": ""
+  },
+  "src/data/stages.js": {
+    "mtime": 1790159169.5524862,
+    "seen": 1790162839.76118,
+    "ast_hash": "4eb34b4c59a0266cb4d0ac67b841baac",
+    "semantic_hash": ""
+  },
+  "src/data/story.js": {
+    "mtime": 1790170912.4500709,
+    "seen": 1790174981.1849368,
+    "ast_hash": "76f008a04a3a72656ad8c11f236ef60d",
+    "semantic_hash": ""
+  },
+  "src/data/unlocks.js": {
+    "mtime": 1789718002.3056686,
+    "seen": 1789722696.7828548,
+    "ast_hash": "e5bf9af96aa7a8729f36e7f4eff16e74",
+    "semantic_hash": ""
+  },
+  "src/game/animator.js": {
+    "mtime": 1789387704.5754068,
+    "seen": 1789703142.0472653,
+    "ast_hash": "92f5d2d1220dfd556bb04fcaf89a66b1",
+    "semantic_hash": ""
+  },
+  "src/game/battle.js": {
+    "mtime": 1790194003.7381659,
+    "seen": 1790195482.5277884,
+    "ast_hash": "63bcd3170760e2b624ff10cf48c20504",
+    "semantic_hash": ""
+  },
+  "src/game/cinema.js": {
+    "mtime": 1789924140.5917618,
+    "seen": 1789941263.576466,
+    "ast_hash": "8a0f95a1081b7e376d16df5d78e56572",
+    "semantic_hash": ""
+  },
+  "src/game/clash.js": {
+    "mtime": 1789647641.4500597,
+    "seen": 1789703142.0472653,
+    "ast_hash": "490add0c2c2a75dcc56b0a122c121b01",
+    "semantic_hash": ""
+  },
+  "src/game/controllers.js": {
+    "mtime": 1790178509.106071,
+    "seen": 1790192109.355881,
+    "ast_hash": "e81992e7697ed6bec3caac1cf9dbc9c5",
+    "semantic_hash": ""
+  },
+  "src/game/creature.js": {
+    "mtime": 1789327022.5336592,
+    "seen": 1789703142.0472653,
+    "ast_hash": "a7b790591299aa19c9b9ef17a651ddcb",
+    "semantic_hash": ""
+  },
+  "src/game/fighter.js": {
+    "mtime": 1790178912.1425817,
+    "seen": 1790192109.355881,
+    "ast_hash": "70ee1d72611ea812e32df76f32628707",
+    "semantic_hash": ""
+  },
+  "src/game/mechanics.js": {
+    "mtime": 1789756494.4884245,
+    "seen": 1789795652.2242744,
+    "ast_hash": "d823d0d90ec4fdbec5c5533526707ac1",
+    "semantic_hash": ""
+  },
+  "src/game/mission.js": {
+    "mtime": 1790193739.8501844,
+    "seen": 1790195482.5277884,
+    "ast_hash": "b315d6bba25e3bc89cd1812dd228e231",
+    "semantic_hash": ""
+  },
+  "src/game/model.js": {
+    "mtime": 1790156911.4451182,
+    "seen": 1790162839.76118,
+    "ast_hash": "2dcab975d2998795a096d61b694558ad",
+    "semantic_hash": ""
+  },
+  "src/game/model_glb.js": {
+    "mtime": 1789389361.7622507,
+    "seen": 1789703142.0472653,
+    "ast_hash": "2313d4931b497694da0ca0ef156b3c54",
+    "semantic_hash": ""
+  },
+  "src/game/projectiles.js": {
+    "mtime": 1790177593.0771742,
+    "seen": 1790192109.355881,
+    "ast_hash": "ba53bf5c33abc367f0876b1df0e18b4a",
+    "semantic_hash": ""
+  },
+  "src/game/radial.js": {
+    "mtime": 1789941527.399114,
+    "seen": 1789943216.6768622,
+    "ast_hash": "61c10db755894a92c7e22991df3401a5",
+    "semantic_hash": ""
+  },
+  "src/game/rules.js": {
+    "mtime": 1789757844.0082688,
+    "seen": 1789795652.2242744,
+    "ast_hash": "0a44eb0d9a1046bbf3cbbb33c9f20216",
+    "semantic_hash": ""
+  },
+  "src/game/stage.js": {
+    "mtime": 1790157736.863075,
+    "seen": 1790162839.76118,
+    "ast_hash": "dca6b0da08e3fe1b7555e64bf038de7e",
+    "semantic_hash": ""
+  },
+  "src/game/targeting.js": {
+    "mtime": 1789736590.1331327,
+    "seen": 1789739436.2964084,
+    "ast_hash": "790d834c9b89cfd47ead66b5b2053ff8",
+    "semantic_hash": ""
+  },
+  "src/game/techniques.js": {
+    "mtime": 1790177594.5353293,
+    "seen": 1790192109.355881,
+    "ast_hash": "a9d250f8f25d3fbe2978a47b44775f29",
+    "semantic_hash": ""
+  },
+  "src/game/telemetry.js": {
+    "mtime": 1789362265.7998374,
+    "seen": 1789703142.0472653,
+    "ast_hash": "e4e118d3355c836a21b6c68f83a5f8aa",
+    "semantic_hash": ""
+  },
+  "src/main.js": {
+    "mtime": 1789757856.7932856,
+    "seen": 1789795652.2242744,
+    "ast_hash": "fb05daff5c13e318217810e7efb9e242",
+    "semantic_hash": ""
+  },
+  "src/render/camera.js": {
+    "mtime": 1790189793.9372146,
+    "seen": 1790192109.355881,
+    "ast_hash": "8172db143e5e1c7d2fbadb37bf8f3e65",
+    "semantic_hash": ""
+  },
+  "src/render/glb.js": {
+    "mtime": 1789389432.3700085,
+    "seen": 1789703142.0472653,
+    "ast_hash": "e411b421f743e8d1515e8c4a405a991b",
+    "semantic_hash": ""
+  },
+  "src/render/renderer.js": {
+    "mtime": 1789261486.973106,
+    "seen": 1789703142.0472653,
+    "ast_hash": "6a6fbb7afbccb3c0cd426a2716da396d",
+    "semantic_hash": ""
+  },
+  "src/render/toon.js": {
+    "mtime": 1789645532.5362759,
+    "seen": 1789703142.0472653,
+    "ast_hash": "620e63de3d4e5e7ac61f5d40fbc91553",
+    "semantic_hash": ""
+  },
+  "src/render/vfx.js": {
+    "mtime": 1790188795.5204468,
+    "seen": 1790192109.355881,
+    "ast_hash": "c3b326d623d6b1f9913b2f7834edc391",
+    "semantic_hash": ""
+  },
+  "src/ui/hud.js": {
+    "mtime": 1790195059.7580194,
+    "seen": 1790195482.5277884,
+    "ast_hash": "7cb5408144b6dde63253e01f944525f8",
+    "semantic_hash": ""
+  },
+  "src/ui/screens_battle.js": {
+    "mtime": 1790194114.4409258,
+    "seen": 1790195482.5277884,
+    "ast_hash": "adb8a4ea85c97e4169d465619da72222",
+    "semantic_hash": ""
+  },
+  "src/ui/screens_menu.js": {
+    "mtime": 1790194272.678249,
+    "seen": 1790195482.5277884,
+    "ast_hash": "298302b9ffcaad5d736a437218d3aa10",
+    "semantic_hash": ""
+  },
+  "src/ui/screens_select.js": {
+    "mtime": 1789486875.271956,
+    "seen": 1789703142.0472653,
+    "ast_hash": "17db1d8e2bdfa565532eef552f9908cd",
+    "semantic_hash": ""
+  },
+  "src/ui/screens_settings.js": {
+    "mtime": 1790194286.3648398,
+    "seen": 1790195482.5277884,
+    "ast_hash": "41627275a020f52b99c9db9a2c8c150d",
+    "semantic_hash": ""
+  },
+  "src/ui/ui.js": {
+    "mtime": 1789586500.0649924,
+    "seen": 1789703142.0472653,
+    "ast_hash": "96f0c562c5d1b684601c89fa912b9b8c",
+    "semantic_hash": ""
+  },
+  "tests/buu-tests.js": {
+    "mtime": 1789718389.8710501,
+    "seen": 1789722696.7828548,
+    "ast_hash": "2ac00528ecc4c0569938753217dbd77c",
+    "semantic_hash": ""
+  },
+  "tests/cell-games-tests.js": {
+    "mtime": 1789738442.0315166,
+    "seen": 1789739436.2964084,
+    "ast_hash": "64c972dee57f860232f3f6e202fed4c1",
+    "semantic_hash": ""
+  },
+  "tests/headless.js": {
+    "mtime": 1790194004.7274613,
+    "seen": 1790195482.5277884,
+    "ast_hash": "c8c5fc861a56d07961eb0ee9e77a78f8",
+    "semantic_hash": ""
+  },
+  "tests/run-tests.js": {
+    "mtime": 1790170667.5134373,
+    "seen": 1790174981.1849368,
+    "ast_hash": "e6e39f814b223afd0070cad8940f97cd",
+    "semantic_hash": ""
+  },
+  "tests/sim-tests.js": {
+    "mtime": 1790195074.4456153,
+    "seen": 1790195482.5277884,
+    "ast_hash": "bb729fdce0b4780b47f2941652e69fe9",
+    "semantic_hash": ""
+  },
+  "tools/balance_boss.js": {
+    "mtime": 1789340728.3031862,
+    "seen": 1789703142.0472653,
+    "ast_hash": "bed2fe44d4c67ef3cb8c4b318ee30a60",
+    "semantic_hash": ""
+  },
+  "tools/balance_duel.js": {
+    "mtime": 1789361374.5582411,
+    "seen": 1789703142.0472653,
+    "ast_hash": "8a7f081b8ab8583bc5426e05e64bcdb0",
+    "semantic_hash": ""
+  },
+  "tools/balance_saibamen.js": {
+    "mtime": 1789329857.8201358,
+    "seen": 1789703142.0472653,
+    "ast_hash": "89c0f7af188c022b0647b6d7caeece90",
+    "semantic_hash": ""
+  },
+  "tools/encounter_probe.js": {
+    "mtime": 1789602707.7596486,
+    "seen": 1789703142.0472653,
+    "ast_hash": "447ec620ff5864b6450e91e339a1e6ab",
+    "semantic_hash": ""
+  },
+  "tools/glb_check.js": {
+    "mtime": 1789389671.3657532,
+    "seen": 1789703142.0472653,
+    "ast_hash": "713914433e7854bcb72d608cd8bb2836",
+    "semantic_hash": ""
+  },
+  "tools/lab.js": {
+    "mtime": 1789344765.9936886,
+    "seen": 1789703142.0472653,
+    "ast_hash": "e2fce17b891531190ad367233e20ed9b",
+    "semantic_hash": ""
+  },
+  "tools/make_test_glb.js": {
+    "mtime": 1789389470.4708726,
+    "seen": 1789703142.0472653,
+    "ast_hash": "a766ea0357fff87480a402fceeff0865",
+    "semantic_hash": ""
+  },
+  "tools/mission_brains.js": {
+    "mtime": 1790174704.5333035,
+    "seen": 1790174981.1849368,
+    "ast_hash": "327ca1633a1e3bdca604c109225fa8e8",
+    "semantic_hash": ""
+  },
+  "tools/missionbot.js": {
+    "mtime": 1789328325.5498168,
+    "seen": 1789703142.0472653,
+    "ast_hash": "13d5ca4d82801bddaa41aabd9ac13ffb",
+    "semantic_hash": ""
+  },
+  "tools/serve.js": {
+    "mtime": 1789261341.1210554,
+    "seen": 1789703142.0472653,
+    "ast_hash": "c1745915f9879bd09bac7a46b8d10a60",
+    "semantic_hash": ""
+  },
+  "tools/snap.js": {
+    "mtime": 1789309206.69868,
+    "seen": 1789703142.0472653,
+    "ast_hash": "cfdb413dc5eee8fae4ea961ac358f929",
+    "semantic_hash": ""
+  },
+  "HANDOFF.md": {
+    "mtime": 1790192043.8831518,
+    "seen": 1790192109.355881,
+    "ast_hash": "a23ba99c1bffc7ede72f088c7fb5b88b",
+    "semantic_hash": ""
+  },
+  "MASTER_SPEC.md": {
+    "mtime": 1789936929.357206,
+    "seen": 1789941263.576466,
+    "ast_hash": "7b0a8490229880e5e71b7eaf8f33c7c8",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1790176205.6296704,
+    "seen": 1790176274.7174218,
+    "ast_hash": "2336e7f150c412f23d76b5ac1f7d6004",
+    "semantic_hash": ""
+  },
+  "STATUS.md": {
+    "mtime": 1790192043.8757741,
+    "seen": 1790192109.355881,
+    "ast_hash": "3de5367240099ca0b0a56c6dc7928522",
+    "semantic_hash": ""
+  },
+  "assets/models/README.md": {
+    "mtime": 1789389768.1801922,
+    "seen": 1789703142.0472653,
+    "ast_hash": "0a842315027c473d345f3549d12caf37",
+    "semantic_hash": ""
+  },
+  "index.html": {
+    "mtime": 1790170642.596909,
+    "seen": 1790174981.1849368,
+    "ast_hash": "5b79e4b135873bbf272cf5ecfb11d8ea",
+    "semantic_hash": ""
+  },
+  "tools/viewer.html": {
+    "mtime": 1789398507.7236564,
+    "seen": 1789703142.0472653,
+    "ast_hash": "af0569e71c315f46333857d263af2a1f",
+    "semantic_hash": ""
+  },
+  ".claude/settings.json": {
+    "mtime": 1789703189.0300417,
+    "seen": 1789722696.7818515,
+    "ast_hash": "e023400ae39f4f11911b116691daa49e",
+    "semantic_hash": ""
+  },
+  "src/data/characters/babidi_force.js": {
+    "mtime": 1789720034.5544782,
+    "seen": 1789722696.7828548,
+    "ast_hash": "ef4db3a9485e331d9d86509643fe9ca6",
+    "semantic_hash": ""
+  },
+  "src/data/characters/kai.js": {
+    "mtime": 1789704159.5126,
+    "seen": 1789722696.7828548,
+    "ast_hash": "3d560d282ff8467f11c4ed1fe525dc26",
+    "semantic_hash": ""
+  },
+  "src/data/characters/tournament_cast.js": {
+    "mtime": 1789704123.137115,
+    "seen": 1789722696.7828548,
+    "ast_hash": "38c7ac9e234afb61d715a5fc28c1fbd8",
+    "semantic_hash": ""
+  },
+  "src/data/missions/buu_flight.js": {
+    "mtime": 1790193811.8482876,
+    "seen": 1790195482.5277884,
+    "ast_hash": "e62f50b2f5a1e3a307650c61aba427b9",
+    "semantic_hash": ""
+  },
+  "src/data/missions/buu_junior.js": {
+    "mtime": 1789718919.6594179,
+    "seen": 1789722696.7828548,
+    "ast_hash": "79ae2e4a85ebdf26d6257d865d5ba8ef",
+    "semantic_hash": ""
+  },
+  "src/data/missions/buu_kibito.js": {
+    "mtime": 1790193811.8505728,
+    "seen": 1790195482.5277884,
+    "ast_hash": "70fd961b872973a062892a5f88de6500",
+    "semantic_hash": ""
+  },
+  "src/data/missions/buu_pursuit.js": {
+    "mtime": 1790193811.852328,
+    "seen": 1790195482.5277884,
+    "ast_hash": "aabdbf1be1db352c8ad23145a26c6e7f",
+    "semantic_hash": ""
+  },
+  "src/data/missions/buu_ship.js": {
+    "mtime": 1790193811.8563569,
+    "seen": 1790195482.5277884,
+    "ast_hash": "2e87b5cf532fc0d91878642cb1151d7e",
+    "semantic_hash": ""
+  },
+  "src/data/missions/buu_spopovich.js": {
+    "mtime": 1789722170.063949,
+    "seen": 1789722696.7828548,
+    "ast_hash": "3139f73bdb606385e24bc430526412b6",
+    "semantic_hash": ""
+  },
+  "src/data/scenes/buu_babidi.js": {
+    "mtime": 1789720153.4421177,
+    "seen": 1789722696.7828548,
+    "ast_hash": "434cb7edfa4a01e06abbf6f7ffac07c4",
+    "semantic_hash": ""
+  },
+  "src/data/scenes/buu_tournament.js": {
+    "mtime": 1789722472.3642519,
+    "seen": 1789722696.7828548,
+    "ast_hash": "39915a5b0c8cda6417972ea0548f556c",
+    "semantic_hash": ""
+  },
+  "src/game/tournament.js": {
+    "mtime": 1789722170.0604267,
+    "seen": 1789722696.7828548,
+    "ast_hash": "96cb3e3bff0eb8b6c56e4c0c49077c7a",
+    "semantic_hash": ""
+  },
+  "tests/buu-b-tests.js": {
+    "mtime": 1789722656.99214,
+    "seen": 1789722696.7828548,
+    "ast_hash": "4d37250a17e5ee942f9478f5ebd036d0",
+    "semantic_hash": ""
+  },
+  "CLAUDE.md": {
+    "mtime": 1789703189.0220404,
+    "seen": 1789722696.7828548,
+    "ast_hash": "8a6643a420fdad6bfb583523bc6cef16",
+    "semantic_hash": ""
+  },
+  "tests/feel-tests.js": {
+    "mtime": 1789739397.1406584,
+    "seen": 1789739436.2964084,
+    "ast_hash": "f4d198b1e3f028338e10adf46edc18e5",
+    "semantic_hash": ""
+  },
+  "src/core/dev.js": {
+    "mtime": 1789757993.8105295,
+    "seen": 1789795652.2242744,
+    "ast_hash": "f974ceb2f7dfb1a0d31ad5810df1180d",
+    "semantic_hash": ""
+  },
+  "src/data/scenes/namek_ginyu.js": {
+    "mtime": 1789794409.1749947,
+    "seen": 1789795652.2242744,
+    "ast_hash": "cf9b2f37a69e6b6625d4c27c4ae1f930",
+    "semantic_hash": ""
+  },
+  "src/data/scenes/namek_nail.js": {
+    "mtime": 1789794500.8745363,
+    "seen": 1789795652.2242744,
+    "ast_hash": "79de38fc5896f555e89da86d1b3c6867",
+    "semantic_hash": ""
+  },
+  "src/data/scenes/namek_prince.js": {
+    "mtime": 1789793906.6748672,
+    "seen": 1789795652.2242744,
+    "ast_hash": "a255f7aa99573310b2e4d0b7298e2786",
+    "semantic_hash": ""
+  },
+  "src/data/scenes/saiyan_saga.js": {
+    "mtime": 1789793310.9639578,
+    "seen": 1789795652.2242744,
+    "ast_hash": "e18fd49992f4813e1b520098de100f98",
+    "semantic_hash": ""
+  },
+  "src/ui/screens_dev.js": {
+    "mtime": 1789757895.964396,
+    "seen": 1789795652.2242744,
+    "ast_hash": "66bd71cf9dc3576993e672e88ac7b084",
+    "semantic_hash": ""
+  },
+  "tests/playtest2-tests.js": {
+    "mtime": 1789795079.3114882,
+    "seen": 1789795652.2242744,
+    "ast_hash": "54748b4cc8f588c361533087dcb3246b",
+    "semantic_hash": ""
+  },
+  "tests/playtest3-tests.js": {
+    "mtime": 1790151425.747962,
+    "seen": 1790153418.749898,
+    "ast_hash": "9265ed4447da2b6255d92d2997bddb3f",
+    "semantic_hash": ""
+  },
+  "src/data/missions/namek_kaioken20.js": {
+    "mtime": 1790193811.8779233,
+    "seen": 1790195482.5277884,
+    "ast_hash": "035126d185ae89588cade58a28c06a35",
+    "semantic_hash": ""
+  },
+  "src/data/scenes/namek_kaioken20.js": {
+    "mtime": 1790158111.111809,
+    "seen": 1790162839.76118,
+    "ast_hash": "800797ad0148544448376cff5e78b953",
+    "semantic_hash": ""
+  },
+  "tests/playtest4-tests.js": {
+    "mtime": 1790160762.0113344,
+    "seen": 1790162839.76118,
+    "ast_hash": "18f8b5ce8754a10724ec884ce65f44d7",
+    "semantic_hash": ""
+  },
+  "planning/ASTRA_REVIEW.md": {
+    "mtime": 1790065406.8632927,
+    "seen": 1790153418.749898,
+    "ast_hash": "50f8cdaaf11e81c260b1c9a61f0e2dc8",
+    "semantic_hash": ""
+  },
+  "planning/ASTRA_WHAT_IF_BIBLE.md": {
+    "mtime": 1790150206.3522804,
+    "seen": 1790153418.749898,
+    "ast_hash": "e244b47a2430167c265e74215a55be3a",
+    "semantic_hash": ""
+  },
+  "src/data/scenes/namek_finale.js": {
+    "mtime": 1790160695.5597746,
+    "seen": 1790162839.76118,
+    "ast_hash": "066e8a37daec25787bf3c53b3743de17",
+    "semantic_hash": ""
+  },
+  "src/data/missions/whatif_prince.js": {
+    "mtime": 1790173118.585087,
+    "seen": 1790174981.1849368,
+    "ast_hash": "bb30a06f0420494ac12c99eb2c07f4a9",
+    "semantic_hash": ""
+  },
+  "src/data/missions/whatif_signal.js": {
+    "mtime": 1790193811.90186,
+    "seen": 1790195482.5277884,
+    "ast_hash": "bc47d70544f077cb81d3856bbbfb8b95",
+    "semantic_hash": ""
+  },
+  "src/data/missions/whatif_tail.js": {
+    "mtime": 1790193811.9100628,
+    "seen": 1790195482.5277884,
+    "ast_hash": "514e4805ef41f5fb2887d3750036ad2f",
+    "semantic_hash": ""
+  },
+  "src/data/missions/whatif_twenty.js": {
+    "mtime": 1790193811.9100628,
+    "seen": 1790195482.5277884,
+    "ast_hash": "157047dbbe00f66d2f81471676057b41",
+    "semantic_hash": ""
+  },
+  "tests/whatif-tests.js": {
+    "mtime": 1790171560.8464513,
+    "seen": 1790174981.1849368,
+    "ast_hash": "b3259379d19f8f0d3694a1e7cc1b1e4b",
+    "semantic_hash": ""
+  },
+  "tests/frieza-fair-tests.js": {
+    "mtime": 1790179120.6384997,
+    "seen": 1790192109.355881,
+    "ast_hash": "7199c2f1a0a8df95f92380d0fb1748ce",
+    "semantic_hash": ""
+  },
+  "tools/frieza_probe.js": {
+    "mtime": 1790190004.8684626,
+    "seen": 1790192109.355881,
+    "ast_hash": "a278cd624ddd0ad7230c180f48c10c14",
+    "semantic_hash": ""
+  },
+  "tests/immersion-tests.js": {
+    "mtime": 1790195174.869345,
+    "seen": 1790195482.5277884,
+    "ast_hash": "e68b4f739837495c83c9554c2a434026",
+    "semantic_hash": ""
+  },
+  "tests/minidom.js": {
+    "mtime": 1790195124.1216767,
+    "seen": 1790195482.5277884,
+    "ast_hash": "1852d8ce457a5a515f3d40d95462ae66",
+    "semantic_hash": ""
+  }
+}

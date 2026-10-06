@@ -1,0 +1,79 @@
+﻿<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Model & Pose Viewer (dev tool)</title>
+<style>
+  body{margin:0;background:#222;color:#eee;font:13px system-ui;overflow:hidden}
+  #ui{position:fixed;left:8px;top:8px;background:rgba(0,0,0,.6);padding:8px;border-radius:6px;z-index:2}
+  select,button{font:13px system-ui}
+  canvas{display:block}
+</style></head>
+<body>
+<div id="ui">
+  <select id="char"></select>
+  <select id="pose"></select>
+  <select id="form"></select>
+  <select id="expr"><option>neutral</option><option>angry</option><option>shout</option><option>hurt</option><option>smirk</option><option>calm</option><option>ko</option></select>
+  <select id="view"><option value="front">front</option><option value="side">side</option><option value="back">back</option><option value="threeq">3/4</option><option value="face">face</option></select>
+</div>
+<script src="../vendor/three.min.js"></script>
+<script>window.THREE || document.write('<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"><\/script>');</script>
+<script src="../src/core/namespace.js"></script>
+<script src="../src/core/settings.js"></script>
+<script src="../src/render/toon.js"></script>
+<script src="../src/game/model.js"></script>
+<script src="../src/game/animator.js"></script>
+<script src="../src/data/hair.js"></script>
+<script src="../src/data/poses_common.js"></script>
+<script src="../src/data/characters/goku.js"></script>
+<script src="../src/data/characters/vegeta.js"></script>
+<script src="../src/data/characters/bardock.js"></script>
+<script src="../src/data/characters/frieza_force.js"></script>
+<script>
+SL.Toon.init();
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.outputEncoding = THREE.LinearEncoding; // hex colors display exactly as authored (anime palette)
+renderer.setPixelRatio(devicePixelRatio);
+renderer.setSize(innerWidth, innerHeight);
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x6a8fb8);
+scene.add(new THREE.HemisphereLight(0xdfefff, 0x6a5a48, 0.75));
+const sun = new THREE.DirectionalLight(0xffffff, 0.85); sun.position.set(3,6,5); scene.add(sun);
+const ground = new THREE.Mesh(new THREE.CircleGeometry(3,32), SL.Toon.mat(0x9a8a70)); ground.rotation.x=-Math.PI/2; scene.add(ground);
+const cam = new THREE.PerspectiveCamera(35, innerWidth/innerHeight, 0.05, 100);
+let model=null, anim=null;
+const $ = id=>document.getElementById(id);
+const chars = Object.values(SL.data.characters);
+for (const c of chars) $('char').add(new Option(c.id, c.id));
+function load(){
+  const def = SL.data.characters[$('char').value];
+  if (model) model.dispose();
+  model = new SL.Model(def);
+  scene.add(model.root);
+  const poses = Object.assign({}, SL.data.poses, def.poses||{});
+  anim = new SL.Animator(model, poses);
+  $('pose').innerHTML=''; for (const k of Object.keys(poses)) $('pose').add(new Option(k,k));
+  $('pose').value = 'idle';
+  $('form').innerHTML=''; (def.forms||[{id:'base'}]).forEach((f,i)=>$('form').add(new Option(f.id, i)));
+  setPose();
+}
+function setPose(){ anim.play($('pose').value, 14); anim.breathe = 0.6; }
+$('char').onchange=load; $('pose').onchange=setPose;
+$('form').onchange=()=>{ const def=SL.data.characters[$('char').value]; model.setForm(def.forms[$('form').value]); };
+$('expr').onchange=()=>model.setExpression($('expr').value);
+function place(){
+  const v=$('view').value; const h=1.0;
+  const P={front:[0,1.1,4.2], side:[4.2,1.1,0], back:[0,1.1,-4.2], threeq:[2.8,1.5,3.2], face:[0,1.65,0.9]}[v];
+  cam.position.set(...P); cam.lookAt(0, v==='face'?1.62:0.95, 0);
+}
+const clock = new THREE.Clock();
+function frame(){ const dt=Math.min(0.05, clock.getDelta()); if(anim) anim.update(dt); place(); renderer.render(scene,cam); requestAnimationFrame(frame); }
+const params = new URLSearchParams(location.search);
+if (params.get('char')) $('char').value = params.get('char');
+load();
+if (params.get('pose')) { $('pose').value = params.get('pose'); setPose(); }
+if (params.get('view')) $('view').value = params.get('view');
+if (params.get('form')) { $('form').value = params.get('form'); $('form').onchange(); }
+frame();
+window.viewer = { setPose:(p)=>{$('pose').value=p; setPose(); anim.snap();}, setView:(v)=>$('view').value=v, setChar:(c)=>{$('char').value=c; load();}, setForm:(i)=>{$('form').value=i; $('form').onchange();}, setExpr:(e)=>model.setExpression(e) };
+</script>
+</body></html>

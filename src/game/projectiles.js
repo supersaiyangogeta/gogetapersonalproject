@@ -1,0 +1,845 @@
+/*
+ * Projectiles: ki blasts, energy balls, javelins, beams and the Spirit Bomb.
+ * Beams are persistent objects with a growing head; they can hit fighters,
+ * carve terrain, destroy rock spires, and clash with opposing beams.
+ */
+(function () {
+  'use strict';
+  const U = SL.util;
+  const R = SL.Rules;
+  const V3 = THREE.Vector3;
+  const TICK = SL.TICK;
+  const UP = new V3(0, 1, 0);
+
+  // a sword ward works whenever the fighter has his feet and his hands (not reeling, not down)
+  const WARD_STATES = { free: true, guard: true, attack: true, dash: true, land: true, recover: true, rush: true, charge: true };
+
+  let coreGeo = null;
+  function getCoreGeo() {
+    if (!coreGeo) coreGeo = new THREE.SphereGeometry(1, 14, 10);
+    return coreGeo;
+  }
+
+  class Projectiles {
+    constructor(battle) {
+      this.battle = battle;
+      this.scene = battle.scene;
+      this.list = [];
+      this.beams = [];
+      this.bombs = [];
+      this.orbs = [];
+      this.meshPool = [];
+    }
+
+    chargeOrb(color) {
+      let s = this.orbs.find((o) => !o.visible);
+      if (!s) {
+        // soft colored halo with a hot white core, so the orb reads without hiding the body
+        s = new THREE.Sprite(new THREE.SpriteMaterial({ map: SL.Toon.tex.glow, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.6 }));
+        s.renderOrder = 12;
+        const core = new THREE.Sprite(new THREE.SpriteMaterial({ map: SL.Toon.tex.glow, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, color: 0xffffff }));
+        core.scale.setScalar(0.42);
+        core.renderOrder = 13;
+        s.add(core);
+        this.scene.add(s);
+        this.orbs.push(s);
+      }
+      s.material.color.set(color);
+      s.visible = true;
+      return s;
+    }
+
+    _visual(p) {
+      let v = this.meshPool.find((m) => !m.group.visible);
+      if (!v) {
+        const group = new THREE.Group();
+        const core = new THREE.Mesh(getCoreGeo(), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+        const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: SL.Toon.tex.glow, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
+        glow.renderOrder = 12;
+        group.add(core, glow);
+        this.scene.add(group);
+        v = { group, core, glow };
+        this.meshPool.push(v);
+      }
+      v.core.quaternion.identity();
+      v.core.material.color.set(p.core || 0xffffff);
+      v.glow.material.color.set(p.color);
+      const r = p.radius;
+      if (p.kind === 'javelin') {
+        v.core.scale.set(r * 0.35, r * 0.35, r * 3.2);
+        v.glow.scale.setScalar(r * 5);
+      } else if (p.kind === 'disc') {
+        // thin spinning saw blade of ki
+        v.core.scale.set(r * 1.1, r * 0.08, r * 1.1);
+        v.glow.scale.setScalar(r * 3.2);
+      } else if (p.kind === 'soul') {
+        // Gogeta's Soul Punisher: a hard white core inside a wide, shifting halo (update cycles its hue)
+        v.core.scale.setScalar(r * 0.78);
+        v.glow.scale.setScalar(r * 5.4);
+      } else if (p.kind === 'ghost') {
+        // Gotenks' ghosts: a pale, soft, egg-shaped body with a wide halo of light
+        v.core.scale.set(r * 0.8, r * 1.05, r * 0.8);
+        v.glow.scale.setScalar(r * 3.6);
+      } else {
+        v.core.scale.setScalar(r * 0.62);
+        v.glow.scale.setScalar(r * (p.kind === 'blast' ? 4.2 : 4.8));
+      }
+      v.group.visible = true;
+      return v;
+    }
+
+    spawnBlast(owner, origin, dir, params) {
+      const p = {
+        ...params,
+        owner,
+        team: owner.team,
+        pos: origin.clone(),
+        vel: dir.clone().normalize().multiplyScalar(params.speed),
+        speed: params.speed,
+        life: params.life || 2.5,
+        alive: true,
+        target: owner.aimTarget ? owner.aimTarget() : owner.target,
+      };
+      // a shot at a far environmental target (the moon) is delivered there, not lost at the arena's edge
+      const far = SL.Targeting ? SL.Targeting.farProp(this.battle, owner) : null;
+      if (far) {
+        p.farProp = far;
+        p.target = SL.Targeting.proxyFor(far);
+        p.homing = Math.max(p.homing || 0, 1.2);
+        p.life = Math.max(p.life, far.pos.distanceTo(origin) / Math.max(1, params.speed) + 1.5);
+        p.vel.copy(far.pos.clone().sub(origin).normalize().multiplyScalar(params.speed));
+        this.battle.emit('farShot', { owner, prop: far, kind: 'projectile' });
+      }
+      p.visual = this._visual(p);
+      p.visual.group.position.copy(p.pos);
+      this.list.push(p);
+      return p;
+    }
+
+    spawnBeam(owner, spec, frac) {
+      const b = new Beam(this.battle, owner, spec, frac);
+      this.beams.push(b);
+      return b;
+    }
+
+    spawnSpiritBomb(owner, spec) {
+      const b = new SpiritBomb(this.battle, owner, spec);
+      this.bombs.push(b);
+      return b;
+    }
+
+    update() {
+      const battle = this.battle;
+      for (const p of this.list) {
+        if (!p.alive) continue;
+        if (battle.isFrozen(p.owner)) continue;
+        p.life -= TICK;
+        p.age = (p.age || 0) + 1;
+        // mines (Light Grenade): fly out, stop, hang in the air, then burst when an enemy comes close
+        if (p.mine) {
+          if (!p.armed && p.age >= p.mine.after) {
+            p.armed = true;
+            p.vel.set(0, 0, 0);
+            p.life = p.mine.life / 60;
+            battle.vfx.ring(p.pos, 2, p.color, 0.4);
+            battle.emit('mineArmed', { owner: p.owner, pos: p.pos.clone() });
+          }
+          if (p.armed) {
+            p.visual.glow.scale.setScalar(p.radius * (4 + Math.sin(p.age * 0.3) * 1.2));
+            let tripped = null;
+            for (const f of battle.fighters) {
+              if (f.alive && f.team !== p.team && !f.hidden && f.capsuleDistance(p.pos) < p.mine.trigger + f.radius) tripped = f;
+            }
+            if (tripped) {
+              battle.emit('mineTriggered', { owner: p.owner, victim: tripped });
+              const c = p.pos.clone();
+              // the one who tripped it takes the full blast; the explosion catches anyone else nearby
+              tripped.takeHit(p.owner, { type: 'ki', damage: p.damage, knock: p.knock, knockSpeed: p.knockSpeed, hitstun: 30, impact: p.impact, dir: tripped.chest().sub(c).normalize(), point: c.clone() });
+              this._explode(p, false, tripped);
+              continue;
+            }
+            if (p.life <= 0) {
+              this._explode(p, false);
+              continue;
+            }
+            continue;
+          }
+        }
+        if (p.life <= 0) {
+          this._explode(p, true);
+          continue;
+        }
+        const t = p.target;
+        // Spirit Ball Control: a CPU owner's ball steers itself at the target for a moment;
+        // a player's steering comes from the owner's spiritSteer state
+        // after bursting through a target it rises for a moment, then snaps straight back at it
+        if (p.returnAt && p.age >= p.returnAt) {
+          p.returnAt = 0;
+          if (t && t.alive && !t.hidden) {
+            p.vel.copy(t.chest().sub(p.pos).normalize()).multiplyScalar(p.speed);
+            battle.vfx.ring(p.pos.clone(), p.radius * 3, p.color, 0.3);
+            battle.emit('spiritBallReturn', { owner: p.owner });
+          }
+        }
+        if (p.autoSteer > 0) {
+          p.autoSteer--;
+          if (t && t.alive && !t.hidden && !p.returnAt) {
+            // turn by at most steer.turn radians a second — a real rotation, so it can swing all the way round
+            const to = t.chest().sub(p.pos).normalize();
+            const cur = p.vel.clone().normalize();
+            const angle = Math.acos(U.clamp(cur.dot(to), -1, 1));
+            const step = p.steer.turn * TICK;
+            if (angle <= step) cur.copy(to);
+            else {
+              const axis = new V3().crossVectors(cur, to);
+              if (axis.lengthSq() < 1e-8) axis.set(0, 1, 0);
+              cur.applyQuaternion(new THREE.Quaternion().setFromAxisAngle(axis.normalize(), step));
+            }
+            p.vel.copy(cur).multiplyScalar(p.speed);
+          }
+        }
+        const steered = !!(p.steering || p.autoSteer > 0);
+        if (steered) {
+          // steered: no seeking or homing on top of it
+        } else if (p.seek && t && t.alive && !t.hidden) {
+          // seeking shots (Scattering Bullet) steer straight at their target after a short delay
+          p.seekDelay = (p.seekDelay || 0) - 1;
+          if (p.seekDelay < 0) {
+            const to = t.chest().sub(p.pos).normalize();
+            if (p.seekTurn) {
+              // a turn-rate limit (Death Saucers): it follows, but a sharp enough move outruns
+              // the turn and it sails past before coming round again
+              const cur = p.vel.clone().normalize();
+              const angle = cur.angleTo(to);
+              const step = p.seekTurn * TICK;
+              if (angle <= step) cur.copy(to);
+              else {
+                const axis = new V3().crossVectors(cur, to);
+                if (axis.lengthSq() < 1e-8) axis.set(0, 1, 0);
+                cur.applyQuaternion(new THREE.Quaternion().setFromAxisAngle(axis.normalize(), step));
+              }
+              p.vel.copy(cur).multiplyScalar(p.speed);
+            } else p.vel.normalize().lerp(to, p.seek).normalize().multiplyScalar(p.speed);
+          }
+        } else if (p.homing && t && t.alive) {
+          const to = t.chest().sub(p.pos);
+          const dist = to.length();
+          to.divideScalar(Math.max(0.001, dist));
+          const cur = p.vel.clone().normalize();
+          if (cur.dot(to) > 0.2 && dist > 1.5) {
+            cur.lerp(to, U.clamp01(p.homing * TICK * 2.2)).normalize();
+            p.vel.copy(cur).multiplyScalar(p.speed);
+          }
+        }
+        p.pos.addScaledVector(p.vel, TICK);
+        p.visual.group.position.copy(p.pos);
+        // a ghost bobs as it drifts (the drawing only: where it is, and what it hits, stay on the line)
+        if (p.kind === 'ghost') p.visual.group.position.y += Math.sin(battle.frame * 0.22 + (p.wobble || 0) * 1.9) * 0.14;
+        if (p.kind === 'javelin') p.visual.core.quaternion.setFromUnitVectors(new V3(0, 0, 1), p.vel.clone().normalize());
+        else if (p.kind === 'disc') p.visual.core.rotation.y += 0.9;
+        if (p.kind === 'soul') {
+          // the halo runs through the colours of the light it is made of; a ring pulses off it
+          // (frame-based, never Math.random: presentation must not touch the seeded stream)
+          const hue = ((battle.frame + (p.wobble || 0) * 40) * 0.012) % 1;
+          p.visual.glow.material.color.setHSL(hue, 0.95, 0.56);
+          p.visual.glow.scale.setScalar(p.radius * (5.2 + Math.sin(battle.frame * 0.4) * 0.5));
+          if (battle.frame % 6 === 0) battle.vfx.ring(p.pos.clone(), p.radius * 2.4, p.visual.glow.material.color.getHex(), 0.22);
+        }
+        if (battle.frame % (p.kind === 'blast' ? 2 : 1) === 0) battle.vfx.trail(p.pos, p.kind === 'soul' ? p.visual.glow.material.color.getHex() : p.color, p.radius * (p.kind === 'blast' ? 1.4 : 1.8), 0.18);
+
+        // a Death Saucer that has outlived its leash turns on everybody, owner included
+        if (p.kind === 'disc' && p.turnAt && !p.loose && battle.frame >= p.turnAt) {
+          p.loose = true;
+          p.team = -1;
+          battle.emit('deathSaucerLoose', { fighter: p.owner, projectile: p });
+        }
+
+        // fighters
+        let consumed = false;
+        for (const f of battle.fighters) {
+          if (!f.alive || f.team === p.team || f.intangible) continue;
+          if (f.capsuleDistance(p.pos) > p.radius + f.radius) continue;
+          // a steered ball that just burst through this fighter passes on before it can hit again
+          if (p.lastHit === f && p.age - p.lastHitAge < 30) continue;
+          // THE SWORD'S ANSWER: a guard timed on a ki shot knocks it back with the blade
+          // (def.swordDeflect), and the story's version (f.swordWard, Future Trunks against people
+          // far beneath him) does it whenever he is not reeling — a piercing shot (a Death Beam) is
+          // let past with a lean instead (ward.slip)
+          const ward = this._ward(p, f);
+          if (ward === 'slip') continue;
+          if (ward === 'deflect') {
+            consumed = true;
+            break;
+          }
+          // deflect with a heavy strike
+          if (p.kind === 'blast' && f.state === 'attack' && f.sd.kind === 'heavy' && f.stateFrame >= f.sd.startup && f.stateFrame < f.sd.startup + f.sd.move.active + 2) {
+            this._deflect(p, f);
+            consumed = true;
+            break;
+          }
+          // a steered Spirit Ball with a pass left bursts through: the hit staggers instead of knocking the target flat
+          const burst = steered && p.steer && (p.rebounds || 0) < (p.steer.rebound || 0);
+          const res = f.takeHit(p.owner, {
+            type: 'ki', damage: p.damage, knock: burst ? 'push' : p.knock, knockSpeed: burst ? 8 : p.knockSpeed, hitstun: burst ? 40 : p.hitstun, impact: p.impact,
+            dir: p.vel.clone().normalize(), point: p.pos.clone(), color: p.color, guardPierce: p.guardPierce, sfx: 'kiBlast', name: p.name, stone: p.stone, deflected: !!p.deflected,
+          });
+          if (res === 'miss' || res === 'vanished') continue;
+          if (burst) {
+            // a steered Spirit Ball bursts through and swings up and round for another, weaker pass
+            p.rebounds = (p.rebounds || 0) + 1;
+            p.lastHit = f;
+            p.lastHitAge = p.age;
+            p.damage = Math.round(p.damage * 0.6);
+            battle.vfx.explosion(p.pos.clone(), p.radius * 2, p.color, { smoke: false });
+            battle.emit('spiritBallRebound', { owner: p.owner, victim: f });
+            // it rises out of the burst for a moment, then snaps straight back at the target (see update)
+            const back = p.vel.clone().normalize().multiplyScalar(-0.3);
+            back.y = 1;
+            p.vel.copy(back.normalize()).multiplyScalar(p.speed * 0.6);
+            p.returnAt = p.age + 22;
+            if (p.autoSteer > 0) p.autoSteer = Math.max(p.autoSteer, 90);
+            p.life = Math.max(p.life, 2.5);
+            continue;
+          }
+          this._explode(p, false, f);
+          consumed = true;
+          break;
+        }
+        if (consumed) continue;
+
+        // other projectiles
+        for (const q of this.list) {
+          if (q === p || !q.alive || q.team === p.team) continue;
+          if (q.pos.distanceTo(p.pos) < q.radius + p.radius) {
+            const pBig = p.radius >= q.radius * 1.8, qBig = q.radius >= p.radius * 1.8;
+            if (!pBig) this._explode(p, false);
+            if (!qBig) this._explode(q, false);
+            break;
+          }
+        }
+        if (!p.alive) continue;
+        const hit = battle.stage.collideSphere(p.pos, p.radius);
+        if (hit && !(hit.type === 'bounds' && p.farProp)) this._explode(p, hit.type === 'bounds', null, hit);
+      }
+      this.list = this.list.filter((p) => p.alive);
+
+      for (const b of this.beams) if (!b.done) b.update();
+      this.beams = this.beams.filter((b) => !b.done);
+      for (const b of this.bombs) if (!b.done) b.update();
+      this.bombs = this.bombs.filter((b) => !b.done);
+    }
+
+    /** Sword ward and sword deflect (see update): 'deflect' | 'slip' | null. */
+    _ward(p, f) {
+      if (p.kind !== 'blast' && p.kind !== 'ball') return null;
+      const ward = f.swordWard;
+      const own = p.owner;
+      let kind = null;
+      if (ward && (!ward.from || ward.from.includes(own)) && WARD_STATES[f.state]) {
+        if (p.guardPierce && ward.slip) kind = 'slip';
+        else if (ward.deflect) kind = 'deflect';
+      } else if (f.def.swordDeflect && f.state === 'guard' && f.stateFrame <= f.def.swordDeflect.window && f.forward.dot(p.vel.clone().setY(0).normalize().negate()) > -0.2) {
+        kind = 'deflect';
+      }
+      if (!kind) return null;
+      const battle = this.battle;
+      if (kind === 'slip') {
+        // a lean to one side: the shot goes past his ear and carries on
+        const d = p.vel.clone().setY(0).normalize();
+        const side = new V3(-d.z, 0, d.x).multiplyScalar(battle.frame % 2 ? 1 : -1);
+        f.vel.addScaledVector(side, 7);
+        f.ghost(0.22, 0.4);
+        p.lastHit = f;
+        p.lastHitAge = p.age;
+      } else {
+        this._deflect(p, f);
+        if (battle.vfx.slash) {
+          const c = p.pos.clone();
+          const side = new V3(-f.forward.z, 0.6, f.forward.x).normalize();
+          battle.vfx.slash(c.clone().addScaledVector(side, 0.6), c.clone().addScaledVector(side, -0.6), 0xeaf4ff, 0.18, 0.08);
+        }
+        battle.sfx('swordClang', f, { vol: 0.8, pitch: 1.3 });
+        SL.mech(f, 'on', 'deflect', { projectile: p });
+      }
+      battle.emit('swordWard', { fighter: f, attacker: own, kind, projectile: p });
+      return kind;
+    }
+
+    _deflect(p, f) {
+      const back = p.owner && p.owner.alive ? p.owner.chest().sub(p.pos).normalize() : f.forward;
+      p.vel.copy(back).multiplyScalar(p.speed * 1.25);
+      p.deflected = true;
+      p.owner = f;
+      p.team = f.team;
+      p.target = f.target;
+      p.life = 2;
+      p.damage *= 1.3;
+      this.battle.vfx.impact(p.pos, 2, 0xffffff);
+      this.battle.sfx('block', f, { vol: 1.2 });
+      this.battle.emit('deflect', { fighter: f });
+    }
+
+    _explode(p, fizzle, directTarget, stageHit) {
+      if (!p.alive) return;
+      p.alive = false;
+      p.visual.group.visible = false;
+      const battle = this.battle;
+      const r = p.explode || 1;
+      if (fizzle) {
+        battle.vfx.flash(p.pos, p.radius * 3, p.color, 0.15, SL.Toon.tex.glow);
+        return;
+      }
+      if (p.kind === 'soul') {
+        // purifying light, not fire: rings of every colour and a clean white flare (kept small —
+        // the glow of an explosion is ~3x its radius and a close lens inside it is a white frame)
+        for (let i = 0; i < 4; i++) battle.vfx.ring(p.pos.clone(), r * (0.8 + i * 0.45), new THREE.Color().setHSL(i * 0.22, 0.8, 0.68).getHex(), 0.45 + i * 0.08);
+        battle.vfx.flash(p.pos, r * 1.4, 0xffffff, 0.3, SL.Toon.tex.glow);
+        battle.vfx.sparks(p.pos, 0xe8f4ff, 30, 16, 0.14);
+        battle.sfx('soulBurst', null, { at: p.pos });
+      }
+      if (r < 2) {
+        battle.vfx.impact(p.pos, 1, p.color);
+        battle.vfx.ball(p.pos, r * 0.7, p.color, 0.22);
+        battle.sfx('explosionSmall', null, { at: p.pos, vol: 0.5 });
+      } else {
+        battle.vfx.explosion(p.pos, r * 0.8, p.color);
+        battle.sfx(r > 5 ? 'explosionBig' : 'explosionSmall', null, { at: p.pos });
+        battle.cameraTraumaAt(p.pos, 0.2 + r * 0.04);
+        for (const f of battle.fighters) {
+          if (!f.alive || f.team === p.team || f === directTarget || f.intangible) continue;
+          const d = f.capsuleDistance(p.pos);
+          if (d < r * 0.8) {
+            f.takeHit(p.owner, { type: 'explosion', damage: p.damage * 0.45 * (1 - d / (r * 0.8)), knock: 'push', knockSpeed: 10, hitstun: 18, impact: 2, dir: f.chest().sub(p.pos).normalize(), point: p.pos.clone(), name: p.name });
+          }
+        }
+      }
+      battle.stage.explode(p.pos, Math.max(r, 1.2), p.damage * 0.6, stageHit, p.owner);
+    }
+
+    dispose() {
+      for (const b of this.beams) b.dispose();
+      for (const b of this.bombs) b.dispose();
+      for (const v of this.meshPool) {
+        v.group.parent && v.group.parent.remove(v.group);
+        v.core.material.dispose();
+        v.glow.material.dispose();
+      }
+      for (const o of this.orbs) {
+        o.parent && o.parent.remove(o);
+        o.material.dispose();
+        for (const c of o.children) c.material.dispose();
+      }
+    }
+  }
+
+  /* ---------------- Beam ---------------- */
+  class Beam {
+    constructor(battle, owner, spec, frac) {
+      this.battle = battle;
+      this.owner = owner;
+      this.team = owner.team;
+      this.spec = spec;
+      this.frac = frac;
+      this.radius = U.lerp(spec.radius[0], spec.radius[1], frac) * Math.max(1, owner.scale);
+      this.damage = U.lerp(spec.damage[0], spec.damage[1], frac);
+      // defaults for data that forgot them: a beam that cannot travel silently does nothing
+      this.speed = spec.speed > 0 ? spec.speed : 90;
+      this.range = spec.range > 0 ? spec.range : 60;
+      this.sustain = spec.sustain > 0 ? spec.sustain : spec.fireFrames || 40;
+      this.power = R.beamPower(frac, owner) * (spec.ultimate ? 1.35 : 1);
+      this.state = 'extend';
+      this.headDist = 0.5;
+      this.alpha = 1;
+      this.done = false;
+      this.hitSet = new Set();
+      this.aimYaw = 0;
+      this.aimPitch = 0;
+      this.time = 0;
+      this.origin = this._handOrigin();
+      const t = owner.aimTarget ? owner.aimTarget() : owner.target;
+      const free = !t && owner.freeAimDir ? owner.freeAimDir(this.origin) : null;
+      this.baseDir = t && t.alive ? (t.aimPoint ? t.aimPoint(this.origin) : t.chest()).sub(this.origin).normalize() : free || owner.forward;
+      // a beam at a far environmental target reaches it
+      const far = SL.Targeting ? SL.Targeting.farProp(battle, owner) : null;
+      if (far) {
+        this.farProp = far;
+        this.baseDir = far.pos.clone().sub(this.origin).normalize();
+        this.range = Math.max(this.range, far.pos.distanceTo(this.origin) + far.r);
+        this.speed = Math.max(this.speed, this.range / 1.6);
+        battle.emit('farShot', { owner, prop: far, kind: 'beam' });
+      }
+      this.dir = this.baseDir.clone();
+      this.headOverride = null;
+      this.visual = battle.vfx.createBeam(spec.color, spec.core, spec.style || {});
+      this.loop = battle.silenced ? null : SL.Audio.loop('beam', { vol: battle.volFor(owner), timbre: spec.sound, tag: 'beam' });
+      battle.cameraTraumaAt(this.origin, 0.25);
+      // capped: a 2 m ultimate's flash at x6 filled the screen white with the shooter inside it
+      battle.vfx.flash(this.origin, Math.min(this.radius * 6, 5.5), spec.color, 0.25);
+      this.update(true);
+    }
+
+    _handOrigin() {
+      const o = this.owner;
+      // mouth beams (Great Ape, Nappa) leave from the head
+      if (this.spec.fromHead && o.model.joints.head) {
+        o.object.updateMatrixWorld(true);
+        const h = o.model.joints.head.localToWorld(new V3(0, 0.1, 0.18)).sub(o.object.position).add(o.pos);
+        return h.addScaledVector(o.forward, 0.3 * o.scale);
+      }
+      const h = this.spec.oneHand ? o.handPos('R') : o.handPos('R').add(o.handPos('L')).multiplyScalar(0.5);
+      return h.addScaledVector(o.forward, 0.25);
+    }
+
+    get head() {
+      if (this.headOverride) return this.headOverride.clone();
+      return this.origin.clone().addScaledVector(this.dir, this.headDist);
+    }
+
+    stop() {
+      if (this.state !== 'fade') {
+        this.state = 'fade';
+        if (this.loop) this.loop.stop(0.3);
+        this.loop = null;
+      }
+    }
+
+    update(initial) {
+      const battle = this.battle;
+      this.time += TICK;
+      if (this.owner.alive) this.origin = this._handOrigin();
+      if (this.state === 'clash') {
+        this._render();
+        return;
+      }
+      if (!initial && battle.isFrozen(this.owner)) {
+        this._render();
+        return;
+      }
+      if (this.state === 'extend' || this.state === 'sustain') {
+        const t = this.owner.aimTarget ? this.owner.aimTarget() : this.owner.target;
+        if (t && t.alive && this.state === 'extend') {
+          const want = t.chest().sub(this.origin).normalize();
+          this.baseDir.lerp(want, 0.35 * TICK).normalize();
+        }
+        const right = new V3().crossVectors(this.baseDir, UP).normalize();
+        this.dir.copy(this.baseDir).applyAxisAngle(UP, this.aimYaw);
+        if (right.lengthSq() > 0.01) this.dir.applyAxisAngle(right, this.aimPitch);
+        this.dir.normalize();
+      }
+      if (this.state === 'extend') {
+        this.headDist += this.speed * TICK;
+        if (this.headDist >= this.range) {
+          this.headDist = this.range;
+          this.state = 'sustain';
+        }
+      } else if (this.state === 'sustain') {
+        this.sustain--;
+        if (this.sustain <= 0) this.stop();
+      } else if (this.state === 'fade') {
+        this.alpha -= TICK * 4;
+        if (this.alpha <= 0) {
+          this.dispose();
+          return;
+        }
+      }
+      if (this.loop) this.loop.set(this.power);
+
+      if (this.state === 'extend' || this.state === 'sustain') this._collide();
+      this._render();
+    }
+
+    _collide() {
+      const battle = this.battle;
+      const head = this.head;
+      for (const f of battle.fighters) {
+        if (!f.alive || f.team === this.team || this.hitSet.has(f) || f.intangible) continue;
+        const dHead = f.capsuleDistance(head);
+        const dBody = segmentDistance(f.chest(), this.origin, head);
+        if (dHead < this.radius * 1.15 + f.radius || (this.state === 'sustain' && dBody < this.radius + f.radius)) {
+          const res = f.takeHit(this.owner, {
+            type: 'beam', damage: this.damage, knock: 'heavy', knockSpeed: 30, hitstun: 46, impact: this.spec.ultimate ? 5 : 4,
+            dir: this.dir.clone(), point: head, color: this.spec.color, guardPierce: this.spec.pierce === true,
+          });
+          this.hitSet.add(f);
+          if (res === 'miss' || res === 'vanished') continue;
+          this._impact(head, true);
+          return;
+        }
+      }
+      for (const p of battle.projectiles.list) {
+        if (!p.alive || p.team === this.team) continue;
+        if (p.pos.distanceTo(head) < this.radius * 1.4 + p.radius) battle.projectiles._explode(p, false);
+      }
+      const hit = battle.stage.collideSphere(head, this.radius * 0.8);
+      if (hit && hit.type !== 'bounds') this._impact(head, false, hit);
+    }
+
+    _impact(point, onFighter, stageHit) {
+      const battle = this.battle;
+      const size = this.radius * 3.2 + 2;
+      battle.vfx.explosion(point, size, this.spec.color);
+      SL.ScreenFX.flash(battle.involvesPlayer(this.owner) ? 0.35 : 0.15);
+      battle.sfx('explosionBig', null, { at: point });
+      battle.cameraTraumaAt(point, 0.55);
+      battle.stage.explode(point, size * 1.4, this.damage, stageHit, this.owner);
+      this.headDist = Math.max(1, point.distanceTo(this.origin));
+      this.state = 'sustain';
+      this.sustain = Math.min(this.sustain, 12);
+    }
+
+    _render() {
+      const head = this.head;
+      this.visual.update(this.origin, head, this.radius, U.clamp01(this.alpha), this.time);
+      if (this.state !== 'fade' && this.battle.frame % 2 === 0) {
+        const c = new THREE.Color(this.spec.color);
+        const vfx = this.battle.vfx;
+        for (let i = 0; i < 3; i++) {
+          const v = new V3(U.rand(-1, 1), U.rand(-1, 1), U.rand(-1, 1)).normalize().multiplyScalar(U.rand(3, 9));
+          vfx.add.emit(head.x, head.y, head.z, v.x, v.y, v.z, c.r, c.g, c.b, 1, this.radius * U.rand(0.3, 0.7), 0.3, { drag: 3 });
+        }
+      }
+    }
+
+    dispose() {
+      if (this.done) return;
+      this.done = true;
+      if (this.loop) this.loop.stop(0.2);
+      this.visual.dispose();
+    }
+  }
+
+  function segmentDistance(p, a, b) {
+    const ab = new V3().subVectors(b, a);
+    const t = U.clamp01(new V3().subVectors(p, a).dot(ab) / Math.max(0.0001, ab.lengthSq()));
+    return a.clone().addScaledVector(ab, t).distanceTo(p);
+  }
+
+  /* ---------------- Spirit Bomb ---------------- */
+  const lerpParam = (v, t) => (Array.isArray(v) ? U.lerp(v[0], v[1], t) : v);
+
+  /**
+   * Spirit Bomb. Radius, damage, blast size and clash power scale with how long
+   * the owner held the charge (spec arrays [min, max]). While flying it can be
+   * met by an opposing beam, which starts a beam-vs-bomb clash (clash.js).
+   */
+  class SpiritBomb {
+    constructor(battle, owner, spec) {
+      this.battle = battle;
+      this.owner = owner;
+      this.team = owner.team;
+      this.spec = spec;
+      this.isBomb = true;
+      this.state = 'charging';
+      this.chargeFrac = 0;
+      this.done = false;
+      this.pos = owner.pos.clone().add(new V3(0, owner.height + 2, 0));
+      this.vel = new V3();
+      this.maxRadius = lerpParam(spec.radius, 1);
+      this.radius = lerpParam(spec.radius, 0) * 0.1;
+      this.hitSet = new Set();
+      this.headOverride = null;
+      this.origin = owner.chest();
+      const mat = new THREE.ShaderMaterial({
+        uniforms: { uColor: { value: new THREE.Color(spec.color) }, uTime: { value: 0 }, uCharge: { value: 0 } },
+        vertexShader: `varying vec3 vN; varying vec3 vV; varying vec3 vP;
+          void main(){ vP = position; vec4 mv = modelViewMatrix*vec4(position,1.0); vN = normalize(normalMatrix*normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix*mv; }`,
+        fragmentShader: `${SL.NOISE_GLSL} uniform vec3 uColor; uniform float uTime; uniform float uCharge; varying vec3 vN; varying vec3 vV; varying vec3 vP;
+          void main(){ float f = abs(dot(normalize(vN), normalize(vV)));
+            float n = vnoise(vP*2.5 + vec3(0.0, uTime*1.5, uTime));
+            float n2 = vnoise(vP*6.0 - vec3(uTime*2.0, 0.0, uTime*0.7));
+            float veins = smoothstep(0.62, 0.8, n2) * (0.35 + 0.4 * uCharge);
+            vec3 col = mix(uColor, vec3(1.0), pow(f, 3.0)*0.5 + n*0.18 + veins) * 1.15;
+            float a = 0.42 + pow(1.0-f, 2.0)*0.5;
+            gl_FragColor = vec4(col*a, a); }`,
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.CustomBlending,
+        blendSrc: THREE.OneFactor,
+        // premultiplied over: keeps the bomb blue with visible swirling detail instead of blowing out to white
+        blendDst: THREE.OneMinusSrcAlphaFactor,
+      });
+      this.mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 24), mat);
+      this.mesh.renderOrder = 11;
+      this.core = new THREE.Mesh(getCoreGeo(), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false }));
+      this.core.renderOrder = 12;
+      this.glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: SL.Toon.tex.glow, color: spec.color, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.55 }));
+      battle.scene.add(this.mesh, this.core, this.glow);
+      this.light = new THREE.PointLight(spec.color, 2, 80, 2);
+      battle.scene.add(this.light);
+      this.time = 0;
+      this.hum = battle.silenced ? null : SL.Audio.loop('aura', { vol: 0.8, tag: 'spiritBomb' });
+    }
+
+    get head() {
+      return this.headOverride ? this.headOverride.clone() : this.pos.clone();
+    }
+    get dir() {
+      return this.vel.lengthSq() > 0.0001 ? this.vel.clone().normalize() : this.owner.forward;
+    }
+
+    /** Locks the final size and power in at release. */
+    launch(target) {
+      const sp = this.spec, k = this.chargeFrac;
+      this.state = 'flying';
+      this.target = target;
+      this.life = 9;
+      this.radius = lerpParam(sp.radius, k);
+      this.damage = lerpParam(sp.damage, k);
+      this.explodeR = lerpParam(sp.explode, k);
+      this.power = lerpParam(sp.clashPower || [1, 1.6], k) * R.multipliers(this.owner).damage;
+      this.speed = sp.speed * (1.15 - 0.3 * k);
+      const dir = target && target.alive ? target.chest().sub(this.pos).normalize() : this.owner.forward;
+      this.vel.copy(dir).multiplyScalar(this.speed);
+      this.origin = this.owner.chest();
+      this.battle.stage.clearMood(2.5);
+      this.battle.emit('bombLaunch', { fighter: this.owner, frac: k });
+    }
+
+    cancel() {
+      if (this.done) return;
+      this.battle.vfx.flash(this.pos, this.radius * 4, this.spec.color, 0.3, SL.Toon.tex.glow);
+      this.battle.sfx('explosionSmall', null, { at: this.pos });
+      this.dispose();
+    }
+
+    /** Clash interface (same as Beam): a lost clash dissolves the bomb. */
+    stop() {
+      if (this.done) return;
+      this.battle.vfx.explosion(this.head, this.radius * 1.4, this.spec.color, { smoke: false });
+      this.dispose();
+    }
+
+    update() {
+      const battle = this.battle;
+      this.time += TICK;
+      this.mesh.material.uniforms.uTime.value = this.time;
+      this.mesh.material.uniforms.uCharge.value = this.chargeFrac;
+      if (this.state === 'clash') {
+        if (this.headOverride) this.pos.copy(this.headOverride);
+        if (this.hum) this.hum.set(1);
+        this._render();
+        return;
+      }
+      if (battle.isFrozen(this.owner)) {
+        this._render();
+        return;
+      }
+      if (this.state === 'charging') {
+        const o = this.owner;
+        if (!o.alive || o.state !== 'spiritBomb') {
+          this.cancel();
+          return;
+        }
+        const k = this.chargeFrac;
+        const target = lerpParam(this.spec.radius, k) * (0.12 + 0.88 * Math.min(1, k * 3));
+        this.radius = U.damp(this.radius, target, 4, TICK);
+        this.pos.copy(o.pos).add(new V3(0, o.height + 0.8 + this.radius, 0));
+        if (battle.frame % 2 === 0) {
+          const c = new THREE.Color(this.spec.color);
+          const n = 3 + Math.round(k * 4);
+          for (let i = 0; i < n; i++) {
+            const dir = new V3(U.rand(-1, 1), U.rand(-0.2, 1), U.rand(-1, 1)).normalize();
+            const start = this.pos.clone().addScaledVector(dir, 25 + Math.random() * 25);
+            const v = this.pos.clone().sub(start).multiplyScalar(1 / 0.9);
+            battle.vfx.add.emit(start.x, start.y, start.z, v.x, v.y, v.z, c.r, c.g, c.b, 0.9, U.rand(0.15, 0.35), 0.9, {});
+          }
+        }
+        if (battle.frame % 30 === 0) battle.vfx.ring(this.pos, this.radius * 1.6, this.spec.color, 0.5);
+        if (this.hum) this.hum.set(0.3 + k * 0.6);
+      } else if (this.state === 'flying') {
+        this.life -= TICK;
+        const t = this.target;
+        if (t && t.alive) {
+          const to = t.chest().sub(this.pos).normalize();
+          const cur = this.vel.clone().normalize().lerp(to, U.clamp01(this.spec.homing * TICK)).normalize();
+          this.vel.copy(cur).multiplyScalar(this.speed);
+        }
+        this.pos.addScaledVector(this.vel, TICK);
+        if (battle.frame % 3 === 0) battle.vfx.trail(this.pos, this.spec.color, this.radius * 0.9, 0.4);
+        // ki blasts are absorbed by the bomb
+        for (const p of battle.projectiles.list) {
+          if (p.alive && p.team !== this.team && p.pos.distanceTo(this.pos) < this.radius + p.radius) battle.projectiles._explode(p, true);
+        }
+        let hitF = null;
+        for (const f of battle.fighters) {
+          if (!f.alive || f.team === this.team || f.intangible) continue;
+          if (f.capsuleDistance(this.pos) < this.radius + f.radius) {
+            hitF = f;
+            break;
+          }
+        }
+        if (hitF || battle.stage.collideSphere(this.pos, this.radius * 0.7) || this.life <= 0) {
+          this._explode();
+          return;
+        }
+      }
+      this._render();
+    }
+
+    /** Resumes flight after winning a clash, now aimed at the loser. */
+    resumeToward(target, point) {
+      this.state = 'flying';
+      this.headOverride = null;
+      this.pos.copy(point);
+      this.target = target;
+      this.life = 6;
+      this.speed *= 1.5;
+      this.damage *= 1.2;
+      const dir = target && target.alive ? target.chest().sub(this.pos).normalize() : this.dir;
+      this.vel.copy(dir).multiplyScalar(this.speed);
+    }
+
+    _explode() {
+      const battle = this.battle;
+      const sp = this.spec;
+      const er = this.explodeR || lerpParam(sp.explode, this.chargeFrac);
+      const dmg = this.damage || lerpParam(sp.damage, this.chargeFrac);
+      battle.vfx.explosion(this.pos, er * 0.8, sp.color);
+      battle.vfx.explosion(this.pos, er * 0.45, 0xffffff, { smoke: false });
+      battle.vfx.ring(this.pos, er * 1.3, sp.color, 0.8);
+      battle.vfx.light(this.pos, sp.color, 8, er * 6, 0.6);
+      SL.ScreenFX.flash(0.85, '#e8f8ff');
+      battle.sfx('explosionHuge', null, { at: this.pos });
+      battle.cameraTraumaAt(this.pos, 1);
+      for (const f of battle.fighters) {
+        if (!f.alive || f.team === this.team) continue;
+        const d = f.capsuleDistance(this.pos);
+        if (d < er) {
+          f.takeHit(this.owner, { type: 'explosion', damage: dmg * U.lerp(1, 0.5, d / er), knock: 'heavy', knockSpeed: 34, hitstun: 50, impact: 5, dir: f.chest().sub(this.pos).normalize(), point: this.pos.clone(), color: sp.color });
+        }
+      }
+      battle.stage.explode(this.pos, er * 1.3, dmg, null, this.owner);
+      battle.emit('bombExplode', { fighter: this.owner, pos: this.pos.clone(), radius: er });
+      this.dispose();
+    }
+
+    _render() {
+      const pulse = 1 + Math.sin(this.time * 12) * 0.02;
+      this.mesh.position.copy(this.pos);
+      this.mesh.scale.setScalar(this.radius * pulse);
+      this.mesh.rotation.y = this.time * 0.6;
+      this.core.position.copy(this.pos);
+      this.core.scale.setScalar(this.radius * 0.45 * (1 + Math.sin(this.time * 7) * 0.05));
+      this.glow.position.copy(this.pos);
+      this.glow.scale.setScalar(this.radius * 3.4);
+      this.light.position.copy(this.pos);
+      this.light.intensity = 0.8 + this.radius * 0.3;
+    }
+
+    dispose() {
+      if (this.done) return;
+      this.done = true;
+      if (this.hum) this.hum.stop(0.3);
+      this.hum = null;
+      this.battle.scene.remove(this.mesh, this.core, this.glow, this.light);
+      this.mesh.geometry.dispose();
+      this.mesh.material.dispose();
+      this.core.material.dispose();
+      this.glow.material.dispose();
+    }
+  }
+
+  SL.Projectiles = Projectiles;
+  SL.Beam = Beam;
+  SL.SpiritBomb = SpiritBomb;
+})();

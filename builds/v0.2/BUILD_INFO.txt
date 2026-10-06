@@ -1,0 +1,11 @@
+Dragon Ball: Saiyan Legacy — VERSION 0.2 ("Goku Showcase")
+Frozen snapshot, created 2026-09-13 before Version 0.3 development started.
+
+This folder is a complete, self-contained copy of Version 0.2.
+Play it by double-clicking index.html in this folder.
+It uses the local vendor/three.min.js (r149), so it runs offline.
+
+Save data: Version 0.2 uses the save slot saiyanLegacy.save.v2.
+Version 0.3 copies that progress once into its own slot and never writes to it.
+
+Do not edit files here. Development continues in the main saiyan-legacy folder.

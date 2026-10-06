@@ -1,0 +1,9 @@
+Dragon Ball: Saiyan Legacy — VERSION 0.3 BACKUP (in-development snapshot)
+Created 2026-10-01, before the Cell Saga revamp / Vegito fusion cinematic / Namek wish fixes.
+
+This folder is a complete, self-contained copy of Version 0.3 as it was on 2026-10-01
+(Buu Saga pass 6: Vegito and Buuhan done). It is a backup, not a frozen release.
+Play it by double-clicking index.html in this folder (local vendor/three.min.js, offline).
+
+Save data: uses the same slot as the main folder (saiyanLegacy.save.v3).
+Do not edit files here. Development continues in the main saiyan-legacy folder.

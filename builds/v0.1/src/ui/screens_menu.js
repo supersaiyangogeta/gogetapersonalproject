@@ -1,0 +1,258 @@
+/*
+ * Title, main menu, story timeline and records screens, plus the living 3D
+ * menu background (which changes as the player progresses).
+ */
+(function () {
+  'use strict';
+  const U = SL.util;
+  const el = U.el;
+  const V3 = THREE.Vector3;
+
+  /* ---------------- 3D menu background ---------------- */
+  class MenuScene {
+    constructor() {
+      const battle = (this.battle = new SL.Battle({ mode: 'menu', stageId: 'wasteland', fighters: [], rules: {} }));
+      battle.phase = 'menu';
+      const bardock = SL.Save.isUnlocked('menuScenes', 'bardock');
+      const heroId = bardock && Math.random() < 0.5 ? 'bardock' : 'goku';
+      this.hero = battle.spawn({ charId: heroId, team: 0, pos: new V3(0, 0, 0), dummy: 'idle' });
+      this.hero.controller = null;
+      this.hero.yaw = 0.5;
+      this.hero.setState('scripted', { pose: 'idle' });
+      if (bardock) {
+        const other = heroId === 'bardock' ? 'goku' : 'bardock';
+        this.rival = battle.spawn({ charId: other, team: 0, pos: new V3(-9, 0, -16), dummy: 'idle' });
+        this.rival.controller = null;
+        this.rival.yaw = 2.6;
+        this.rival.setState('scripted', { pose: other === 'bardock' ? 'b_victory' : 'g_intro' });
+      }
+      this.powered = 0;
+      this.time = 0;
+      const hero = this.hero;
+      battle.camera.playShot((t, out, el2) => {
+        const c = hero.chest();
+        const a = 0.9 + Math.sin(el2 * 0.06) * 0.35;
+        const r = 5.4;
+        out.pos.set(c.x + Math.sin(a) * r, c.y + 0.4 + Math.sin(el2 * 0.1) * 0.15, c.z + Math.cos(a) * r);
+        const right = new V3(Math.cos(a), 0, -Math.sin(a));
+        out.look.copy(c).addScaledVector(right, 1.7).add(new V3(0, 0.2, 0));
+        out.fov = 52;
+      }, 1e9, { hold: true, cut: true, blendIn: 0, kind: 'story' });
+    }
+
+    setPower(on) {
+      const h = this.hero;
+      if (on && !this.loop) {
+        this.loop = SL.Audio.loop('aura', { vol: 0.8 });
+        h.setState('scripted', { pose: 'charge', aura: 1, expression: 'shout' });
+        if (!SL.Save.data.flags.menuPowerUp) {
+          SL.Save.data.flags.menuPowerUp = true;
+          SL.Save.write();
+        }
+      }
+      if (!on && this.loop) {
+        this.loop.stop(0.4);
+        this.loop = null;
+        h.setState('scripted', { pose: 'idle' });
+      }
+    }
+
+    update(dt) {
+      this.time += dt;
+      if (this.loop) {
+        this.loop.set(1);
+        this.battle.camera.addTrauma(0.01);
+        if (Math.random() < 0.08) this.battle.vfx.dust(this.hero.pos, 1.5, 3);
+      }
+      this.battle.update(dt);
+    }
+
+    render() {
+      this.battle.render();
+    }
+
+    dispose() {
+      if (this.loop) this.loop.stop(0.1);
+      this.battle.dispose();
+    }
+  }
+  SL.MenuScene = MenuScene;
+
+  /* ---------------- title ---------------- */
+  function logo(cls) {
+    return el('div', { class: 'logo ' + (cls || '') }, [
+      el('div', { class: 'top' }, [el('span', { class: 'db-icon', style: { fontSize: '0.9em' } }), el('span', { text: 'DRAGON BALL' })]),
+      el('div', { class: 'big title-font gradient-text', text: 'Saiyan Legacy' }),
+    ]);
+  }
+  SL.logo = logo;
+
+  const LEGAL = 'Unofficial, non-commercial fan project. Dragon Ball © Bird Studio / Shueisha, Toei Animation. Not affiliated with or endorsed by Bandai Namco, Toei, or Shueisha.';
+
+  SL.Screens = SL.Screens || {};
+
+  SL.Screens.title = function () {
+    const s = new SL.Screen('title-screen');
+    const press = el('div', { class: 'press', text: 'PRESS ANY BUTTON' });
+    s.el.append(logo(), el('div', { class: 'tag', text: SL.BUILD }), press, el('div', { class: 'legal', text: LEGAL }));
+    let done = false;
+    const go = () => {
+      if (done) return;
+      done = true;
+      SL.Audio.init();
+      SL.Audio.play('uiSelect');
+      SL.Music.play('menu', { intensity: 1 });
+      SL.UI.replace(SL.Screens.mainMenu());
+    };
+    s.handleNav = (nav) => {
+      if (nav.any) go();
+    };
+    s.el.addEventListener('mousedown', go);
+    return s;
+  };
+
+  /* ---------------- main menu ---------------- */
+  SL.Screens.mainMenu = function () {
+    const s = new SL.Screen('main-menu dim');
+    const save = SL.Save.data;
+    const col = el('div', { class: 'menu-col' });
+    const brand = logo();
+    brand.classList.add('brand');
+    const next = nextMission();
+    const storyCap = save.story.started ? (next ? 'Continue: ' + next.title : 'Replay the Prologue') : 'Begin: ' + SL.data.missions.prologue_final_stand.title;
+    const story = SL.UI.menuButton(s, save.story.started ? 'Story' : 'New Game', storyCap, () => SL.UI.push(SL.Screens.story()), { isNew: !save.story.started });
+    const free = SL.UI.menuButton(s, 'Free Battle', 'Any fighter, any stage', () => SL.UI.push(SL.Screens.select('free')));
+    const train = SL.UI.menuButton(s, 'Training', 'Practice combos and techniques', () => SL.UI.push(SL.Screens.select('training')));
+    col.append(story.node, free.node, train.node);
+    if (SL.Save.hasProgress()) {
+      const rec = SL.UI.menuButton(s, 'Records', 'Stats and completion', () => SL.UI.push(SL.Screens.records()));
+      col.append(rec.node);
+    }
+    const settings = SL.UI.menuButton(s, 'Settings', 'Gameplay · Graphics · Audio · Controls', () => SL.UI.push(SL.Screens.settings()));
+    col.append(settings.node);
+
+    const pct = SL.Save.completion();
+    const progress = el('div', { class: 'progress' }, [el('b', { text: pct + '%' }), el('span', { text: 'COMPLETION' })]);
+    const version = el('div', { class: 'version', text: SL.BUILD + ' · v' + SL.VERSION + ' — ' + LEGAL });
+    const footer = SL.UI.footer([['confirm', 'Select']]);
+    s.el.append(brand, col, progress, version, footer);
+    s.refreshGlyphs = () => footer.render();
+    s.onBack = () => {};
+    s.onUpdate = () => {
+      const scene = SL.App.menuScene;
+      if (scene) scene.setPower(SL.Input.anyHeldRaw('charge'));
+    };
+    s.onHide = () => {
+      if (SL.App.menuScene) SL.App.menuScene.setPower(false);
+    };
+    return s;
+  };
+
+  function nextMission() {
+    const ids = Object.keys(SL.data.missions);
+    for (const id of ids) {
+      const r = SL.Save.missionResult(id);
+      if (!r || !r.completed) return SL.data.missions[id];
+    }
+    return null;
+  }
+
+  /* ---------------- story ---------------- */
+  SL.Screens.story = function () {
+    const s = new SL.Screen('story dim');
+    const m = SL.data.missions.prologue_final_stand;
+    const res = SL.Save.missionResult(m.id);
+    s.el.appendChild(el('h1', { class: 'title-font gradient-text', text: 'Story' }));
+    const tl = el('div', { class: 'timeline' });
+
+    const ch = el('div', { class: 'chapter' }, [el('div', { class: 'ch-head', text: 'PROLOGUE · AGE 737' }), el('div', { class: 'ch-title', text: 'Planet Vegeta' })]);
+    const card = el('div', { class: 'mcard' });
+    card.append(
+      el('img', { class: 'portrait', src: SL.Portraits.get('bardock'), alt: '' }),
+      el('div', { class: 'm-title', text: m.title }),
+      el('div', { class: 'm-sub', text: m.subtitle }),
+      el('div', { class: 'm-blurb', text: m.blurb })
+    );
+    const status = el('div', { class: 'm-status' });
+    if (res && res.completed) {
+      status.append(el('span', { class: 'rank', text: res.bestRank || '—' }), el('span', { class: 'badge done', text: 'CLEARED' }));
+    } else status.append(el('span', { class: 'badge', text: 'NEW' }));
+    card.appendChild(status);
+    ch.appendChild(card);
+    const rewards = el('div', { class: 'rewards' });
+    rewards.innerHTML = (res && res.completed ? 'Unlocked: ' : 'Rewards: ') + m.rewards.map((r) => '<b>' + r + '</b>').join(' · ');
+    ch.appendChild(rewards);
+    tl.appendChild(ch);
+
+    const ch2 = el('div', { class: 'chapter' }, [el('div', { class: 'ch-head', text: 'CHAPTER 1 · AGE 749' }), el('div', { class: 'ch-title', text: 'Kid Goku' })]);
+    const locked = el('div', { class: 'mcard locked' }, [
+      el('div', { class: 'm-title', text: 'In Development' }),
+      el('div', { class: 'm-sub', text: 'NOT IN THIS BUILD' }),
+      el('div', { class: 'm-blurb', text: 'Later chapters follow the timeline: Kid Goku, the World Tournament, the Saiyan Saga and beyond.' }),
+    ]);
+    ch2.appendChild(locked);
+    tl.appendChild(ch2);
+    s.el.appendChild(tl);
+
+    const diffRow = el('div', { class: 'rows', style: { maxWidth: '520px' } });
+    const diff = SL.UI.choiceRow(s, {
+      label: 'Difficulty',
+      desc: 'Changes enemy reactions, guarding and damage.',
+      options: SL.Settings.SCHEMA.find((x) => x.key === 'difficulty').options,
+      get: () => SL.Settings.data.gameplay.difficulty,
+      set: (v) => SL.Settings.set('gameplay.difficulty', v),
+    });
+    diffRow.appendChild(diff.node);
+    s.el.appendChild(diffRow);
+
+    const cardItem = s.addItem(card, { onSelect: () => SL.App.startMission(m.id, {}) });
+    s.focus(s.items.indexOf(cardItem), true);
+    const footer = SL.UI.footer([['confirm', 'Start'], ['adjust', 'Difficulty'], ['back', 'Back']]);
+    s.el.appendChild(footer);
+    s.refreshGlyphs = () => footer.render();
+    s.onBack = () => SL.UI.pop();
+    return s;
+  };
+
+  /* ---------------- records ---------------- */
+  SL.Screens.records = function () {
+    const s = new SL.Screen('story dim');
+    const st = SL.Save.data.stats;
+    s.el.appendChild(el('h1', { class: 'title-font gradient-text', text: 'Records' }));
+    const wrap = el('div', { style: { display: 'flex', gap: '28px', flexWrap: 'wrap', alignItems: 'flex-start' } });
+    const general = el('div', { class: 'panel' }, [el('h2', { text: 'Overall' })]);
+    const list = el('div', { class: 'stat-list' });
+    const rows = [
+      ['Completion', SL.Save.completion() + '%'],
+      ['Battles', st.battles],
+      ['Wins', st.wins],
+      ['Losses', st.losses],
+      ['Best combo', st.maxCombo + ' hits'],
+      ['Beam clashes won', st.clashesWon],
+    ];
+    for (const m of Object.values(SL.data.missions)) {
+      const r = SL.Save.missionResult(m.id);
+      rows.push([m.title, r && r.completed ? r.bestRank + ' · ' + U.fmtInt(r.bestScore) : '—']);
+    }
+    for (const [a, b] of rows) list.append(el('span', { text: a }), el('span', { text: String(b) }));
+    general.appendChild(list);
+    wrap.appendChild(general);
+
+    const roster = el('div', { class: 'panel' }, [el('h2', { text: 'Fighters' })]);
+    const rl = el('div', { class: 'stat-list' });
+    for (const c of Object.values(SL.data.characters)) {
+      if (!c.playable) continue;
+      const un = SL.Save.isUnlocked('characters', c.id);
+      const pc = st.perCharacter[c.id];
+      rl.append(el('span', { text: un ? c.name : '???' }), el('span', { text: un ? (pc ? pc.wins + 'W / ' + pc.battles + ' · ' + U.fmtInt(pc.damage) + ' dmg' : 'not played') : 'locked' }));
+    }
+    roster.appendChild(rl);
+    wrap.appendChild(roster);
+    s.el.appendChild(wrap);
+    const back = SL.UI.actionRow(s, 'Back', () => SL.UI.pop());
+    const r = el('div', { class: 'rows', style: { maxWidth: '300px' } }, [back.node]);
+    s.el.appendChild(r);
+    s.onBack = () => SL.UI.pop();
+    return s;
+  };
+})();

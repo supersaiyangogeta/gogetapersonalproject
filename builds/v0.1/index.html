@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dragon Ball: Saiyan Legacy — Unofficial Fan Project</title>
+<link rel="stylesheet" href="css/game.css">
+</head>
+<body>
+<div id="app">
+  <canvas id="game-canvas"></canvas>
+  <canvas id="speedlines"></canvas>
+  <div id="flash"></div>
+  <div id="vignette"></div>
+  <div id="hud" hidden></div>
+  <div id="screens"></div>
+  <div id="subtitles"></div>
+  <div id="notify"></div>
+  <div id="save-indicator" hidden><span class="db-icon small"></span></div>
+  <div id="fps" hidden></div>
+  <div id="boot" class="boot">
+    <div class="boot-ball"><span></span></div>
+    <div class="boot-text">Loading…</div>
+  </div>
+</div>
+
+<!-- 3D engine: local copy first (offline play), CDN fallback -->
+<script src="vendor/three.min.js"></script>
+<script>window.THREE || document.write('<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"><\/script>');</script>
+
+<!-- core -->
+<script src="src/core/namespace.js"></script>
+<script src="src/core/settings.js"></script>
+<script src="src/core/save.js"></script>
+<script src="src/core/input.js"></script>
+<script src="src/core/audio.js"></script>
+<script src="src/core/music.js"></script>
+<!-- rendering -->
+<script src="src/render/toon.js"></script>
+<script src="src/render/renderer.js"></script>
+<script src="src/render/camera.js"></script>
+<script src="src/render/vfx.js"></script>
+<!-- characters & data -->
+<script src="src/game/model.js"></script>
+<script src="src/game/animator.js"></script>
+<script src="src/data/hair.js"></script>
+<script src="src/data/poses_common.js"></script>
+<script src="src/data/characters/goku.js"></script>
+<script src="src/data/characters/vegeta.js"></script>
+<script src="src/data/characters/bardock.js"></script>
+<script src="src/data/characters/frieza_force.js"></script>
+<script src="src/data/stages.js"></script>
+<script src="src/data/dialogue.js"></script>
+<script src="src/data/unlocks.js"></script>
+<!-- gameplay -->
+<script src="src/game/rules.js"></script>
+<script src="src/game/mechanics.js"></script>
+<script src="src/game/controllers.js"></script>
+<script src="src/game/fighter.js"></script>
+<script src="src/game/projectiles.js"></script>
+<script src="src/game/clash.js"></script>
+<script src="src/game/stage.js"></script>
+<script src="src/game/battle.js"></script>
+<script src="src/game/mission.js"></script>
+<script src="src/data/missions/prologue_bardock.js"></script>
+<!-- interface -->
+<script src="src/ui/ui.js"></script>
+<script src="src/ui/hud.js"></script>
+<script src="src/ui/screens_menu.js"></script>
+<script src="src/ui/screens_select.js"></script>
+<script src="src/ui/screens_settings.js"></script>
+<script src="src/ui/screens_battle.js"></script>
+<script src="src/main.js"></script>
+</body>
+</html>

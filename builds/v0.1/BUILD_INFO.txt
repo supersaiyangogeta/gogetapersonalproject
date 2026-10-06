@@ -1,0 +1,10 @@
+Dragon Ball: Saiyan Legacy — VERSION 0.1 (First Playable Build)
+Frozen snapshot, created 2026-09-13 before Version 0.2 development started.
+
+This folder is a complete, self-contained copy of Version 0.1.
+Play it by double-clicking index.html in this folder.
+It uses the local vendor/three.min.js (r149), so it runs offline.
+
+Do not edit files here. Development continues in the main saiyan-legacy folder.
+Note (updated during Version 0.2): Version 0.2 uses its own save slot (saiyanLegacy.save.v2).
+It copies Version 0.1 progress once and never writes to the Version 0.1 slot, so this build keeps its own progress.
