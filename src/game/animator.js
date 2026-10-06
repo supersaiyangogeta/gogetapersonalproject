@@ -183,12 +183,24 @@
       }
       // HAIR GRAVITY: a long mane (style.gravity) does not swing up into the shoulders when the head is thrown
       // back — it counter-turns part of the way, so it keeps hanging down the back (Super Saiyan 3's roar)
+      // Only the long locks swing, each about its own root on the scalp: the scalp and the crown stay on the skull
+      // (turning the whole group about the head's centre slid the mane off it and over the chest).
       const hairG = this.model.currentHair && this.model.hairGroups ? this.model.hairGroups[this.model.currentHair] : null;
-      if (hairG && hairG.userData.gravity) {
+      if (hairG && hairG.rotation.x) hairG.rotation.x = 0;
+      const locks = hairG && hairG.userData.locks;
+      if (locks && locks.length) {
+        const grav = hairG.userData.gravity || 0;
         const pitch = ((p.head ? p.head[0] : 0) + (p.neck ? p.neck[0] : 0) + (p.chest ? p.chest[0] * 0.5 : 0)) * DEG;
-        const want = Math.max(0, Math.min(1.1, -pitch * hairG.userData.gravity));
-        hairG.rotation.x += (want - hairG.rotation.x) * Math.min(1, dt * 10);
-      } else if (hairG && hairG.rotation.x) hairG.rotation.x = 0;
+        const want = grav ? Math.max(0, Math.min(1.0, -pitch * grav)) : 0;
+        const ud = hairG.userData;
+        ud.swing = (ud.swing || 0) + (want - (ud.swing || 0)) * Math.min(1, dt * 10);
+        if (Math.abs(ud.swing - (ud.applied || 0)) > 1e-4 || (ud.swing && !ud.applied)) {
+          tmpE.set(ud.swing, 0, 0);
+          addQ.setFromEuler(tmpE);
+          for (const m of locks) m.quaternion.copy(addQ).multiply(m.userData.lockQ0);
+          ud.applied = ud.swing;
+        }
+      }
       if (this.model.setHands) {
         const h = p.hands || ['fist', 'fist'];
         const oh = ov && ov.hands;

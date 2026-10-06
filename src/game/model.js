@@ -105,6 +105,8 @@
     cocky: { brow: 0.34, browY: -0.003, mouthH: 1.1, mouthW: 1.15, eyeH: 0.66, mouthRot: 0.26, lash: 0.22 },
     // Buuhan: brows hard down, a wide grin with every tooth in it
     wicked: { brow: 0.54, browY: -0.008, mouthH: 2.3, mouthW: 1.32, eyeH: 0.6, mouthRot: 0.08, lash: 0.38, teeth: true },
+    // the forced grin (Vegeta's Bingo): eyes blown wide in terror over a huge toothy smile, brows up
+    forced: { brow: -0.32, browY: 0.01, mouthH: 3.2, mouthW: 1.5, eyeH: 1.25, lash: -0.12, teeth: true },
     // stage fright (Uub at the tournament): inner brows pulled up hard, eyes wide, a small tight mouth turned down
     nervous: { brow: -0.4, browY: 0.009, mouthH: 0.6, mouthW: 0.72, eyeH: 1.08, mouthRot: -0.1, lash: -0.12 },
     // reading the fight: brows level and low, eyes narrowed to a line, the mouth shut
@@ -228,8 +230,10 @@
       const head = J('head', neck, 0, b.neckLen, 0);
 
       // torso
-      const baggy = o.pantsStyle === 'gi';
-      this.add(hips, S, pants, { pos: [0, -0.02, 0], scale: [b.pelvisW * (baggy ? 1.08 : 1), b.pelvisH, b.pelvisD * (baggy ? 1.1 : 1)] });
+      // 'harem' (Beerus): trousers wider still, ballooning over the shins and gathered at the ankle
+      const harem = o.pantsStyle === 'harem';
+      const baggy = o.pantsStyle === 'gi' || harem;
+      this.add(hips, S, pants, { pos: [0, -0.02, 0], scale: [b.pelvisW * (harem ? 1.16 : baggy ? 1.08 : 1), b.pelvisH * (harem ? 1.08 : 1), b.pelvisD * (harem ? 1.18 : baggy ? 1.1 : 1)] });
       // the gi is tracked so a story state can tear it off (see setTorn); the belly band stays
       // on unless the outfit's `torn` look says otherwise
       this.gi = { torso: [], trim: [], sleeves: [], abs: null, trap: null };
@@ -318,10 +322,12 @@
         const ap = o.apron, len = ap.len || 0.3, w = ap.width || 0.11;
         for (const side of ap.back ? [1, -1] : [1]) {
           const g = new THREE.Group();
-          g.position.set(0, -0.03, side * b.waistD * (o.pantsStyle === 'gi' ? 1.3 : 1.1)); // outside a gi's baggy front
+          g.position.set(0, -0.03, side * b.waistD * (harem ? 1.46 : baggy ? 1.3 : 1.1)); // outside a gi's (or harem trousers') baggy front
           spine.add(g);
           this.add(g, G.box(), ap.color, { pos: [0, -len / 2, side * 0.008], rot: [side * 0.06, 0, 0], scale: [w, len, 0.014], outline: 0.5 });
           if (ap.trim !== undefined) this.add(g, G.box(), ap.trim, { pos: [0, -len + 0.014, side * 0.011], rot: [side * 0.06, 0, 0], scale: [w * 1.04, 0.026, 0.016], outline: 0.4, shadow: false });
+          // apron.edges: gold piping down both long sides (Beerus' tabard)
+          if (ap.edges && ap.trim !== undefined) for (const e of [1, -1]) this.add(g, G.box(), ap.trim, { pos: [e * w * 0.5, -len / 2, side * 0.011], rot: [side * 0.06, 0, 0], scale: [0.012, len, 0.016], outline: 0, shadow: false });
           this.cloth.push({ node: g, sx: new Spring(30, 4), sz: new Spring(30, 4), amount: 1.6 });
         }
       }
@@ -403,9 +409,13 @@
         const th = J('thigh' + side, hips, s * b.hipX, -0.05, 0);
         const kn = J('knee' + side, th, 0, -b.thighLen, 0);
         const ft = J('foot' + side, kn, 0, -b.shinLen, 0);
-        const pw = baggy ? 1.38 : 1;
+        const pw = harem ? 1.5 : baggy ? 1.38 : 1;
         grow(this.add(th, G.limb(b.thighR * pw, b.thighLen), pants, {}));
-        if (baggy) this.add(kn, G.tube(b.shinR * 1.55, b.shinR * 1.15, b.shinLen * 0.6), pants, { pos: [0, 0.03, 0] });
+        if (harem) {
+          // the balloon: full over the knee and the shin, then drawn in to the ankle (the band is bootTrim)
+          this.add(kn, S, pants, { pos: [0, -b.shinLen * 0.4, 0.008], scale: [b.shinR * 2.2, b.shinLen * 0.5, b.shinR * 2.1] });
+          this.add(kn, G.tube(b.shinR * 1.9, b.shinR * 1.18, b.shinLen * 0.32), pants, { pos: [0, -b.shinLen * 0.58, 0] });
+        } else if (baggy) this.add(kn, G.tube(b.shinR * 1.55, b.shinR * 1.15, b.shinLen * 0.6), pants, { pos: [0, 0.03, 0] });
         else this.add(kn, G.limb(b.shinR, b.shinLen), o.legs !== undefined ? o.legs : pants, {});
         const boots = o.boots !== undefined ? o.boots : 0x333333;
         const bootTop = o.bootStyle === 'saiyan' ? 0.62 : o.bootStyle === 'shoe' ? 0.16 : 0.5;
@@ -1153,7 +1163,9 @@
       hc.position.set(0, R * 0.95, 0);
       head.add(hc);
       this.headCenter = hc;
-      this.skull = this.add(hc, S, skin, { scale: [R * SKULL[0], R * SKULL[1], R * SKULL[2]], skin: true });
+      // face.skull: the skull's own proportions (Beerus' tall sphinx head) as multiples of the default ellipsoid
+      const sk = f.skull || [1, 1, 1];
+      this.skull = this.add(hc, S, skin, { scale: [R * SKULL[0] * sk[0], R * SKULL[1] * sk[1], R * SKULL[2] * sk[2]], skin: true });
       // the jaw and cheeks carry the face's age and build (all opt-in, 1 = as before): face.jaw
       // lengthens the chin (an adult, a hard face), face.jawW narrows it, face.cheeks rounds (>1),
       // flattens (<1) or drops (0) the cheekbones
@@ -1338,15 +1350,27 @@
         }
         // a piece may have its own colour (a hair tie); everything else is the hair
         const matOf = (sp) => (sp.color !== undefined ? this.mat(sp.color) : hairMat);
-        for (const sp of def.spikes || []) this._spike(g, sp, matOf(sp), R);
+        // the LONG LOCKS of a mane (longer than 0.3 m) are kept apart: hair gravity swings each of them about its own
+        // root on the scalp, never the scalp itself (the owner, 2026-10-06: Super Saiyan 3's hair slid off the skull
+        // and over his chest when he threw his head back — the whole hair group used to turn about the head's centre)
+        const locks = [];
+        const spike = (sp) => {
+          const m = this._spike(g, sp, matOf(sp), R);
+          if (m && sp.l > 0.3 && sp.shape === undefined) {
+            m.userData.lockQ0 = m.quaternion.clone();
+            locks.push(m);
+          }
+        };
+        for (const sp of def.spikes || []) spike(sp);
         if (def.mirror) {
           for (const sp of def.mirror) {
-            this._spike(g, sp, matOf(sp), R);
-            this._spike(g, { ...sp, a: [-sp.a[0], sp.a[1], sp.a[2]], d: [-sp.d[0], sp.d[1], sp.d[2]], twist: sp.twist ? -sp.twist : 0 }, matOf(sp), R);
+            spike(sp);
+            spike({ ...sp, a: [-sp.a[0], sp.a[1], sp.a[2]], d: [-sp.d[0], sp.d[1], sp.d[2]], twist: sp.twist ? -sp.twist : 0 });
           }
         }
         // hair gravity (style.gravity 0..1): how much a long mane resists turning with the head (Animator)
         g.userData.gravity = def.gravity || 0;
+        g.userData.locks = locks;
         this.headCenter.add(g);
         this.hairGroups[key] = g;
         this.setOutlines(this._outlinesOn !== false);
@@ -1502,14 +1526,15 @@
 
     _ripParent(at) {
       const b = this.b, o = this.app.outfit || {};
-      const baggy = o.pantsStyle === 'gi';
+      const harem = o.pantsStyle === 'harem';
+      const baggy = o.pantsStyle === 'gi' || harem;
       if (at === 'chest') return { node: this.chestMesh, pts: CHEST_PTS };
       if (at === 'spine') return { node: this.absMesh, pts: ABS_PTS };
       const side = at.slice(-1);
       const j = this.joints[at];
       if (!j) return null;
-      if (at.startsWith('thigh')) return { node: j, r: b.thighR * (baggy ? 1.38 : 1), len: b.thighLen, side };
-      if (at.startsWith('knee')) return { node: j, r: b.shinR * (baggy ? 1.36 : 1.02), len: b.shinLen * (baggy ? 0.6 : 1), side };
+      if (at.startsWith('thigh')) return { node: j, r: b.thighR * (harem ? 1.5 : baggy ? 1.38 : 1), len: b.thighLen, side };
+      if (at.startsWith('knee')) return { node: j, r: b.shinR * (harem ? 2.1 : baggy ? 1.36 : 1.02), len: b.shinLen * (baggy ? 0.6 : 1), side };
       if (at.startsWith('shoulder')) return { node: j, r: b.upperArmR * (o.sleeves === 'long' ? o.sleeveBulk || 1 : 1), len: b.upperArmLen, side };
       if (at.startsWith('elbow')) return { node: j, r: b.foreArmR * (o.gloves !== undefined && o.gloves !== null ? 1.2 : 1), len: b.foreArmLen, side };
       return null;

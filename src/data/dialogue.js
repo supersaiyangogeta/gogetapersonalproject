@@ -205,6 +205,11 @@
     goku_ssj3: ['And this... is to go... even further beyond!'],
     goku_god: ['So this is a god\'s power... It\'s so calm.'],
     goku_godki: ['The red\'s gone — but the power\'s still here!'],
+    // Goku of the Super era (Battle of Gods, the End of Z): the same transformations, his own voice now — easy,
+    // confident, excited by a strong opponent, never Namek's rage (bogKit.superVoice)
+    goku_ssj_super: ['Alright — let\'s see how you like this!', 'Heh. Let\'s get serious.'],
+    goku_ssj2_super: ['Okay. Let\'s take it up a notch.', 'You\'re fun. Let\'s go a little higher!'],
+    goku_ssj3_super: ['Here goes — everything I\'ve got!', 'Sorry it takes so long. This one\'s a lot.'],
     vegeta_ssj2: ['You are not the only one who kept climbing, Kakarot.'],
     majin_combo: ['MORE!', 'Is that pain? I barely feel it!', 'Again! AGAIN!'],
     majin_hurt: ['Ha! Finally!', 'Yes... THAT is how it should feel!'],

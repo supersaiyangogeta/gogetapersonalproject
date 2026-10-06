@@ -216,6 +216,13 @@
     for (const z of [1.45, -1.45]) this._gMesh(new THREE.BoxGeometry(4.6, 1.1, 0.06), I.cloth2, { parent: bed, pos: [0, 3.6, z], outline: 0 });
     this.obstacles.push({ shape: 'cyl', x: 0, z: BZ, y: 0, r: 2, h: 0.9, top: 0.9, hp: 1e9, maxHp: 1e9, alive: true, group: bed, color: I.stone2 });
     this.landmarks.bed = new V3(0, 0.9, BZ);
+    // what the story camera has to see round (Cinema.occluded): the posts, the canopy and its two curtains — the
+    // posts never push anybody, they only keep a lens from parking behind them (the owner: Whis hidden by the bed)
+    this.occluders = this.occluders || [];
+    for (const [x, z] of [[2.1, 1.3], [-2.1, 1.3], [2.1, -1.3], [-2.1, -1.3]]) this.occluders.push({ shape: 'cyl', x, z: BZ + z, r: 0.2, bottom: 0, top: 4.3 });
+    this.occluders.push({ shape: 'box', min: new V3(-2.3, 3.0, BZ - 1.55), max: new V3(2.3, 4.32, BZ + 1.55) });
+    this.occluders.push({ shape: 'box', min: new V3(-2.25, 0, BZ - 1.45), max: new V3(2.25, 0.95, BZ + 1.45) });
+    this.landmarks.bedFront = new V3(0, 0, BZ + 1.4);
 
     // stone lanterns along the path, each with a violet flame
     for (const z of [-8, -14, -20]) {

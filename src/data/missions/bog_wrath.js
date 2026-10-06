@@ -36,6 +36,8 @@
 
   function setup(battle) {
     const b = battle;
+    // Goku of the Super era: his own transformation lines, not Namek's
+    K().superVoice(b);
     const s = BP().setup(b, { player: 'vegeta', godsHere: true });
     s.gotenks = null;
     s.goku.setHidden(true);

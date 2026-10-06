@@ -773,6 +773,9 @@
       const d = q.clone().sub(p);
       const len = d.length();
       if (len < 0.5) return false;
+      // set dressing the lens must see round (a bed's posts and canopy, a breakable rock): tested along the whole
+      // segment, so a post thinner than the sampling step still counts (the owner: Whis hidden by Beerus' bed)
+      if (Cinema.occluded(st, p, q, clearEnd)) return true;
       const n = Math.min(24, Math.ceil(len / 1.2));
       for (let i = 1; i < n; i++) {
         const s = i / n;
@@ -787,6 +790,63 @@
         if (subj && Cinema.personAt(b, x, y, z, subj)) return true;
       }
       return !!(subj && Cinema.personAt(b, p.x, p.y, p.z, subj));
+    },
+
+    /**
+     * CAMERA OCCLUDERS: stage.occluders (camera-only shapes that never push a body: { shape: 'cyl', x, z, r,
+     * bottom, top } or { shape: 'box', min: V3, max: V3 }) and the solid props (a training rock, a pod). Does the
+     * segment p → q pass through one (ignoring the last `clearEnd` metres before q)?
+     */
+    occluded(st, p, q, clearEnd = 0.6) {
+      const d = q.clone().sub(p);
+      const len = d.length();
+      if (len < 0.5) return false;
+      const tMax = Math.max(0, 1 - clearEnd / len);
+      for (const o of st.occluders || []) {
+        if (o.alive === false) continue;
+        if (o.shape === 'box') {
+          // slab test against the box, over t in [0, tMax]
+          let t0 = 0, t1 = tMax, hit = true;
+          for (const ax of ['x', 'y', 'z']) {
+            const dv = d[ax], lo = o.min[ax], hi = o.max[ax];
+            if (Math.abs(dv) < 1e-9) {
+              if (p[ax] < lo || p[ax] > hi) {
+                hit = false;
+                break;
+              }
+              continue;
+            }
+            let a = (lo - p[ax]) / dv, c = (hi - p[ax]) / dv;
+            if (a > c) [a, c] = [c, a];
+            t0 = Math.max(t0, a);
+            t1 = Math.min(t1, c);
+            if (t0 > t1) {
+              hit = false;
+              break;
+            }
+          }
+          if (hit) return true;
+          continue;
+        }
+        // a vertical cylinder: the closest approach of the segment to its axis, in plan, at a height inside it
+        const ex = p.x - o.x, ez = p.z - o.z;
+        const aa = d.x * d.x + d.z * d.z;
+        let t = aa > 1e-9 ? -(ex * d.x + ez * d.z) / aa : 0;
+        t = U.clamp(t, 0, tMax);
+        const cx = ex + d.x * t, cz = ez + d.z * t;
+        if (cx * cx + cz * cz > o.r * o.r) continue;
+        const y = p.y + d.y * t;
+        if (y >= (o.bottom || 0) && y <= o.top) return true;
+      }
+      for (const pr of st.props || []) {
+        if (!pr.alive || pr.passable || !pr.pos || !(pr.r >= 0.5) || pr.cameraIgnore) continue;
+        // closest point of the segment to the prop's centre
+        const w = pr.pos.clone().sub(p);
+        const t = U.clamp(w.dot(d) / (len * len), 0, tMax);
+        const c = p.clone().addScaledVector(d, t);
+        if (c.distanceToSquared(pr.pos) < pr.r * pr.r * 0.8) return true;
+      }
+      return false;
     },
 
     /** Is somebody (not the subject, not the people meant to be in his shot) standing at this point? */
@@ -1015,6 +1075,11 @@
         for (const o of st.obstacles) {
           if (!o.alive) continue;
           if (Math.hypot(x - o.x, z - o.z) < (o.r || 1) + r) return false;
+        }
+        // breakable props stand in the open too (King Kai's training rocks)
+        for (const pr of st.props || []) {
+          if (!pr.alive || !pr.pos || pr.passable) continue;
+          if (Math.hypot(x - pr.pos.x, z - pr.pos.z) < (pr.r || 1) + r) return false;
         }
         return true;
       };

@@ -36,6 +36,8 @@
 
   function setup(battle) {
     const b = battle;
+    // Goku of the Super era: his own transformation lines, not Namek's
+    K().superVoice(b);
     const s = BP().setup(b, { player: 'goku', godsHere: true });
     for (const f of Object.values(s)) if (f && f.setState && f !== s.goku) f.untargetable = f.intangible = true;
     K().toForm(s.goku, 'god');
