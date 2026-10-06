@@ -540,6 +540,39 @@
       this.scene.add(l);
     }
     this.landmarks.center = new V3(0, 0, 0);
+    // a closed room: nobody (and no camera) goes up through the rock of the roof — see keepInDome
+    this.dome = { r: R + 22, sy: C.domeScale, y0: -2, inner: 0.93 };
+  };
+
+  /**
+   * THE DOME (the crystal cavern is a closed room under the sea floor). The roof is an ellipsoid of rock: radius r,
+   * squashed to sy, standing at y0, rough on the inside by about 6 % (inner keeps clear of the roughest of it).
+   * domeOut(p) is how far outside the inside surface p is (< 0: inside); keepInDome pulls a point (a fighter, the
+   * lens) back in with `margin` to spare and takes the outward part out of its velocity.
+   */
+  P.domeOut = function (p, margin = 0) {
+    const D = this.dome;
+    if (!D) return -1;
+    const y = (p.y - D.y0) / D.sy;
+    return Math.sqrt(p.x * p.x + p.z * p.z + y * y) - (D.r * D.inner - margin);
+  };
+  P.keepInDome = function (p, margin = 0, vel) {
+    const D = this.dome;
+    if (!D || p.y < D.y0) return false;
+    const y = (p.y - D.y0) / D.sy;
+    const q = Math.sqrt(p.x * p.x + p.z * p.z + y * y);
+    const lim = D.r * D.inner - margin;
+    if (q <= lim || q < 1e-6) return false;
+    const k = lim / q;
+    p.x *= k;
+    p.z *= k;
+    p.y = D.y0 + y * k * D.sy;
+    if (vel) {
+      const n = new V3(p.x, (p.y - D.y0) / (D.sy * D.sy), p.z).normalize();
+      const vn = vel.dot(n);
+      if (vn > 0) vel.addScaledVector(n, -vn);
+    }
+    return true;
   };
 
   /**

@@ -318,23 +318,39 @@
         sfx: { name: 'tinnitus', vol: 0.25 },
         hold: 3.6,
       },
-      // the voices
+      // THE VOICES: all of them, over each other, out of nowhere — surfacing in the dark and sinking away
       {
-        cam: { from: { at: 'here', off: [-2.6, 1.6, 3] }, look: { at: 'here' }, fov: 36, raw: true },
-        say: { who: 'krillin', line: 'Goku!', duration: 1.4, style: 'quiet' },
+        call: (ctx) => {
+          ctx.offWhispers = K().whispers(ctx.m, [
+            ['krillin', 'Goku!'],
+            ['vegeta', 'Kakarot!'],
+            ['gohan', 'Dad!'],
+            ['bulma', 'Son-kun!'],
+            ['goten', 'Daddy!'],
+            ['piccolo', 'Goku!'],
+            ['trunks', 'Mr. Goku!'],
+            ['videl', 'Mr. Goku!'],
+            ['krillin', 'GOKU!'],
+            ['vegeta', 'KAKAROT!'],
+            ['gohan', 'DAD!'],
+          ], 0.4);
+        },
+        cam: { from: { at: 'here', off: [-2.6, 1.6, 3] }, to: { at: 'here', off: [-1.7, 1.1, 2.1] }, look: { at: 'here' }, fov: 36, raw: true, ease: 'linear' },
+        sfx: { name: 'visionIn', vol: 0.45, pitch: 0.55 },
+        hold: 3.2,
+      },
+      {
+        cam: { from: { at: 'here', off: [0.6, 3.4, 1.6] }, to: { at: 'here', off: [0.4, 2.6, 1.2] }, look: { at: 'here' }, fov: 40, raw: true },
         hold: 2,
       },
+      // silence: the voices are gone
       {
-        say: { who: 'vegeta', line: 'Kakarot!', duration: 1.4, style: 'quiet' },
-        hold: 2,
+        call: (ctx) => {
+          if (ctx.offWhispers) ctx.offWhispers();
+          ctx.offWhispers = null;
+        },
+        hold: 1.6,
       },
-      {
-        cam: { from: { at: 'here', off: [0.6, 3.4, 1.6] }, look: { at: 'here' }, fov: 40, raw: true },
-        say: { who: 'adult_gohan', line: 'Dad!', duration: 1.4, style: 'quiet' },
-        hold: 2.6,
-      },
-      // silence
-      { hold: 1.6 },
       // CHI-CHI: tight, running at the lens, in tears
       {
         call: (ctx) => {
@@ -370,17 +386,23 @@
           s.goku.setHidden(false);
           s.goku.setState('scripted', { pose: 'bg_tumble', expression: 'ko', speed: 1 });
           const back = s.goku.chest().addScaledVector(s.goku.forward, -0.25);
-          pt(ctx, 'from', back.clone().add(new V3(-40, -26, -30)));
+          // it comes from far behind him, out of the dark, straight at the middle of his back
+          const from = back.clone().addScaledVector(s.goku.forward, -46).add(new V3(-14, -10, 0));
+          const dir = back.clone().sub(from).normalize();
+          const across = new V3().crossVectors(dir, new V3(0, 1, 0)).normalize();
+          pt(ctx, 'from', from);
           pt(ctx, 'back', back);
-          pt(ctx, 'wideL', back.clone().add(new V3(10, 2, 9)));
+          // the lens off to the side of its path: the whole streak crosses the frame toward him
+          pt(ctx, 'wideL', back.clone().addScaledVector(dir, -9).addScaledVector(across, 13).add(new V3(0, 2.2, 0)));
+          pt(ctx, 'wideLook', back.clone().addScaledVector(dir, -9));
         },
         tick: (ctx, t) => {
-          const head = K().blueLine(ctx.b, ctx.cast.from.pos, ctx.cast.back.pos, t / 1.2);
-          if (ctx.b.frame % 2 === 0) ctx.b.vfx.sparks(head, 0x8ad8ff, 3, 3, 0.08);
+          const head = K().blueLine(ctx.b, ctx.cast.from.pos, ctx.cast.back.pos, t / 1.5);
+          if (ctx.b.frame % 2 === 0) ctx.b.vfx.sparks(head, 0x8ad8ff, 4, 4, 0.1);
         },
-        cam: { from: { at: 'wideL' }, look: { at: 'back', off: [-6, -4, -4] }, fov: 50, raw: true },
+        cam: { from: { at: 'wideL' }, look: { at: 'wideLook' }, fov: 58, raw: true },
         sfx: { name: 'visionIn', vol: 1 },
-        hold: 1.3,
+        hold: 1.55,
       },
       {
         call: (ctx) => {
@@ -412,6 +434,9 @@
     ],
     end(ctx) {
       const s = st(ctx);
+      if (ctx.offWhispers) ctx.offWhispers();
+      ctx.offWhispers = null;
+      if (ctx.b._void && ctx.b._void.key) ctx.b._void.key.color.set(0xdfe8ff);
       SL.ScreenFX.vision(0);
       s.chichi.setHidden(true);
       if (!ctx.b._void) K().voidOn(ctx.m, [s.goku]);
@@ -435,23 +460,36 @@
           b.camera.addTrauma(0.5);
         },
         pose: [{ who: 'goku', pose: 'bg_roar', face: 'shout', speed: 12 }],
-        cam: { subject: 'goku', focus: 'closeup', angle: 'front' },
+        // the head is thrown back, the face to the sky: the lens above it and in front of him, looking down into
+        // the scream (the forehead to the top of the frame — never the underside of the chin)
+        cam: { from: { at: 'goku', local: [0.2, 1.75, 1.0] }, look: { at: 'goku:face' }, fov: 40, raw: true, follow: true },
         tick: (ctx) => ctx.b.camera.addTrauma(0.03),
         hold: 1.6,
       },
-      // the God's flame erupts; the hair goes red
+      // the God's flame erupts out of him: the dark lit red, ring after ring, the hair going red
       {
         call: (ctx) => {
           const s = st(ctx), b = ctx.b;
           K().toForm(s.goku, 'god');
           b.vfx.ring(s.goku.chest(), 6, 0xff5a6a, 0.6);
-          b.vfx.flash(s.goku.chest(), 3.5, 0xff6a5a, 0.4, SL.Toon.tex.glow);
+          b.after(10, () => b.vfx.ring(s.goku.chest(), 11, 0xff8a7a, 0.7));
+          b.after(20, () => b.vfx.ring(s.goku.chest(), 17, 0xffb0a0, 0.8));
+          b.vfx.flash(s.goku.chest(), 6, 0xff6a5a, 0.5, SL.Toon.tex.glow);
+          b.vfx.light(s.goku.chest(), 0xff4a4a, 6, 30, 1.6);
           b.sfx('transformBurst', s.goku, { vol: 1.3, pitch: 0.8 });
-          SL.ScreenFX.flash(0.4, '#ff8a7a');
+          SL.ScreenFX.flash(0.45, '#ff8a7a');
+          pt(ctx, 'flameCam', s.goku.pos.clone().addScaledVector(s.goku.forward, 5.2).add(new V3(1.2, 0.4, 0)));
         },
-        pose: [{ who: 'goku', pose: 'bg_roar', face: 'shout', speed: 12, aura: 1 }],
-        cam: { subject: 'goku', focus: 'upper', angle: 'low' },
-        tick: (ctx) => ctx.b.camera.addTrauma(0.04),
+        tick: (ctx, t) => {
+          const s = st(ctx), b = ctx.b;
+          b.camera.addTrauma(0.04);
+          // the void takes his light: the cold key light goes red
+          if (b._void && b._void.key) b._void.key.color.set(0xdfe8ff).lerp(new THREE.Color(0xff4a4a), Math.min(1, t / 0.8));
+          if (b._void && b._void.light) b._void.light.color.set(0x9ab0ff).lerp(new THREE.Color(0xff6a5a), Math.min(1, t / 0.8));
+          if (b.frame % 2 === 0) b.vfx.streamInward(s.goku.chest(), 3.5, 0xff6a6a, 3, 0.16, 0.35);
+        },
+        pose: [{ who: 'goku', pose: 'bg_roar', face: 'shout', speed: 12, aura: 1.4 }],
+        cam: { from: { at: 'flameCam' }, look: { at: 'goku', off: [0, 0.5, 0] }, fov: 50, raw: true },
         music: { song: 'ssj_god', level: 6 },
         hold: 1.8,
       },
@@ -462,7 +500,9 @@
           K().voidOff(ctx.m, false);
           for (const f of Object.values(s)) if (f && f.setHidden && f !== s.goku && f !== s.beerus) f.setHidden(true);
           s.beerus.setHidden(false);
-          if (s.sphere) s.sphere.group.visible = true;
+          // (a run that came straight into the void has no sun yet: it is right where he left it, over him)
+          if (!s.sphere) ensureSphere(ctx.m, SP.full, s.goku.pos.clone().add(new V3(0, SP.hand + SP.full, 0)));
+          s.sphere.group.visible = true;
           pt(ctx, 'under', s.goku.pos.clone().add(new V3(14, -18, 30)));
         },
         pose: [{ who: 'goku', pose: 'bg_surge', face: 'shout', speed: 10, aura: 1 }],
@@ -484,7 +524,26 @@
           b.vfx.trail(s.goku.chest(), 0xff4a5a, 1.6, 0.5);
           b.camera.addTrauma(0.05);
         },
-        cam: { from: { at: 'under' }, look: { at: 'goku', off: [0, 8, 0] }, fov: 62, raw: true },
+        // rising with him, under and behind: the red flame going up into the face of the sun
+        cam: { from: { at: 'goku', off: [3.2, -4.5, 6.5] }, look: { at: 'goku', off: [0, 9, 0] }, fov: 64, raw: true, follow: true },
+      },
+      // his hands in it: the surface of the sun right over him, the red going into the orange
+      {
+        call: (ctx) => {
+          const s = st(ctx);
+          pt(ctx, 'palms', s.goku.handPos('R').lerp(s.goku.handPos('L'), 0.5));
+        },
+        pose: [{ who: 'goku', pose: 'bg_holdUp', face: 'shout', speed: 14, aura: 1.2 }],
+        tick: (ctx, t) => {
+          const s = st(ctx), b = ctx.b;
+          s.sphere.pulse();
+          s.sphere.veins(0.8 + t * 0.1);
+          if (b.frame % 2 === 0) b.vfx.sparks(ctx.cast.palms.pos, 0xff4a6a, 6, 7, 0.12);
+          b.camera.addTrauma(0.05);
+        },
+        cam: { from: { at: 'palms', off: [3.4, -1.6, 3.8] }, look: { at: 'palms', off: [0, 0.6, 0] }, fov: 52, raw: true },
+        sfx: { name: 'kiCharge', vol: 1.2, pitch: 0.55 },
+        hold: 1.2,
       },
       // his ki through it: red veins, then cracks of light
       {
@@ -555,6 +614,17 @@
     s.beerus.prevPos.copy(s.beerus.pos);
   }
 
+  /** Square to the line between the god and the mortal, on the side Goku is facing. */
+  function gripSide(ctx) {
+    const s = st(ctx);
+    const dir = s.beerus.pos.clone().sub(s.goku.pos).setY(0);
+    if (dir.lengthSq() < 1e-4) dir.set(1, 0, 0);
+    dir.normalize();
+    const across = new V3().crossVectors(dir, new V3(0, 1, 0)).normalize();
+    if (across.dot(s.goku.forward) < 0) across.negate();
+    return across;
+  }
+
   /* ---------------------------------------------------------------- the quiet: "Only the second...?" */
   S.bgs_quiet = {
     id: 'bgs_quiet',
@@ -619,15 +689,55 @@
           K().air(ctx.m, s.beerus, hand.x + 0.42, hand.y - 0.95, hand.z, new V3(hand.x - 3, hand.y - 0.95, hand.z), 'bg_catch', 'calm');
           s.goku.setState('scripted', { pose: 'bg_hangWrist', expression: 'ko', speed: 6 });
           pt(ctx, 'grip', hand);
+          // the lens level with the hands, square to the line between the two of them: the god's fingers round
+          // the mortal's wrist in the middle of the frame, Goku's lolling head under it
+          ctx.gripSide = gripSide(ctx);
+          // first the two of them: he is simply there, beside him, and has him
+          pt(ctx, 'appearCam', hand.clone().addScaledVector(ctx.gripSide, 5.5).add(new V3(0, -0.6, 0)));
+          pt(ctx, 'appearLook', hand.clone().add(new V3(0, -0.9, 0)));
         },
-        tick: (ctx) => gripHold(ctx),
-        cam: { from: { at: 'grip', off: [2.4, 0.4, 3] }, look: { at: 'grip', off: [0, -0.8, 0] }, fov: 40, raw: true },
-        hold: 2.6,
+        tick: (ctx) => {
+          gripHold(ctx);
+          const s = st(ctx);
+          ctx.cast.grip.pos.copy(s.goku.handPos('R'));
+        },
+        cam: { from: { at: 'appearCam' }, look: { at: 'appearLook' }, fov: 44, raw: true },
+        hold: 1,
       },
-      // hold it: the end of the battle
+      {
+        call: (ctx) => {
+          const g = ctx.cast.grip.pos, side = ctx.gripSide;
+          pt(ctx, 'gripCam', g.clone().addScaledVector(side, 2.6).add(new V3(0, -0.35, 0)));
+          pt(ctx, 'gripLook', g.clone().add(new V3(0, -0.45, 0)));
+        },
+        // tracks the grip itself every frame (the arm is still swinging up into the god's hand as it starts, and the
+        // god is still being eased onto it): square to the line between them, on Goku's side — neither body in front
+        tick: (ctx) => {
+          gripHold(ctx);
+          const g = st(ctx).goku.handPos('R');
+          ctx.cast.grip.pos.copy(g);
+          // level with the grip or a little above it, never looking up at the god's hips
+          const want = g.clone().addScaledVector(gripSide(ctx), 2.9).add(new V3(0, 0.25, 0));
+          if (!ctx.gripInit) ctx.cast.gripCam.pos.copy(want);
+          else ctx.cast.gripCam.pos.lerp(want, 0.12);
+          ctx.gripInit = true;
+          ctx.cast.gripLook.pos.copy(g).add(new V3(0, -0.3, 0));
+        },
+        cam: { from: { at: 'gripCam' }, look: { at: 'gripLook' }, fov: 32, raw: true, follow: true },
+        sfx: { name: 'block', vol: 0.4, pitch: 0.6 },
+        hold: 2.8,
+      },
+      // the two of them, chest-up: the god holding him up over the curve of the world
       {
         tick: (ctx) => gripHold(ctx),
-        cam: { from: { at: 'grip', off: [7, 2.4, 9] }, to: { at: 'grip', off: [9, 3, 12] }, look: { at: 'grip', off: [0, -1, 0] }, fov: 42, raw: true },
+        cam: { subject: 'beerus', with: 'goku', focus: 'upper', angle: 'three' },
+        say: { who: 'beerus', line: '...Hmph.', duration: 1.6, style: 'quiet' },
+        hold: 2.2,
+      },
+      // hold it: the end of the battle, pulling away over the Earth
+      {
+        tick: (ctx) => gripHold(ctx),
+        cam: { from: { at: 'grip', off: [6, 1.2, 8] }, to: { at: 'grip', off: [16, 4, 22] }, look: { at: 'grip', off: [0, -1.4, 0] }, look2: { at: 'grip', off: [0, -8, 0] }, fov: 42, raw: true },
         hold: 4,
       },
     ],

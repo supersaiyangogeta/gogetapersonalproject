@@ -1385,11 +1385,69 @@
       b.scene.remove(v.light, v.key);
       if (restore) for (const [f, h] of v.hidden) f.setHidden(h);
     },
-    /** The line of light across the void, drawn from `from` toward `to` as far as k. */
+    /**
+     * The line of light across the void, drawn from `from` toward `to` as far as k (call every tick): a streak, not
+     * a spark — a blade of blue the length of the dark behind a white-hot head, sparks shed along it, the light it
+     * casts on him growing as it comes.
+     */
     blueLine(b, from, to, k) {
-      const head = from.clone().lerp(to, U.clamp01(k));
-      for (let i = 0; i < 6; i++) b.vfx.trail(from.clone().lerp(head, 1 - i * 0.03 * (1 - k * 0.5)), i ? 0x6ac8ff : 0xe8f8ff, i ? 0.35 : 0.6, 0.6);
+      k = U.clamp01(k);
+      const head = from.clone().lerp(to, k);
+      const tail = from.clone().lerp(to, Math.max(0, k - 0.55));
+      b.vfx.slash(tail, head, 0x3a9cff, 0.07, 0.55);
+      b.vfx.slash(tail.clone().lerp(head, 0.35), head, 0x9ad8ff, 0.07, 0.22);
+      b.vfx.slash(tail.clone().lerp(head, 0.7), head, 0xffffff, 0.07, 0.08);
+      b.vfx.flash(head, 2.6, 0xbfe8ff, 0.08, SL.Toon.tex.glow);
+      for (let i = 0; i < 4; i++) b.vfx.trail(tail.clone().lerp(head, 0.55 + i * 0.12), i < 3 ? 0x6ac8ff : 0xe8f8ff, 0.3 + i * 0.1, 0.5);
+      if (b._void && b._void.key) b._void.key.color.set(0xdfe8ff).lerp(new THREE.Color(0x6ac8ff), k);
       return head;
+    },
+
+    /**
+     * VOICES IN THE DARK (the void, the owner's "overlapping chorus"): the friends' lines layered over each other —
+     * each one surfacing somewhere on the screen, faint, echoing, sinking away while the next is already there.
+     * lines: [[who, text]]; gap: seconds between them. Each is still a spoken line (a voice pack gets the cue).
+     * Returns dispose().
+     */
+    whispers(m, lines, gap = 0.5) {
+      const b = m.battle;
+      let layer = null;
+      try {
+        const sub = document.getElementById('subtitles');
+        layer = document.createElement('div');
+        layer.className = 'void-voices';
+        ((sub && sub.parentNode) || document.body).appendChild(layer);
+      } catch (e) {
+        layer = null;
+      }
+      const spots = [[22, 30], [70, 24], [30, 64], [74, 60], [48, 42], [14, 48], [84, 40], [56, 74], [38, 20]];
+      lines.forEach(([who, text], i) => {
+        b.after(1 + Math.round(i * gap * 60), () => {
+          const f = b.story && b.story[who];
+          const name = (f && f.def && f.def.name) || who;
+          if (SL.Voice && SL.Voice.cue) SL.Voice.cue({ speakerId: (f && f.def && f.def.id) || who, line: text, style: 'echo' });
+          if (!layer) return;
+          try {
+            const [x, y] = spots[i % spots.length];
+            const node = document.createElement('div');
+            node.className = 'vv';
+            node.style.left = x + '%';
+            node.style.top = y + '%';
+            const nm = document.createElement('span');
+            nm.className = 'who';
+            nm.textContent = name;
+            node.appendChild(nm);
+            node.appendChild(document.createTextNode(text));
+            layer.appendChild(node);
+          } catch (e) {
+            /* a page without a HUD: the cue was enough */
+          }
+        });
+      });
+      return () => {
+        if (layer && layer.parentNode) layer.parentNode.removeChild(layer);
+        layer = null;
+      };
     },
 
     /**

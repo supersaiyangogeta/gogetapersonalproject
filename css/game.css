@@ -509,6 +509,14 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #000; color:
 .subline .jp { display: block; font-size: 0.96em; opacity: 0.92; letter-spacing: 0.04em; margin-bottom: 2px; }
 .subline.quiet { opacity: 0.88; font-style: italic; }
 .subline.shout { font-weight: 700; letter-spacing: 0.02em; }
+/* a voice from somewhere it shouldn't carry from (under the rock, the void): ghosts of the words trailing it */
+.subline.echo { letter-spacing: 0.07em; font-style: italic; color: #ffe8f2; text-shadow: 0 0 8px rgba(255, 60, 140, 0.85), 4px 0 0 rgba(255, 70, 150, 0.32), 8px 0 0 rgba(255, 70, 150, 0.14), 0 1px 3px #000; }
+.subline.echo.shout { font-size: 1.12em; font-style: normal; }
+/* the friends' voices in the void, layered: each surfaces somewhere in the dark and sinks away (bogKit.whispers) */
+.void-voices { position: absolute; inset: 0; pointer-events: none; z-index: 19; }
+.void-voices .vv { position: absolute; transform: translate(-50%, -50%); color: #e4ecff; font-size: clamp(18px, 2.4vw, 34px); font-style: italic; letter-spacing: 0.08em; white-space: nowrap; opacity: 0; text-shadow: 0 0 12px rgba(140, 180, 255, 0.85), 4px 0 0 rgba(140, 180, 255, 0.24), 8px 0 0 rgba(140, 180, 255, 0.1); animation: vvIn 2.8s ease-out forwards; }
+.void-voices .vv .who { display: block; font-size: 0.42em; font-style: normal; color: rgba(255, 214, 130, 0.85); letter-spacing: 0.24em; text-transform: uppercase; }
+@keyframes vvIn { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); filter: blur(5px); } 22% { opacity: 0.95; filter: blur(0); } 70% { opacity: 0.55; } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.14); filter: blur(4px); } }
 /* two voices at once (Vegito): the line doubled, one echo in Goku's orange, one in Vegeta's blue */
 .subline.dual { text-shadow: -1.5px 0 0 rgba(255, 138, 40, 0.75), 1.5px 0 0 rgba(90, 140, 255, 0.75), 0 0 3px #000; letter-spacing: 0.03em; }
 .subline.dual .who { color: #ffd070; }
