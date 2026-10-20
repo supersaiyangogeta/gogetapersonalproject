@@ -610,12 +610,14 @@
     /**
      * SHENRON — the Earth's Eternal Dragon: a long green serpent coiling up out of the balls into the dark
      * sky, small clawed arms, a long head with branching horns and whiskers, red eyes. rise(k) draws him up
-     * from the ground (the body grows along its own length, the head comes last); eyes(k); dispose().
+     * from the ground (the body grows along its own length, the head comes last); eyes(k); dispose(). pal recolours
+     * him { body, belly, horn, dark } (Super Shenron is the same serpent in gold).
      */
-    shenron(b, base, facing) {
+    shenron(b, base, facing, pal) {
       const T = SL.Toon;
       const g = new THREE.Group();
-      const green = T.mat(0x2f8a4a), belly = T.mat(0xc8c070), horn = T.mat(0xe8dcb8), dark = T.mat(0x1f5a32);
+      const c = pal || {};
+      const green = T.mat(c.body || 0x2f8a4a), belly = T.mat(c.belly || 0xc8c070), horn = T.mat(c.horn || 0xe8dcb8), dark = T.mat(c.dark || 0x1f5a32);
       const H = 52;
       const pts = [new V3(0, 0, 0), new V3(6, 8, -3), new V3(-7, 16, -6), new V3(5, 25, -9), new V3(-4, 33, -5), new V3(3, 41, 0), new V3(0, H - 4, 6)];
       const curve = new THREE.CatmullRomCurve3(pts);
@@ -667,7 +669,9 @@
       snout.position.set(0, -0.6, 3.2);
       const jaw = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.6, 3.8), belly);
       jaw.position.set(0, -1.5, 2.8);
-      head.add(skull, snout, jaw);
+      const neck = new THREE.Mesh(new THREE.SphereGeometry(1.95, 12, 10), green);
+      neck.position.set(0, -2.2, -2.4);
+      head.add(skull, snout, jaw, neck);
       for (const o of [skull, snout]) T.addOutline(o, 1.2);
       for (const s of [1, -1]) {
         // branching horns

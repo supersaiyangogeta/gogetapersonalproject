@@ -102,5 +102,41 @@
     render(scene, camera) {
       this.renderer.render(scene, camera);
     },
+
+    /**
+     * A split frame (a story shot, S-END-04): cams[0] drawn into the left half, cams[1] into the right, a black seam
+     * between them. With a third camera the two share the top half and cams[2] takes the whole bottom half (the
+     * reference frame: two faces over a third). Each camera's aspect is set to its panel here; the full canvas is given
+     * back afterwards.
+     */
+    renderSplit(scene, cams) {
+      const r = this.renderer, W = this.width, H = this.height, w = Math.floor(W / 2), seam = 3;
+      const three = cams.length > 2, h = three ? Math.floor(H / 2) : 0, top = H - h;
+      const clear = r.getClearColor(new THREE.Color()), alpha = r.getClearAlpha();
+      // [x, y, width, height] in CSS pixels, y from the bottom (WebGL); the right and top panels one pixel larger
+      // (clipped at the edge): at a fractional pixel ratio the floored viewport left the canvas's last column undrawn
+      // (700 px wide at 1.25)
+      const rects = [[0, h, w, top], [w, h, W - w + 1, top + (three ? 1 : 0)]];
+      if (three) rects.push([0, 0, W + 1, h]);
+      const draw = (c, [x, y, cw, ch]) => {
+        c.aspect = cw / ch;
+        c.updateProjectionMatrix();
+        r.setViewport(x, y, cw, ch);
+        r.setScissor(x, y, cw, ch);
+        r.render(scene, c);
+      };
+      r.setScissorTest(true);
+      cams.slice(0, rects.length).forEach((c, i) => draw(c, rects[i]));
+      r.setClearColor(0x000000, 1);
+      r.setScissor(w - seam, h, seam * 2, top);
+      r.clear(true, false, false);
+      if (three) {
+        r.setScissor(0, h - seam, W, seam * 2);
+        r.clear(true, false, false);
+      }
+      r.setClearColor(clear, alpha);
+      r.setScissorTest(false);
+      r.setViewport(0, 0, W, H);
+    },
   });
 })();

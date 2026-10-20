@@ -25,6 +25,14 @@
   const fits = (p, charId) => p.chars === '*' || p.chars.includes(charId);
   const eraIndex = (id) => SL.data.eras.findIndex((e) => e.id === id);
   const unlockType = (p) => (p.slot === 'outfit' ? 'outfits' : 'accessories');
+  /*
+   * BODIES: an outfit is made for a body ('adult' default, or 'young'). A profile wears one body (profile.body), or
+   * offers several (profile.bodies: { [body]: appearance fields }): then the outfit picks the body, and that body's
+   * fields (height, build, hair, face, headExtras, props) replace the character's own — young Chi-Chi's helmet armour is
+   * the young body, her 23rd World Tournament dress the grown one, so neither can end up on the other's body.
+   */
+  const bodyOf = (p) => trait(p, 'body') || 'adult';
+  const fitsBody = (p, pr) => (pr && pr.bodies ? !!pr.bodies[bodyOf(p)] : bodyOf(p) === ((pr && pr.body) || 'adult'));
 
   /**
    * A property of a piece, inherited through `base` like its look: an outfit built on another one
@@ -50,15 +58,51 @@
     return null;
   }
 
-  /** An outfit's model fields, inherited through `base`; a null value removes a field. */
-  function outfitLook(p, depth = 0) {
-    if (!p) return {};
-    const out = p.base && depth < 8 ? outfitLook(piece(p.base), depth + 1) : {};
+  /**
+   * An outfit's model fields, inherited through `base`; a null value removes a field. `start`: the fields it is laid
+   * over (an `own` outfit's authored ones), so a null can remove an authored field too (18's stripes, her skirt).
+   */
+  function outfitLook(p, depth = 0, start) {
+    if (!p) return Object.assign({}, start);
+    const out = p.base && depth < 8 ? outfitLook(piece(p.base), depth + 1, start) : Object.assign({}, start);
     for (const [k, v] of Object.entries(p.look || {})) {
       if (v === null) delete out[k];
       else out[k] = v;
     }
     return out;
+  }
+
+  /*
+   * BODY CONTROLS (profile.bodyControls): bounded appearance sliders for a character that offers them (Kefla). A selection
+   * may carry body = { [control id]: value } with value in [-1, 1] in steps of 0.25; 0 (or absent) is the authored
+   * build. Each control lists the build keys it moves: [path, value at -1, value at +1]; the value at 0 is read from
+   * the character's own build, so the default never changes. Nothing here writes to a character definition.
+   */
+  const BODY_STEP = 0.25;
+  const bodyControls = (charId) => {
+    const pr = profile(charId);
+    return (pr && pr.bodyControls) || null;
+  };
+  const getPath = (o, path) => path.split('.').reduce((a, k) => (a == null ? undefined : a[k]), o);
+  /** The character's build with a selection's body values applied (copies only what it touches). */
+  function bodyBuild(def, body) {
+    const ctl = bodyControls(def.id);
+    const build = Object.assign({}, def.appearance.build);
+    if (!ctl || !body) return build;
+    for (const c of ctl) {
+      const v = body[c.id];
+      if (!v) continue;
+      for (const [path, lo, hi] of c.keys) {
+        const base = getPath(def.appearance.build, path);
+        if (typeof base !== 'number') continue;
+        const val = v < 0 ? base + (lo - base) * -v : base + (hi - base) * v;
+        const parts = path.split('.');
+        let o = build;
+        for (let i = 0; i < parts.length - 1; i++) o = o[parts[i]] = Object.assign({}, o[parts[i]]);
+        o[parts[parts.length - 1]] = val;
+      }
+    }
+    return build;
   }
 
   const Wardrobe = (SL.Wardrobe = {
@@ -68,6 +112,8 @@
     profile,
     outfitLook,
     trait,
+    bodyControls,
+    BODY_STEP,
 
     has(charId) {
       return !!profile(charId);
@@ -121,7 +167,7 @@
         if (opts.checkUnlock && !Wardrobe.available(p)) return 'is locked';
         if (p.modes && opts.mode && !p.modes.includes(opts.mode)) return 'is not allowed in ' + opts.mode;
         // a young body's clothes need a young body (and the other way round)
-        if ((trait(p, 'body') || 'adult') !== (pr.body || 'adult')) return 'is made for a ' + (trait(p, 'body') || 'adult') + ' body';
+        if (!fitsBody(p, pr)) return 'is made for a ' + bodyOf(p) + ' body';
         return null;
       };
       let o = piece(s.outfit);
@@ -148,6 +194,31 @@
         if (why2) {
           problems.push(slot + ' "' + v + '" ' + why2);
           s[slot] = fallback(slot);
+        }
+      }
+      if (s.body !== undefined) {
+        const ctl = bodyControls(charId);
+        const raw = s.body;
+        delete s.body;
+        if (!ctl) {
+          if (raw && typeof raw === 'object' && Object.keys(raw).length) problems.push('body controls are not offered for ' + charId);
+        } else if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+          problems.push('body is not a set of values');
+        } else {
+          const out = {};
+          for (const k of Object.keys(raw)) if (!ctl.some((c) => c.id === k)) problems.push('body control "' + k + '" does not exist');
+          for (const c of ctl) {
+            if (raw[c.id] === undefined) continue;
+            const n = Number(raw[c.id]);
+            if (!isFinite(n)) {
+              problems.push('body ' + c.id + ' is not a number');
+              continue;
+            }
+            const v = Math.round(Math.max(-1, Math.min(1, n)) / BODY_STEP) * BODY_STEP;
+            if (v !== n) problems.push('body ' + c.id + ' ' + n + ' adjusted to ' + v);
+            if (v) out[c.id] = v;
+          }
+          if (Object.keys(out).length) s.body = out;
         }
       }
       if (!s.palette) s.palette = 'default';
@@ -207,7 +278,11 @@
     appearance(def, sel) {
       const app = Object.assign({}, def.appearance);
       const o = piece(sel.outfit);
-      const look = outfitLook(o);
+      const pr = profile(def.id);
+      if (pr && pr.bodies) Object.assign(app, pr.bodies[bodyOf(o)]);
+      // an outfit marked `own` is the character's authored outfit (Caulifla, Kefla), with the piece's own changes on top
+      const look = outfitLook(o, 0, trait(o, 'own') ? def.appearance.outfit : null);
+      if (sel.body) app.build = bodyBuild(def, sel.body);
       const palettes = trait(o, 'palettes');
       const pal = sel.palette && sel.palette !== 'default' && palettes && palettes[sel.palette];
       if (pal) Object.assign(look, pal.look);
@@ -238,8 +313,15 @@
       // an outfit can change the face it goes with (Super-era Bardock has no scar yet)
       const face = trait(o, 'face');
       if (face) app.face = Object.assign({}, app.face, face);
+      // ...and the hair (Future Trunks' outfits after the Room of Spirit and Time have it grown to the shoulders); a hair
+      // piece chosen in the hair slot still wins
+      const oh = trait(o, 'hair');
+      if (oh) app.hair = Object.assign({}, app.hair, oh);
       const h = piece(sel.hair);
       if (h) app.hair = Object.assign({}, app.hair, h.look);
+      // ...and the things worn with it (props: Android 18's Buu Saga pearls, earrings, wallet chain and bangle)
+      const op = trait(o, 'props');
+      if (op) app.props = (app.props || []).concat(op);
       app.outfit = look;
       return app;
     },
@@ -270,6 +352,31 @@
       const selection = Wardrobe.selectionFor(def.id, ctx, { selection: opts.wardrobe, isPlayer: opts.isPlayer });
       if (!selection) return null;
       return { def: Wardrobe.modelDef(def, selection), selection, kind: opts.wardrobe ? 'explicit' : ctx.kind };
+    },
+
+    /**
+     * A look as a portable preset (the file-based viewer and the game do not share browser storage): JSON text the
+     * other side reads with importPreset.
+     */
+    exportPreset(charId, sel) {
+      return JSON.stringify({ format: 'saiyan-legacy.look', version: 1, character: charId, selection: sel }, null, 2);
+    },
+    /**
+     * Reads a preset. Returns { ok, charId, selection, problems }: the selection is always sanitized (unknown pieces
+     * replaced, body values clamped), and problems say what was adjusted. opts.checkUnlock: refuse locked pieces too.
+     */
+    importPreset(text, opts = {}) {
+      let o;
+      try {
+        o = typeof text === 'string' ? JSON.parse(text) : text;
+      } catch (e) {
+        return { ok: false, problems: ['not valid JSON'] };
+      }
+      if (!o || o.format !== 'saiyan-legacy.look' || typeof o.character !== 'string') return { ok: false, problems: ['not a Saiyan Legacy look preset'] };
+      if (opts.charId && o.character !== opts.charId) return { ok: false, problems: ['the preset is for ' + o.character] };
+      if (!profile(o.character)) return { ok: false, problems: ['no wardrobe for ' + o.character] };
+      const r = Wardrobe.sanitize(o.character, Wardrobe.complete(o.character, o.selection && typeof o.selection === 'object' ? o.selection : {}), opts);
+      return { ok: true, charId: o.character, selection: r.selection, problems: r.problems };
     },
 
     /* ---------------- the player's choices (in the existing save) ---------------- */
@@ -327,6 +434,27 @@
       return changed;
     },
 
+    /**
+     * Free Battle / Training's opponent: an outfit picked for this one battle, or 'auto' — their saved look, except in a
+     * mirror match (the player's own character), where they wear the next outfit the player owns (or the next colours)
+     * so the two read apart. Returns a selection, or null when nothing changes (the fighter dresses as usual).
+     * Nothing is saved: the player's looks stay as they are.
+     */
+    opponentLook(charId, outfit, playerId) {
+      if (!profile(charId)) return null;
+      const mine = Wardrobe.current(charId);
+      let sel = null;
+      if (outfit && outfit !== 'auto') sel = Wardrobe.complete(charId, { outfit, body: mine.body });
+      else if (charId === playerId) {
+        const own = Wardrobe.options(charId, 'outfit', mine).filter((o) => !o.locked && !o.planned);
+        const pals = Wardrobe.options(charId, 'palette', mine);
+        const next = (list, id) => list[(list.findIndex((x) => x.id === id) + 1) % list.length].id;
+        if (own.length > 1) sel = Wardrobe.complete(charId, { outfit: next(own, mine.outfit), body: mine.body });
+        else if (pals.length > 1) sel = Object.assign({}, mine, { palette: next(pals, mine.palette) });
+      }
+      return sel && Wardrobe.sanitize(charId, sel, { checkUnlock: true }).selection;
+    },
+
     /** RESTORE CANON DEFAULT: forget the player's choice; the character wears their default again. */
     restoreDefault(charId) {
       delete Wardrobe.store().selected[charId];
@@ -356,7 +484,7 @@
       const pr = profile(charId);
       const list = Object.values(data().pieces)
         .filter((p) => p.slot === slot && fits(p, charId) && !(o && slot !== 'outfit' && clash(p, slot, o)))
-        .filter((p) => slot !== 'outfit' || p.status === 'planned' || (trait(p, 'body') || 'adult') === ((pr && pr.body) || 'adult'))
+        .filter((p) => slot !== 'outfit' || p.status === 'planned' || fitsBody(p, pr))
         .sort((a, b) => eraIndex(a.era) - eraIndex(b.era))
         .map((p) => ({ id: p.id, piece: p, name: p.name, era: p.era, planned: p.status !== 'prototype', locked: !Wardrobe.available(p) }));
       if (slot !== 'outfit' && list.length) list.unshift({ id: NONE, name: 'None', locked: false });
@@ -378,7 +506,9 @@
       if (m.repairArmor) m.repairArmor();
       if (f.setTorn) f.setTorn(level >= tearAt);
       if (m.setWorn) m.setWorn(level >= 1 || !!o.worn);
-      if (m.damageArmor && level >= 1) m.damageArmor(level >= 2 ? 3 : 1);
+      // torn.armor 'off': at the tear the armour goes completely (Vegeta after the Final Explosion)
+      const shed = level >= tearAt && o.torn && o.torn.armor === 'off';
+      if (m.damageArmor && level >= 1) m.damageArmor(shed ? 4 : level >= 2 ? 3 : 1);
       if (m.setDamage) m.setDamage(level);
       f.wearLevel = level;
       f.damageLevel = level;
@@ -433,6 +563,7 @@
         }
         const dr = Wardrobe.sanitize(charId, pr.default);
         for (const x of dr.problems) out.push(at + 'default ' + x);
+        for (const k of Object.keys(pr.bodies || {})) if (!['adult', 'young'].includes(k)) out.push(at + 'unknown body ' + k);
         for (const [era, entry] of Object.entries(pr.canonByEra || {})) {
           const ei = eraIndex(era);
           if (ei < 0) {

@@ -164,7 +164,8 @@
       gy.setState('free');
       m.lock(false);
       b.aiLocked = false;
-      m.music('battle', 3);
+      // the Ginyu Force's own theme (soundtrack PDF p.95, an original stand-in: superhero-show brass)
+      m.music('ginyu_force', 3);
       m.objective('hurt', 'Make the captain want a different body', { icon: 'fist' });
       m.objective('dodged', 'Never be there when the beam fires', { icon: 'guard', optional: true });
       let attempts = 0, dodged = 0, taken = 0;

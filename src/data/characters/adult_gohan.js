@@ -359,6 +359,10 @@
     ug_gut: { root: { y: -0.08, rx: 6 }, hips: [0, -18, 0], spine: [8, 16, 0], chest: [6, 22, 0], head: [2, -14, 0], shoulderL: [-84, 0, -4], elbowL: [-10, 0, 0], shoulderR: [-10, 0, -20], elbowR: [-40, 0, 0], thighL: [-32, 8, 12], kneeL: [36, 0, 0], thighR: [16, -8, -12], kneeR: [16, 0, 0], hands: ['fist', 'open'] },
     // the right elbow brought straight down onto the back of a neck
     ug_elbowW: { root: { y: 0.02, rx: -8 }, spine: [-8, 0, 0], chest: [-12, 0, 0], head: [10, 0, 0], shoulderR: [-160, 0, -20], elbowR: [-140, 0, 0], shoulderL: [-10, 0, 16], elbowL: [-24, 0, 0], thighL: [-10, 0, 12], kneeL: [14, 0, 0], thighR: [4, 0, -12], kneeR: [10, 0, 0], hands: ['open', 'fist'] },
+    // ULTIMATE STRIKE (the wheel): the open palm driven up under his chin, launching him
+    ug_palm: { root: { y: -0.04, rx: -4 }, hips: [0, 20, 0], spine: [-4, 14, 0], chest: [-6, 24, 0], head: [-10, -24, 0], shoulderR: [-120, 0, 4], elbowR: [-6, 0, 0], handR: [-70, 0, 0], shoulderL: [-14, 0, 28], elbowL: [-60, 0, 0], thighL: [-30, 8, 12], kneeL: [34, 0, 0], thighR: [20, -8, -12], kneeR: [12, 0, 0], hands: ['fist', 'open'] },
+    // MYSTIC COMBINATION (the wheel): both fists brought down from over his head
+    ug_hammer: { root: { y: 0.08, rx: 24 }, spine: [20, 0, 0], chest: [20, 0, 0], neck: [10, 0, 0], head: [14, 0, 0], shoulderL: [-68, 0, -16], elbowL: [-10, 0, 0], shoulderR: [-68, 0, 16], elbowR: [-10, 0, 0], thighL: [-40, 0, 10], kneeL: [66, 0, 0], thighR: [-20, 0, -10], kneeR: [46, 0, 0], hands: ['fist', 'fist'] },
     ug_elbow: { root: { y: -0.1, rx: 20 }, spine: [22, 0, 0], chest: [16, 0, 0], head: [22, 0, 0], shoulderR: [-60, 0, -10], elbowR: [-140, 0, 0], shoulderL: [-10, 0, 20], elbowL: [-30, 0, 0], thighL: [-24, 0, 12], kneeL: [34, 0, 0], thighR: [10, 0, -12], kneeR: [24, 0, 0], hands: ['open', 'fist'] },
     // Masenko over the head: palms together above the brow, charging a gold ball
     ug_masenkoW: (t) => {
@@ -370,6 +374,9 @@
         hands: ['open', 'open'],
       };
     },
+    // the Special Beam Cannon (Beast): Piccolo's two fingers to the brow, and the arm thrown straight out
+    ub_sbcCharge: SL.data.characters.piccolo.poses.p_sbcCharge,
+    ub_sbcFire: SL.data.characters.piccolo.poses.p_sbcFire,
     ug_masenko: { root: { y: -0.06, rx: 8 }, spine: [8, 0, 0], chest: [6, 0, 0], head: [-4, 0, 0], shoulderL: [-100, -8, 4], elbowL: [-4, 0, 0], shoulderR: [-100, 8, -4], elbowR: [-4, 0, 0], handL: [-50, 0, 0], handR: [-50, 0, 0], thighL: [-30, 8, 16], kneeL: [36, 0, 0], thighR: [16, -8, -16], kneeR: [20, 0, 0], hands: ['open', 'open'] },
     // taking off: a bend of the knees, the arms down, and he is simply in the air
     ug_takeoff: { root: { y: -0.12 }, spine: [6, 0, 0], chest: [2, 0, 0], head: [-10, 0, 0], shoulderL: [10, 0, 14], elbowL: [-10, 0, 0], shoulderR: [10, 0, -14], elbowR: [-10, 0, 0], thighL: [-30, 0, 8], kneeL: [50, 0, 0], thighR: [-30, 0, -8], kneeR: [50, 0, 0], hands: ['open', 'open'] },
@@ -489,6 +496,18 @@
             { id: 'ugGut', startup: 3, active: 3, recovery: 10, cancel: 5, damage: 900, reach: 1.1, radius: 0.8, lunge: 14, hitstun: 26, knock: 'flinch', impact: 2, pose: { wind: 'ug_gutW', strike: 'ug_gut' }, sfx: 'punchHeavy', hitPose: 'hitBody' },
             { id: 'ugElbow', startup: 5, active: 4, recovery: 12, cancel: 7, damage: 1200, reach: 1.1, radius: 0.9, lunge: 12, hitstun: 30, knock: 'smash', knockSpeed: 24, impact: 3, pose: { wind: 'ug_elbowW', strike: 'ug_elbow' }, sfx: 'punchHeavy', hitPose: 'hitHeavy' },
           ],
+          // his own heavies (the records PDF: Ultimate Gohan unlike base Gohan and Goku): no wind-up axe — a short
+          // double hammer, and an open palm that lifts
+          heavy: {
+            0: { id: 'ugHammer', startup: 8, active: 4, recovery: 18, damage: 2500, reach: 1.4, radius: 1.05, lunge: 18, hitstun: 36, knock: 'smash', knockSpeed: 36, impact: 3, guardCrush: true, guardDamage: 50, pose: { wind: 'ug_elbowW', strike: 'ug_hammer' }, sfx: 'punchHeavy', hitPose: 'hitHeavy' },
+            2: { id: 'ugLiftPalm', startup: 7, active: 4, recovery: 16, damage: 1800, reach: 1.3, radius: 0.95, lunge: 14, hitstun: 32, knock: 'launch', knockSpeed: 22, impact: 3, pose: { wind: 'ug_gutW', strike: 'ug_palm' }, sfx: 'punchHeavy', hitPose: 'hitBody' },
+          },
+          // after a Perfect Guard he is simply not where the blow went: Light — behind him, a palm into the back;
+          // Heavy — a gut punch that folds him
+          counter: {
+            light: { id: 'ugSlipPalm', startup: 2, active: 4, recovery: 12, damage: 1200, reach: 1.15, radius: 0.95, lunge: 10, hitstun: 36, knock: 'heavy', knockSpeed: 26, impact: 3, teleport: { to: 'behind', at: 2 }, pose: { wind: 'ug_stare', strike: 'ug_palm' }, sfx: 'punchHeavy', hitPose: 'hitBack' },
+            heavy: { id: 'ugGutCounter', startup: 3, active: 4, recovery: 16, damage: 1600, reach: 1.2, radius: 0.95, lunge: 12, hitstun: 54, knock: 'crumple', impact: 4, guardCrush: true, guardDamage: 70, pose: { wind: 'ug_gutW', strike: 'ug_gut' }, sfx: 'punchHeavy', hitPose: 'hitBody' },
+          },
         },
         specials: {
           special1: {
@@ -514,6 +533,48 @@
           ],
         },
       },
+      {
+        /*
+         * GOHAN BEAST (Dragon Ball Super: Super Hero; the owner's moveset roadmap #63, 2026-10-17): the Super Saiyan 2
+         * shape pushed past its limit — a towering silver-white mane, white brows, red eyes; a dense purple-and-crimson
+         * core inside a violent blue-white flame, static crackling round him. Story-locked: the movie mission "Beast"
+         * (sh_beast) hands it over; Free Battle opens it after that mission. Its Ultimate is Piccolo's technique, made
+         * his own: two fingers to the brow, a spiral drill of green and yellow straight through.
+         */
+        id: 'beast', name: 'Beast', short: 'BEAST', kiCost: 30, style: 'full',
+        storyLocked: true, freeUnlock: 'sh_beast',
+        mult: { damage: 2.9, speed: 1.6, defense: 2.1, kiRegen: 2.8, chargeRate: 1.8, guardStamina: 0.9 },
+        aura: { color: 0xdfe8ff, core: 0x9a2a6a, particles: 0xe8f0ff, idle: 0.55, speed: 1.7, sharp: 0.4, sparks: 0xf0f4ff, lightning: true, boltColor: 0xd8e4ff, flame: [0x5a1450, 0x9a2a6a, 0xbfd4ff, 0xf6f8ff] },
+        look: { hair: { style: 'gohan_beast', color: 0xeef0f6 }, pupil: 0xd81e2a, brow: 0xf4f4f8, bulk: 1.06, muscle: 1.08 },
+        poses: { idle: poses.ag_calm, run: poses.ug_run, flyIdle: poses.ug_flyIdle, flyForward: poses.ug_flyForward, guard: poses.ug_guard, charge: poses.ug_charge, hitLight: poses.ug_hit, land: poses.ug_land, jump: poses.ug_takeoff },
+        specials: {
+          ultimate: {
+            id: 'beastCannon', name: 'Special Beam Cannon (Beast)', type: 'beam', kiCost: 100, icon: 'ultimate', ultimate: true,
+            chargeMin: 66, chargeMax: 66, damage: [10400, 10400], radius: [0.6, 0.6], speed: 190, range: 200, sustain: 34,
+            color: 0xf0ff7a, core: 0xffffff, poses: { charge: 'ub_sbcCharge', fire: 'ub_sbcFire' }, recovery: 40, cinematic: true, oneHand: true, pierce: true,
+            style: { rings: 9, ringColor: 0x9aff5a, ringSpeed: 2.8 },
+            callout: ['SPECIAL BEAM', 'CANNON!'], chargeLight: 0xd8ff6a,
+            // outside the story: his face as the fingers come up to the brow, then along the drill to the target
+            cine: { steps: [{ on: 'start', shot: 'face', dur: 0.6, flash: 1.2, flashColor: 0xd8ff6a }, { on: 'release', shot: 'path', dur: 0.9 }] },
+          },
+        },
+        ai: { personality: 'adaptive', aggression: 0.85, defense: 0.6, ranged: 0.3, beam: 0.45, preferredRange: 2.4 },
+        intro: { pose: 'ag_calm', expression: 'angry' },
+        victory: { poses: ['ag_calm'], expression: 'calm' },
+        ghost: 0xe8eeff,
+        music: 6,
+        sequence: {
+          length: 200,
+          applyAt: 130,
+          steps: [
+            { at: 0, pose: 'ag_calm', speed: 4, expression: 'grit', aura: 0.3, auraColor: 0x9a2a6a, mood: [0.35, 0x140818, 0.8], shot: 'face', sfx: 'kiUp', music: 0 },
+            { at: 40, pose: 'powerCrouch', speed: 6, expression: 'shout', aura: 0.6, quake: 0.35, rocks: true, sfx: 'rumble', lightning: true },
+            { at: 90, pose: 'powerUp', speed: 8, expression: 'shout', aura: 0.9, hairFlicker: true, skyBolt: true, mood: [0.6, 0x0a0a18, 0.5] },
+            { at: 130, burst: true, pose: 'powerUp', speed: 12, expression: 'shout', sfx: 'transformBurst', flash: 0.6, crater: 4, hairFlicker: false, rocks: false, mood: [0.15, 0x101020, 0.4] },
+            { at: 168, pose: 'ag_calm', speed: 4, expression: 'angry', shot: 'orbit', mood: [0, 0x000000, 1.2] },
+          ],
+        },
+      },
     ],
     poses: Object.assign({ idle: poses.ag_idle, run: poses.ag_run, flyIdle: poses.ag_flyIdle, flyForward: poses.ag_flyForward, guard: poses.ag_guard, charge: poses.ag_charge }, poses),
     moves: {
@@ -529,7 +590,68 @@
       },
       dash: { id: 'agDash', startup: 5, active: 7, recovery: 16, damage: 1400, reach: 1.45, radius: 0.95, lunge: 32, hitstun: 28, knock: 'heavy', knockSpeed: 25, impact: 3, pose: { wind: 'ag_jabW', strike: 'ag_jab' }, sfx: 'punchHeavy', hitPose: 'hitBody' },
       throw: { id: 'agToss', name: 'Shoulder Throw', damage: 1200, knockSpeed: 26, poses: ['grab', 'ag_axeW', 'ag_axe'] },
+      // Piccolo's student after a Perfect Guard (the records PDF: his own counters): Light — the blow caught and an
+      // elbow back into him; Heavy — a rising knee that lifts him off his feet
+      counter: {
+        light: { id: 'agCatchElbow', startup: 2, active: 4, recovery: 14, damage: 900, reach: 1.15, radius: 0.9, lunge: 10, hitstun: 34, knock: 'heavy', knockSpeed: 22, impact: 3, pose: { wind: 'ag_catch', strike: 'ag_elbow' }, sfx: 'punchHeavy', hitPose: 'hitBody' },
+        heavy: { id: 'agKneeCounter', startup: 4, active: 4, recovery: 18, damage: 1300, reach: 1.2, radius: 0.95, lunge: 12, hitstun: 38, knock: 'launch', knockSpeed: 22, impact: 3, pose: { wind: 'ag_riseW', strike: 'ag_rise' }, sfx: 'punchHeavy', hitPose: 'hitHeavy' },
+      },
     },
+    // on the skill wheel, the Ultimate form only: crisp, efficient Turtle School work rather than an angry Saiyan's
+    extras: [
+      // ULTIMATE STRIKE (the PDF's, after "I want to kill you" against Super Buu; a game-style rush): calm, then in
+      // front of him — a stomach punch, a roundhouse, behind him for an elbow into the spine, a rising knee, a palm that
+      // launches him, and a Super Kamehameha point blank. Earned for Free Battle by clearing "Ultimate Gohan" (buu_ultimate)
+      {
+        id: 'ultimateStrike', name: 'Ultimate Strike', type: 'rush', kiCost: 60, icon: 'beam',
+        forms: ['ultimate'], freeUnlock: 'buu_ultimate', freeOnly: true,
+        startup: 8, dashFrames: 26, speed: 60, recovery: 34,
+        poses: { wind: 'ug_stare', dash: 'ug_flyForward' },
+        hits: [
+          { pose: 'ug_gut', damage: 650, frames: 10, sfx: 'punchHeavy', hitPose: 'hitBody' },
+          { pose: 'ag_kick', damage: 500, frames: 10, sfx: 'punchHeavy', hitPose: 'hitSideL' },
+          { pose: 'ug_elbow', damage: 550, frames: 10, sfx: 'punchHeavy', hitPose: 'hitBack', to: 'behind' },
+          { pose: 'ag_rise', damage: 450, frames: 10, sfx: 'punchHeavy', hitPose: 'hitHeavy', to: 'front', lift: 1.5 },
+          { pose: 'ug_palm', damage: 450, frames: 12, sfx: 'punchHeavy', hitPose: 'hitHeavy', lift: 1 },
+          { pose: 'ag_kameFire', damage: 2100, frames: 34, sfx: 'kiBlastBig', ki: { color: 0xeaf4ff, hand: 'both' }, beam: { length: 16, radius: 1, frames: 36, core: 0xffffff }, explode: 1.3, knock: 'heavy', knockSpeed: 46, impact: 4, hitPose: 'hitHeavy' },
+        ],
+        cine: {
+          steps: [
+            { on: 'start', shot: 'face', dur: 0.4 },
+            { on: 'release', shot: 'track', dur: 0.35 },
+            { on: 'connect', shot: 'wide', dur: 1.1 },
+            { on: 'finish', shot: 'wide', dur: 1, quake: 0.4 },
+          ],
+        },
+      },
+      // MYSTIC COMBINATION (the games' "Burst Rush"; the PDF's choreography): five quick blows, a rising kick that sends
+      // him up, over him for a double hammer into the ground, then a white wave that bursts on him where he lies.
+      // Earned for Free Battle by clearing "The Z Sword" (buu_zsword, where the form comes)
+      {
+        id: 'mysticCombination', name: 'Mystic Combination', type: 'rush', kiCost: 50, icon: 'rush',
+        forms: ['ultimate'], freeUnlock: 'buu_zsword', freeOnly: true,
+        startup: 8, dashFrames: 26, speed: 58, recovery: 64,
+        poses: { wind: 'ug_stare', dash: 'ug_flyForward' },
+        hits: [
+          { pose: 'ag_jab', damage: 220, frames: 5, sfx: 'punchLight', hitPose: 'hitLight' },
+          { pose: 'ag_elbow', damage: 240, frames: 5, sfx: 'punchLight', hitPose: 'hitSideR' },
+          { pose: 'ag_jab', damage: 220, frames: 5, sfx: 'punchLight', hitPose: 'hitLight' },
+          { pose: 'ag_kick', damage: 280, frames: 6, sfx: 'punchHeavy', hitPose: 'hitSideL' },
+          { pose: 'ug_elbow', damage: 300, frames: 7, sfx: 'punchHeavy', hitPose: 'hitBody' },
+          { pose: 'ag_rise', damage: 450, frames: 14, sfx: 'punchHeavy', hitPose: 'hitHeavy', lift: 3 },
+          { pose: 'ug_hammer', damage: 1100, frames: 18, sfx: 'punchHeavy', to: 'above', knock: 'smash', knockSpeed: 44, impact: 4, hitPose: 'hitHeavy' },
+        ],
+        detonate: { at: 38, damage: 1400, radius: 1.8, color: 0xf4f8ff, pose: 'ug_masenko' },
+        cine: {
+          steps: [
+            { on: 'release', shot: 'track', dur: 0.35 },
+            { on: 'connect', shot: 'wide', dur: 1.2 },
+            { on: 'finish', shot: 'wide', dur: 0.7 },
+            { on: 'finish', at: 38, shot: 'impact', dur: 0.8, quake: 0.3 },
+          ],
+        },
+      },
+    ],
     specials: {
       special1: {
         id: 'agMasenko', name: 'Masenko', type: 'beam', kiCost: 32, icon: 'beam',
@@ -548,10 +670,23 @@
         chargeMin: 54, chargeMax: 54, damage: [9400, 9400], radius: [2, 2], speed: 116, range: 180, sustain: 52,
         color: 0x8ad4ff, core: 0xffffff, poses: { charge: 'ag_kameCharge', fire: 'ag_kameFire' }, recovery: 42, cinematic: true,
         callout: ['KA', 'ME', 'HA', 'ME', 'HA!'],
+        // the follow-through the records PDF names: a second push into the beam while its head is still travelling —
+        // wider and harder from there (a beam that has already struck only looks it: a beam hits once)
+        push: { at: 8, radius: 1.25, damage: 1.1 },
+        // outside the story: three-quarter on his stance, in on the hands, then side-on as it fires and again, shaking,
+        // for the second push (side-on only once it fires: the charge / front shots stand in the beam's path)
+        cine: {
+          steps: [
+            { on: 'start', shot: 'charge', dur: 0.5 },
+            { on: 'start', at: 28, shot: 'hand', dur: 0.45 },
+            { on: 'release', shot: 'wide', dur: 0.3, quake: 0.25 },
+            { on: 'push', shot: 'wide', dur: 1.2, quake: 0.35 },
+          ],
+        },
       },
     },
     mechanic: { type: 'hiddenPotential', name: 'Hidden Potential', desc: 'Damage and fallen allies fill it. When it bursts he is briefly unleashed — the same thing the Old Kai will one day open all the way.' },
-    ai: { personality: 'adaptive', aggression: 0.5, defense: 0.66, ranged: 0.45, beam: 0.5, transformHp: 0.55, preferredRange: 3.2 },
+    ai: { personality: 'adaptive', aggression: 0.5, defense: 0.66, ranged: 0.45, beam: 0.5, transformHp: 0.55, preferredRange: 3.2, hooks: 'adult_gohan' },
     barks: { combo: 'kid_gohan_combo', hurt: 'kid_gohan_hurt', lowHp: 'kid_gohan_lowHp' },
     intro: { pose: 'ag_fight', expression: 'calm' },
     victory: { poses: ['ag_sheepish'], expression: 'soft' },

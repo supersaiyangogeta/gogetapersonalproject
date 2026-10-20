@@ -75,6 +75,9 @@
       },
       // and behind it another, and another: the whole street is clothes
       {
+        // no roar and no beat — only high, thin violins, wrong notes held against each other (soundtrack PDF p.96,
+        // "Looming Threat": an original stand-in)
+        music: { song: 'looming_threat', level: 2 },
         cam: { from: { at: 'street', off: [-2.5, 0.7, 9] }, to: { at: 'street', off: [-1.6, 0.6, 6] }, look: { at: 'street', off: [0, 0.2, -10] }, fov: 46 },
         hold: 3.2,
       },

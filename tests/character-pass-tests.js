@@ -172,6 +172,9 @@ module.exports = function characterPassTests({ test, eq, ok }) {
       for (let x = o; x; x = x.parent) if (!x.visible) return false;
       return true;
     };
+    // meshes only: a sprite (the glow of Whis' and Vados' staffs) cannot be ray-cast without a camera, and is never hair
+    const meshes = [];
+    m.root.traverse((o) => { if (o.isMesh) meshes.push(o); });
     const gaps = [];
     for (const th of [0, 15, 30, 45]) {
       for (let az = 0; az < 360; az += 30) {
@@ -180,7 +183,7 @@ module.exports = function characterPassTests({ test, eq, ok }) {
         const a = (th * Math.PI) / 180, z = (az * Math.PI) / 180;
         const dir = new THREE.Vector3(Math.sin(a) * Math.sin(z), Math.cos(a), Math.sin(a) * Math.cos(z));
         ray.set(head.clone().addScaledVector(dir, R * 4), dir.clone().negate());
-        const hit = ray.intersectObject(m.root, true).find((h) => shown(h.object) && !h.object.userData.isOutline);
+        const hit = ray.intersectObjects(meshes, false).find((h) => shown(h.object) && !h.object.userData.isOutline);
         if (hit && hit.object === m.skull) gaps.push(th + '°/' + az + '°');
       }
     }
@@ -229,7 +232,7 @@ module.exports = function characterPassTests({ test, eq, ok }) {
     const ssj = A.forms.find((f) => f.id === 'ssj'), ssj2 = A.forms.find((f) => f.id === 'ssj2');
     eq(ssj.look.hair.style + ',' + ssj2.look.hair.style, 'gohan_adult_ssj,gohan_adult_ssj2', 'and his own Super Saiyan hair (not his father\'s)');
     ok(ssj2.aura.lightning && ssj2.poses.idle !== ssj.poses.idle, 'Super Saiyan 2 has its lightning and its own stance');
-    eq(A.forms.map((f) => f.id).join(','), 'base,ssj,ssj2,ultimate', 'the Super Saiyan forms unchanged; the Ultimate (Chapter 12) after them');
+    eq(A.forms.map((f) => f.id).join(','), 'base,ssj,ssj2,ultimate,beast', 'the Super Saiyan forms unchanged; the Ultimate (Chapter 12) after them; Beast (the Super Hero film) last');
     for (const p of ['idle', 'run', 'flyIdle', 'flyForward', 'guard', 'charge']) ok(A.poses[p] && A.poses[p] !== SL.data.poses[p], 'his own ' + p);
     // the story dresses him by the era and the day
     let x = inMission(g, 'buu_kibito', 'adult_gohan');
@@ -436,6 +439,31 @@ module.exports = function characterPassTests({ test, eq, ok }) {
     SL.Save.load();
     eq(SL.Wardrobe.saved('videl').outfit, 'videl_super', 'the choice survives a reload');
     ok(SL.Save.isUnlocked('outfits', 'videl_super') && SL.Save.isUnlocked('outfits', 'ag_ultimate'), 'and so do the unlocks');
+    eq(g.errors.length, 0, 'engine errors: ' + g.errors.slice(0, 2).join(' | '));
+  });
+
+  test('every playable fighter has a Free Battle voice and entrance of their own: an intro line, a victory line, and an intro that is not the plain combat stance — and a real Free Battle intro says both lines', () => {
+    const g = H.create({ quiet: true, seed: 1 });
+    const { SL, V3 } = g;
+    const D = SL.data.dialogue;
+    const play = Object.values(SL.data.characters).filter((c) => c.playable);
+    eq(play.filter((c) => !D.introFor(c.id, '-')).map((c) => c.id).join(), '', 'fighters without an intro line');
+    eq(play.filter((c) => !(D.lines[c.id + '_victory'] || []).length).map((c) => c.id).join(), '', 'fighters without a victory line');
+    eq(play.filter((c) => !(c.sequences && c.sequences.intro) && (!c.intro || c.intro.pose === 'idle')).map((c) => c.id).join(), '', 'fighters whose intro is the plain combat stance');
+    // Krillin against Android 16, intro not skipped: each says his line in his own intro pose
+    const b = new SL.Battle({
+      mode: 'free', stageId: 'wasteland', rules: { timeLimit: 0 },
+      fighters: [{ charId: 'krillin', player: true, team: 0, pos: new V3(-6, 0, 0) }, { charId: 'android_16', team: 1, pos: new V3(6, 0, 0), dummy: 'idle' }],
+      onEnd: () => {},
+    });
+    const said = [], poses = new Set();
+    b.on('say', (e) => said.push(e.fighter.def.id + ': ' + e.line));
+    b.start();
+    g.until(b, () => b.phase === 'fight', 600, () => b.fighters.forEach((f) => poses.add(f.def.id + ':' + f.anim.name)));
+    eq(b.phase, 'fight', 'the intro ends in the fight');
+    ok(said.some((x) => x.startsWith('krillin: ')) && said.some((x) => x.startsWith('android_16: ')), 'both spoke: ' + said.join(' / '));
+    ok(poses.has('krillin:k_discCharge') && poses.has('android_16:stand'), 'in their own intro poses');
+    b.dispose();
     eq(g.errors.length, 0, 'engine errors: ' + g.errors.slice(0, 2).join(' | '));
   });
 };

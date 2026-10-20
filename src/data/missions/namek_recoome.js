@@ -123,7 +123,8 @@
       r.setState('free');
       m.lock(false);
       b.aiLocked = false;
-      m.music('battle', 3);
+      // the Ginyu Force's own theme (soundtrack PDF p.95, an original stand-in: superhero-show brass)
+      m.music('ginyu_force', 3);
       m.objective('pride', 'Make Recoome stop smiling', { icon: 'fist', target: 3 });
       const punish = m.objective('punish', 'Punish three poses', { icon: 'fist', optional: true, target: 3 });
       let posed = 0, punished = 0, finished = 0;

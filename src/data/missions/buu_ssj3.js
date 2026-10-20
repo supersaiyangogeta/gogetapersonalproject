@@ -371,7 +371,8 @@
       buu.damageDealtMul = 0.4;
       buu.damageTakenMul = 1.25;
       b.stage.clearMood(1.5);
-      m.music('finale', 6);
+      // Super Saiyan 3's own theme (soundtrack PDF p.93; the sequencer's ssj3_theme, an original stand-in)
+      m.music('ssj3_theme', 6);
       m.objective('apart', 'Blow him apart — twice', { icon: 'fist', target: 2 });
       m.prompt('ssj3Ki', 'charge', 'Charge — the form is burning your ki', { when: () => g.ki < 35 && g.form.id === 'ssj3', until: () => g.ki > 60 });
       let aparts = 0, dry = false;

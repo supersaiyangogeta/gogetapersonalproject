@@ -42,21 +42,41 @@
 
   /**
    * FORM PROGRESSION OUTSIDE THE STORY. A form with `freeUnlock: '<mission>'` exists in Free
-   * Battle, Training and the menus only once that canon mission is cleared (no Super Saiyan 2
-   * before the story has shown it). The story itself is SL.data.formGivenBy's job; What-If
-   * missions lock by their branch point (Mission._lockUnearnedForms).
+   * Battle, Training and the menus only once that mission is cleared (no Super Saiyan 2 before
+   * the story has shown it). An array lists alternative canon/movie acquisitions: any one clear
+   * suffices. Story chronology is SL.data.formGivenBy's job; What-If missions lock by their
+   * branch point (Mission._lockUnearnedForms), independently of these saved acquisitions.
    */
   function formFreeUnlocked(fm) {
     if (!fm.freeUnlock) return true;
     if (SL.Dev && SL.Dev.unlockAll && SL.Dev.unlockAll()) return true;
     try {
-      const r = SL.Save && SL.Save.missionResult && SL.Save.missionResult(fm.freeUnlock);
-      return !!(r && r.completed);
+      const missions = Array.isArray(fm.freeUnlock) ? fm.freeUnlock : [fm.freeUnlock];
+      return missions.some((id) => {
+        const r = SL.Save && SL.Save.missionResult && SL.Save.missionResult(id);
+        return !!(r && r.completed);
+      });
     } catch (e) {
       return false;
     }
   }
   SL.formFreeUnlocked = formFreeUnlocked;
+
+  /**
+   * A form open outside the story (Free Battle, Training): not a story-only one another roster entry owns, not
+   * story-locked unless it also names a freeUnlock, and earned. The fighter's transformations and the setup screen's
+   * Starting Form both follow it.
+   */
+  function formOpenFree(fm) {
+    return !fm.storyOnly && (!fm.storyLocked || !!fm.freeUnlock) && formFreeUnlocked(fm);
+  }
+  SL.formOpenFree = formOpenFree;
+  /**
+   * A form the setup screen may start a Free Battle / Training fight in. form.freeStart: '<mission>' — a story-locked
+   * form that outside the story is only a starting form, once that mission is cleared, and never on the transform
+   * button (Majin Vegeta: his place in the form list is after Blue).
+   */
+  SL.formStartFree = (fm) => formOpenFree(fm) || (!!fm.freeStart && !fm.storyOnly && formFreeUnlocked({ freeUnlock: fm.freeStart }));
 
   function emptyIntent() {
     return {
@@ -87,6 +107,46 @@
   const GOD_EVADE_STATES = { free: 1, guard: 1, dash: 1, charge: 1, land: 1, attack: 1, dodge: 1, recover: 1 };
   // states an ultimate lives in while it is being committed to (see committedUltimate)
   const ULT_COMMIT_STATES = { beamCharge: 1, beamFire: 1, rush: 1, scatter: 1, spiritBomb: 1 };
+  /*
+   * TECHNIQUE CINEMATICS (spec.cine = { steps: [...] }). A step fires on one of the technique's events —
+   * 'start' (pressed), 'full' (a tiered beam reached its last tier), 'push' (sp.push: the second push into a flowing beam), 'release' (the beam, the bomb or the thrown ball leaves, the rush sets off), 'connect' (the rush caught
+   * him), 'perch' (a rush step put him on the held one's head), 'aim' (a rush step raised the hand at him), 'bind' (a rush step
+   * pinned him in rings), 'finish' (its last blow; a charged blast's burst is its 'release') — `at` frames after it; each event drops the steps still waiting from the one
+   * before. A step: { on, at, shot, dur (s), sfx, quake, flash, slow: [scale, s], mood: [amount, color, s], minTier, maxTier }.
+   * Shots are gameplay shots (Settings → Cinematic off / reduced still apply) and only when the player is in it.
+   * The cinematic lives through CINE_STATES: back to 'free' it lets its last shot finish; anything else (hit,
+   * knocked down, a clash, a scene) ends the shot at once, so the camera is never left on a move that is over.
+   */
+  const CINE_STATES = { beamCharge: 1, beamFire: 1, recoverSpecial: 1, rush: 1, spiritBomb: 1, specialThrow: 1, bossBomber: 1 };
+  const CINE_SHOTS = {
+    charge: (b, f, s) => b.ultimateChargeShot(f, s),
+    low: (b, f, s) => b.ultimateChargeShot(f, s, true),
+    face: (b, f, s) => b.faceShot(f, s),
+    // the face of whoever the move has caught (the Divine Lasso's DL-S03: held, screaming)
+    victimFace: (b, f, s) => (f.sd.victim || f.target) && b.faceShot(f.sd.victim || f.target, s),
+    pull: (b, f, s) => b.pullShot(f, s),
+    orbit: (b, f, s) => b.transformShot(f, s),
+    hand: (b, f, s) => b.handShot(f, s),
+    front: (b, f, s) => b.frontShot(f, s),
+    path: (b, f, s) => f.sd.ball && b.pathShot(f, f.sd.ball, s),
+    rise: (b, f, s) => b.riseShot(f, f.sd.bomb, s),
+    track: (b, f, s) => b.rushTrackShot(f, s),
+    reverse: (b, f, s) => b.reverseShot(f, f.target, s),
+    wide: (b, f, s) => b.wideShot(f, f.target, s),
+    // the same, cut to at once: for a beat over before a 0.3 s blend would be (the Divine Lasso's needles cross in 0.2 s)
+    wideCut: (b, f, s) => b.wideShot(f, f.sd.victim || f.target, s, false, true),
+    impact: (b, f, s) => b.wideShot(f, f.target, s, true),
+    perch: (b, f, s) => b.perchShot(f, f.sd.victim || f.target, s),
+    aim: (b, f, s) => b.aimShot(f, f.sd.victim || f.target, s),
+    nova: (b, f, s) => b.novaShot(f, (f.sd.spec && f.sd.spec.radius) || 12, s),
+    pairLow: (b, f, s) => b.pairShot(f, f.sd.victim || f.target, s, 'low'),
+    pairHigh: (b, f, s) => b.pairShot(f, f.sd.victim || f.target, s, 'high'),
+    // a team rush's two, side by side (the Saiyan Charge's shared stance), low
+    partnerLow: (b, f, s) => f.sd.partner && f.sd.partnerOn && b.pairShot(f, f.sd.partner, s, 'low'),
+    swing: (b, f, s) => b.swingShot(f, s),
+    follow: (b, f) => f.sd.bomb && b.bombFollowShot(f.sd.bomb, f),
+  };
+  SL.cineShots = CINE_SHOTS;
   const GRAVITY_EXEMPT = new Set(['knockback', 'knockdown', 'ko', 'held', 'teleport', 'vanish', 'clash', 'transform', 'spiritBomb', 'scripted']);
 
   class Fighter {
@@ -161,8 +221,14 @@
       this.form = def.forms[0];
       // a form the story hands over (Piccolo taking Nail) starts locked, so it never
       // appears on the skill wheel until a mission unlocks it with teach(f, 'form:<id>')
+      // a story-locked form that also names a freeUnlock (Frieza's 100%, Golden Frieza) opens outside the story once
+      // that mission is cleared; inside the story it stays the mission's to hand over. form.storyBoss: inside the story
+      // the boss phases change him (bossTransform, the scenes) — no button buys it there, the player's or a CPU's (a
+      // boss's later shapes have a ki cost only so that Free Battle can sell them). form.storyOnly: a form a story
+      // mission gives this fighter that another roster entry owns outside the story (the Fusion Reborn Gogeta's Blue:
+      // the Super Broly film's Gogeta is gogeta_blue in Free Battle and Training). Outside the story: formOpenFree
       for (const fm of def.forms) {
-        if (!fm.storyLocked && (battle.mode === 'story' || formFreeUnlocked(fm))) continue;
+        if (battle.mode === 'story' ? !fm.storyLocked && !fm.storyBoss : formOpenFree(fm)) continue;
         this.lockedForms = this.lockedForms || {};
         this.lockedForms[fm.id] = true;
       }
@@ -342,9 +408,11 @@
       if (dx * dx + dz * dz < 0.0004) return;
       // a heavy body turns slowly (the played Great Ape, def.turnSpeed in radians per second):
       // something fast can get behind it; instant snaps (rate 100) stay instant
-      if (this.def.turnSpeed && rate < 100) {
+      // (form.turnSpeed: a form that turns its own weight — the Z-movie Broly's Legendary state)
+      const turnSpeed = (this.form && this.form.turnSpeed) || this.def.turnSpeed;
+      if (turnSpeed && rate < 100) {
         const d = U.wrapAngle(Math.atan2(dx, dz) - this.yaw);
-        const step = this.def.turnSpeed * TICK;
+        const step = turnSpeed * TICK;
         this.yaw = U.wrapAngle(this.yaw + U.clamp(d, -step, step));
         return;
       }
@@ -376,7 +444,8 @@
       return this.battle.enemiesOf(this);
     }
     ghostColor() {
-      return (this.form && this.form.ghost) || (this.def.vfx && this.def.vfx.ghost) || 0xcfe8ff;
+      // a fighter without an afterimage colour of his own leaves one in his aura's (Broly's green, Black's rosé, SSJ4 red)
+      return (this.form && this.form.ghost) || (this.def.vfx && this.def.vfx.ghost) || (this.form && this.form.aura && this.form.aura.color) || 0xcfe8ff;
     }
     ghost(life = 0.3, opacity = 0.45) {
       this.battle.vfx.ghost(this.model, this.ghostColor(), life, opacity);
@@ -400,6 +469,7 @@
 
     _exitState(prev, next) {
       const sd = this.sd;
+      if (this.cine && !CINE_STATES[next]) this._endCine(next !== 'free');
       if (sd.orb) {
         sd.orb.visible = false;
         sd.orb = null;
@@ -432,6 +502,10 @@
       }
       if (prev === 'throw' && sd.victim && sd.victim.state === 'held') sd.victim.setState('free');
       if (prev === 'rush' && sd.victim && sd.victim.state === 'held') sd.victim.setState('free');
+      if (prev === 'rush' && sd.beamFx) sd.beamFx.vis.dispose();
+      if (prev === 'rush' && sd.partnerOn) this._releasePartner(sd);
+      if (prev === 'rush' && sd.propScaled) sd.propScaled.scale.y = 1;
+      if (prev === 'attack' && sd.blade && this.model.setPropFill) this.model.setPropFill(sd.blade, 0);
       if (this._stretched) this.setLimbStretch(this._stretched, 1);
       const techExit = SL.TechniqueExits && SL.TechniqueExits[prev];
       if (techExit) techExit(this, sd, next);
@@ -457,6 +531,7 @@
     onSequenceEvent(ev) {
       if (ev === 'dropCape' && this.model.capeNode && this.model.capeNode.visible) {
         this.model.capeNode.visible = false;
+        for (const id in this.model.props || {}) if (this.model.props[id].userData.cape) this.model.setPropVisible(id, false);
         this.battle.vfx.dust(this.pos, 1.2, 10);
         this.battle.sfx('groundImpact', this, { vol: 0.5, pitch: 1.4 });
         this.battle.emit('capeDropped', { fighter: this });
@@ -526,6 +601,7 @@
 
       const handler = STATES[this.state] || STATES.free;
       handler.call(this, it);
+      if (this.cine) this._cineTick();
       if (!this.canFly()) this._gravity();
       this._physics();
       this._post(false);
@@ -567,7 +643,7 @@
       if (this.overloadCooldown > 0) this.overloadCooldown--;
       const lv = this.form.levels && this.form.levels[this.formLevel];
       if (this.form.strain) {
-        const rate = (sd.buildPerSec[this.formLevel] || sd.buildPerSec[sd.buildPerSec.length - 1]) * (this.state === 'charge' ? 0.6 : 1) * (this.strainScale || 1);
+        const rate = (sd.buildPerSec[this.formLevel] || sd.buildPerSec[sd.buildPerSec.length - 1]) * (this.state === 'charge' ? 0.6 : 1) * (this.strainScale === undefined || this.strainScale === null ? 1 : this.strainScale);
         this.strain = Math.min(sd.max, this.strain + rate * TICK);
         if (lv && lv.kiPerSec && !this.infiniteKi) this.ki = Math.max(0, this.ki - lv.kiPerSec * TICK);
         if (this.strain >= sd.max && this.alive) this._overload(sd);
@@ -752,6 +828,18 @@
         else {
           this.runRate = U.clamp(hs / 9, 0.6, 1.6);
           this.anim.play('run', 10);
+          // def.footfall { every (s), vol, pitch, dust, trauma }: a heavy body's steps — a thud, a puff of dust, a
+          // tremor the camera feels (Magetta)
+          const ff = this.def.footfall;
+          if (ff) {
+            this._stepT = (this._stepT || 0) + TICK * this.runRate;
+            if (this._stepT >= (ff.every || 0.5)) {
+              this._stepT = 0;
+              this.battle.sfx('groundImpact', this, { vol: ff.vol || 0.5, pitch: ff.pitch || 0.5 });
+              if (ff.dust) this.battle.vfx.dust(this.pos.clone(), ff.dust, 6);
+              if (ff.trauma) this.battle.cameraTraumaAt(this.pos, ff.trauma);
+            }
+          }
         }
         return;
       }
@@ -824,9 +912,23 @@
     _startCounter(kind) {
       const c = this.moveSet.counter;
       if (!c || !c[kind] || this.counterFrames <= 0 || this.state !== 'free' && this.state !== 'guard') return false;
+      // { special: '<extra id>' }: the counter is a whole technique (Perfect Cell's Perfect Counter, a counterOnly
+      // extra): it starts only inside the Perfect Guard window and pays its own ki; without the ki, the press is spent
+      if (c[kind].special) {
+        if (!this._trySpecial(EXTRA + c[kind].special)) return false;
+        this.counterFrames = 0;
+        this.battle.emit('counterStrike', { fighter: this, move: c[kind] });
+        return true;
+      }
       if (!this._startAttack(c[kind], kind, 0)) return false;
       this.counterFrames = 0;
       this.sd.counter = true;
+      // mv.blade { prop, fill }: an edge along the hand for the strike (Vegito Blue's God Slicer parry), gone with it
+      const bl = c[kind].blade;
+      if (bl && this.model.setPropFill) {
+        this.model.setPropFill(bl.prop, bl.fill === undefined ? 0.35 : bl.fill);
+        this.sd.blade = bl.prop;
+      }
       this.battle.emit('counterStrike', { fighter: this, move: c[kind] });
       return true;
     }
@@ -1029,7 +1131,20 @@
     /** Specials of the active form (a form may replace a slot with a different technique). */
     specials() {
       const fs2 = this.form && this.form.specials;
-      return fs2 ? Object.assign({}, this.def.specials, fs2) : this.def.specials || {};
+      const all = fs2 ? Object.assign({}, this.def.specials, fs2) : this.def.specials || {};
+      // sp.freeOnly: a technique a story character was given to be a complete Free Battle fighter (Hit's Time Cage,
+      // Super Buu's Human Extinction Attack, Magetta's magma, Tagoma's feint): the story's own fights keep the kit they
+      // were built and tuned with, for the player and the CPU alike
+      if (this.battle && this.battle.mode === 'story') {
+        let out = null;
+        for (const k in all) {
+          if (!all[k] || !all[k].freeOnly) continue;
+          out = out || Object.assign({}, all);
+          delete out[k];
+        }
+        if (out) return out;
+      }
+      return all;
     }
 
     /** The spec for a slot: special1 / special2 / ultimate, or "x:<id>" for an extra technique. */
@@ -1100,6 +1215,36 @@
       return base;
     }
 
+    /**
+     * Why an extra technique (def.extras) cannot be used now, or null. 'hidden': not offered at all — a Free Battle
+     * technique in the story (sp.freeOnly), or one not earned yet (sp.freeUnlock: the same rule as a form's).
+     * sp.forms: only in those forms. sp.ultimate: obeys the battle's allowUltimates, like the Ultimate button.
+     * A story mission can open one by id (def.openExtras: the fight it was made for, e.g. God Slicer in "Vegito").
+     */
+    extraLock(sp) {
+      const m = this.battle.mode === 'story' && this.battle.mission;
+      const opened = !!(m && m.def.openExtras && m.def.openExtras.includes(sp.id));
+      if (!opened && ((sp.freeOnly && this.battle.mode === 'story') || !formFreeUnlocked(sp))) return 'hidden';
+      // a move of the higher forms says which it needs; one of the base body's says it is not for this form
+      if (sp.forms && !sp.forms.includes(this.form.id)) return sp.forms.includes('base') ? 'Not in ' + this.form.name : 'Needs ' + sp.forms.map((id) => (this.def.forms.find((fm) => fm.id === id) || { name: id }).name).join(' or ');
+      if (sp.ultimate && !this.battle.rules.allowUltimates) return 'Not allowed here';
+      // sp.counterOnly: answered from a Perfect Guard by the form's counter (moveSet.counter[kind].special), never pressed cold
+      if (sp.counterOnly && !(this.counterFrames > 0)) return sp.counterOnly === true ? 'After a Perfect Guard' : sp.counterOnly;
+      if (sp.partner && !this.teamPartner(sp)) return 'Needs ' + (sp.partner.name || 'a partner') + ' at your side';
+      return null;
+    }
+
+    /**
+     * The ally a team rush needs (sp.partner: { ids, forms, name, range }): on this side, one of those fighters (in one
+     * of those forms), close enough and free to join in — not down, held, busy in a scene or a technique of its own.
+     */
+    teamPartner(sp) {
+      const P = sp.partner;
+      if (!P) return null;
+      const free = { free: 1, guard: 1, dash: 1, land: 1, attack: 1, charge: 1, recover: 1 };
+      return this.battle.alliesOf(this).find((a) => a !== this && a.alive && !a.hidden && P.ids.includes(a.def.id) && (!P.forms || P.forms.includes(a.form.id)) && free[a.state] && a.pos.distanceTo(this.pos) <= (P.range || 40)) || null;
+    }
+
     skillCost(slot) {
       const sp = this.specFor(slot);
       if (!sp) return 0;
@@ -1120,6 +1265,8 @@
       if (!base) return false;
       // story missions can lock techniques a character has not learned yet at that point in the timeline
       if (this.lockedSlots && this.lockedSlots[slot]) return false;
+      const extra = slot.startsWith(EXTRA);
+      if (extra && this.extraLock(base)) return false;
       // some techniques only exist in a mechanic state (e.g. Gohan's rage)
       if (base.requiresMech && !(this.mech && this.mech[base.requiresMech])) {
         this._denied();
@@ -1152,7 +1299,8 @@
           break;
         case 'rush':
           R.spendKi(this, sp.kiCost);
-          this.setState('rush', { spec: sp, slot, phase: 'wind' });
+          // sp.partner: a team rush — the ally it needs comes along (Fighter.teamPartner; extraLock says when there is none)
+          this.setState('rush', { spec: sp, slot, phase: 'wind', partner: sp.partner ? this.teamPartner(sp) : null });
           this.anim.play(sp.poses.wind, 20);
           break;
         case 'spiritBomb':
@@ -1166,9 +1314,124 @@
           if (!tech || !tech.start(this, sp, slot, cost)) return false;
         }
       }
-      if (slot === 'ultimate') this.stats.ultimates++;
+      if (slot === 'ultimate' || (extra && sp.ultimate)) this.stats.ultimates++;
+      if (this.cine) this._endCine(false);
+      // its cinematic: steps on the technique's own events. Not in the story, whose set pieces (a Spirit Bomb
+      // charged for a whole scene) stage their own camera. Shown when the player uses it — and for an ultimate
+      // aimed at the player too, as the ultimates' charge shot always was; a CPU's ordinary technique (a Big
+      // Bang Attack thrown at you every few seconds) never takes the camera away
+      if (sp.cine && this.battle.mode !== 'story') {
+        const b = this.battle, watch = this === b.player || (!!(sp.ultimate || slot === 'ultimate') && b.involvesPlayer(this));
+        this.cine = { spec: sp, queue: [], watch, shot: null, mood: false };
+        this._cineEvent('start');
+      }
       this.battle.emit('special', { fighter: this, spec: sp, slot });
       return true;
+    }
+
+    /** sp.partner.alongside: the partner takes his place at that side of him for the wind-up (the rush has just begun). */
+    _partnerAlongside(sd, sp) {
+      sd.alongStarted = true;
+      const P = sd.partner;
+      if (!P || !P.alive || P.hidden || ['held', 'knockdown', 'knockback', 'hitstun', 'ko', 'scripted', 'clash', 'transform'].includes(P.state)) return;
+      P.ghost(0.3, 0.4);
+      P.setState('scripted', { pose: sp.partner.windPose || sp.partner.pose || 'idle', speed: 20, teamRush: this });
+      P.sd.aura = 1;
+      sd.aura = 1;
+      sd.partnerOn = true;
+      this._keepAlongside(sd, sp);
+      const ig = sp.partner.ignite;
+      if (ig) {
+        const b = this.battle;
+        for (const F of [this, P]) {
+          const feet = F.pos.clone();
+          if (b.stage.hasGround && F.grounded) {
+            feet.y = b.stage.heightAt(feet.x, feet.z);
+            b.stage.crater(feet.clone(), 1.4 * F.scale, 0.25, F);
+          }
+          b.vfx.ring(feet.add(new V3(0, 0.2, 0)), 3.2 * F.scale, ig, 0.6, new V3(0, 1, 0));
+        }
+        b.sfx('kiUp', this, { vol: 1 });
+      }
+    }
+
+    /** The partner held at his side, a stride apart, turned the way he is (the wind-up and the charge). */
+    _keepAlongside(sd, sp) {
+      const P = sd.partner;
+      if (!(P && P.alive && P.state === 'scripted' && P.sd.teamRush === this)) return;
+      const fw = this.forward.clone().setY(0);
+      if (fw.lengthSq() < 1e-4) fw.set(0, 0, 1);
+      fw.normalize();
+      const side = new V3(-fw.z, 0, fw.x).multiplyScalar((sp.partner.alongside === 'left' ? -1 : 1) * 1.5 * Math.max(this.scale, P.scale)); // (-fw.z, 0, fw.x) is his right
+      P.pos.copy(this.pos).add(side);
+      P.vel.copy(this.vel);
+      P.grounded = this.grounded;
+      P.fallVel = 0;
+      P.yaw = this.yaw;
+      if (sd.phase === 'dash' && this.stateFrame % 2 === 0) this.battle.vfx.trail(P.chest(), 0xffffff, 0.5, 0.3);
+    }
+
+    /** The two of them kick off together: twin shockwave rings where they stood (sp.partner.ignite). */
+    _launchAlongside(sd, sp) {
+      const P = sd.partner, b = this.battle, ig = sp.partner.ignite;
+      if (sp.partner.dashPose) P.anim.play(sp.partner.dashPose, 20);
+      if (ig) for (const F of [this, P]) b.vfx.ring(F.pos.clone().add(new V3(0, 0.3, 0)), 2.6 * F.scale, ig, 0.45, new V3(0, 1, 0));
+      b.cameraTraumaAt(this.chest(), 0.25);
+    }
+
+    /** A team rush's partner goes back to fighting on his own (Fighter.rush; also when the rush state is left). */
+    _releasePartner(sd = this.sd) {
+      const P = sd.partner;
+      if (sd.partnerOn && P && P.alive && P.state === 'scripted' && P.sd.teamRush === this) P.setState('free');
+      sd.partnerOn = false;
+    }
+
+    /** A technique event (see CINE_STATES): its steps replace the ones still waiting. */
+    /** add: keep what is already queued (a rush step's own cue, h.cue, must not wipe the shots still to come). */
+    _cineEvent(name, add) {
+      const c = this.cine;
+      if (!c) return;
+      const q = c.spec.cine.steps.filter((s) => s.on === name).map((s) => ({ due: this.frame + (s.at || 0), s }));
+      c.queue = add ? c.queue.concat(q) : q;
+    }
+
+    _cineTick() {
+      const c = this.cine;
+      const due = c.queue.filter((q) => q.due <= this.frame);
+      if (!due.length) return;
+      c.queue = c.queue.filter((q) => q.due > this.frame);
+      for (const q of due) this._cineStep(q.s);
+    }
+
+    _cineStep(s) {
+      const b = this.battle, c = this.cine, t = this.target;
+      // minTier / maxTier: a step only for a beam released at (or below) that charge tier — a full charge's own shots
+      const tier = this.sd.tier || 0;
+      if ((s.minTier && tier < s.minTier) || (s.maxTier !== undefined && tier > s.maxTier)) return;
+      if (c.watch && s.shot && t && t.alive && CINE_SHOTS[s.shot]) {
+        const prev = b.camera.shot;
+        CINE_SHOTS[s.shot](b, this, s.dur || 1.2);
+        c.shot = b.camera.shot;
+        // in a rush every shot but the finish's is held until the next one replaces it (or the rush ends): hit-stop
+        // stretches the blows past any written length, and the camera drifted back to play between the shots
+        if (this.state === 'rush' && s.on !== 'finish' && c.shot && c.shot !== prev) c.shot.hold = true;
+      }
+      if (s.sfx) b.sfx(s.sfx, this, s.sfxOpts || {});
+      if (s.flash) b.vfx.flash(s.flashAt === 'target' && t ? t.chest() : this.chest(), s.flash, s.flashColor || c.spec.color || 0xffffff, 0.2);
+      if (c.watch && s.quake) b.camera.addTrauma(s.quake);
+      if (c.watch && s.slow) b.slowmo(s.slow[0], s.slow[1]);
+      if (s.mood) {
+        b.stage.setMood(s.mood[0], s.mood[1], s.mood[2]);
+        c.mood = true;
+      }
+    }
+
+    /** cut: the move was interrupted — the camera goes back now instead of finishing its shot (a held one always does). */
+    _endCine(cut) {
+      const c = this.cine;
+      this.cine = null;
+      if ((cut || (c.shot && c.shot.hold)) && c.shot && this.battle.camera.shot === c.shot) this.battle.camera.endShot();
+      if (c.mood) this.battle.stage.clearMood(0.8);
     }
 
     _startTeleport(sp, slot, opts) {
@@ -1247,12 +1510,18 @@
     applyForm(index) {
       this.formIndex = index;
       this.form = this.def.forms[index];
+      // a form whose body evades by itself (Ultra Instinct: form.evade, the god-evasion's own fields) — this fighter's
+      // own copy, so its counters are never shared with another fighter in the same form
+      this._formEvade = this.form.evade ? Object.assign({}, this.form.evade) : null;
       this.formLevel = 0;
       this._applyFormLevel();
       // a form can carry its own pose library (a stance, strikes that only exist in it);
       // leaving the form puts the character's own library back
       if (this.anim) this.anim.poses = this.form.poses ? Object.assign({}, this.poses, this.form.poses) : this.poses;
       this.model.setForm(this.form);
+      // form.wear: a form that bursts the suit (Toppo's God of Destruction: bare to the ragged band at the waist); like
+      // any battle damage it stays when he drops out of the form
+      if (this.form.wear && (this.damageLevel || 0) < this.form.wear) this.setDamage(this.form.wear, { burst: !this.battle.mission });
       this.aura.setStyle(this.form.aura || { color: 0xffffff });
       this.battle.emit('formChanged', { fighter: this, form: this.form });
     }
@@ -1448,6 +1717,10 @@
       // a STORY BLOCK (Goku letting Future Trunks test him): whatever this attacker swings stops
       // on him — from any side, on the tip of one finger (sb.pose / sb.pose + '2' alternate).
       // Set per mission: { from: [fighters], pose }; sb.count counts the blows stopped.
+      // a mechanic may send the hit somewhere else entirely (Janemba's portals: the blow lands on the
+      // attacker's own back; a pattern read and he is behind you): its answer is the hit's result
+      const icpt = SL.mech(this, 'intercept', hit, att, dir);
+      if (icpt) return icpt;
       const sb = this.storyBlock;
       if (sb && att && (!sb.from || sb.from.includes(att)) && (hit.type === 'melee' || hit.type === 'throw')) {
         sb.count = (sb.count || 0) + 1;
@@ -1464,8 +1737,9 @@
         this.battle.emit('storyBlock', { fighter: this, attacker: att, count: sb.count, point: tip.clone() });
         return 'blocked';
       }
-      const se = this.storyEvade;
-      if (se && se.mode === 'god' && att && (hit.type === 'melee' || hit.type === 'ki' || hit.type === 'throw') && (!se.from || se.from.includes(att)) && GOD_EVADE_STATES[this.state] && this.battle.frame - (se.last || -9999) > (se.gap || 0) && Math.random() < (se.chance === undefined ? 1 : se.chance)) {
+      // a story's evasion, else the form's own (Ultra Instinct), which needs the ki to pay for it (se.kiCost)
+      const se = this.storyEvade || this._formEvade;
+      if (se && se.mode === 'god' && att && (hit.type === 'melee' || hit.type === 'ki' || hit.type === 'throw') && (!se.from || se.from.includes(att)) && GOD_EVADE_STATES[this.state] && this.battle.frame - (se.last || -9999) > (se.gap || 0) && (!se.kiCost || this.ki >= se.kiCost) && Math.random() < (se.chance === undefined ? 1 : se.chance)) {
         return this._godEvade(att, hit, dir, se);
       }
       if (se && se.mode !== 'god' && att && (hit.type === 'melee' || hit.type === 'ki') && !hit.ultimate && (!se.from || se.from.includes(att)) && STORY_EVADE_STATES[this.state] && this.battle.frame - (se.last || -9999) > (se.gap || 24) && (!se.behind || this.forward.dot(dir.clone().setY(0).normalize().negate()) < -0.2) && Math.random() < (se.chance || 0.6)) {
@@ -1841,6 +2115,7 @@
     _godEvade(att, hit, dir, se) {
       se.count = (se.count || 0) + 1;
       se.last = this.battle.frame;
+      if (se.kiCost) this.ki = Math.max(0, this.ki - se.kiCost);
       this.yaw = this.prevYaw = Math.atan2(att.pos.x - this.pos.x, att.pos.z - this.pos.z);
       const kinds = se.kinds || ['sway', 'step', 'sway', 'parry', 'step', 'vanish'];
       let kind = se.pick ? se.pick(se.count, att, hit) : kinds[(se.count - 1) % kinds.length];
@@ -1869,10 +2144,22 @@
       const right = new V3(-this.forward.z, 0, this.forward.x);
       const toRight = side.dot(right) > 0;
       this.setState('dodge', { dir: side.clone(), pose: step ? se.stepPose || (toRight ? 'strafeR' : 'strafeL') : se.swayPose || 'guard', god: true });
-      this.vel.copy(side).multiplyScalar(step ? 10 : 4.5);
+      // se.swayVel / se.stepVel: how far the body goes — Ultra Instinct moves only as far as the blow needs
+      this.vel.copy(side).multiplyScalar(step ? se.stepVel || 10 : se.swayVel || 4.5);
       this.invuln = step ? 16 : 13;
-      if (att.state === 'attack' && att.sd) att.sd.whiffPenalty = Math.max(att.sd.whiffPenalty || 0, se.whiff === undefined ? 10 : se.whiff);
-      if (step) this.battle.vfx.afterimage(this.pos, this.height, this.ghostColor());
+      if (att.state === 'attack' && att.sd) {
+        att.sd.whiffPenalty = Math.max(att.sd.whiffPenalty || 0, se.whiff === undefined ? 10 : se.whiff);
+        // se.overrun: the attacker's weight carries on through the space the body left, and he has to step to stop
+        if (se.overrun) {
+          att.sd.overrun = se.overrun;
+          att.sd.overrunDir = d.clone();
+        }
+      }
+      // se.trace (Ultra Instinct): no afterimage clone — the body is translucent for a few frames, a thin contour
+      if (se.trace) {
+        this.ghost(0.12, 0.3);
+        this.battle.vfx.ring(this.chest(), 0.8, se.trace, 0.16);
+      } else if (step) this.battle.vfx.afterimage(this.pos, this.height, this.ghostColor());
       this.battle.sfx('dodge', this, { vol: step ? 0.7 : 0.45, pitch: step ? 1 : 1.25 });
       emit();
       return 'miss';
@@ -1927,7 +2214,8 @@
           this._onGroundContact(impactSpeed);
         }
       }
-      const hitPillar = stage.resolveFighter(this);
+      // noCollide: a story figure seated inside scenery (King Yemma behind his desk, under the barrier)
+      const hitPillar = this.noCollide ? null : stage.resolveFighter(this);
       if (hitPillar && (this.state === 'knockback' || (!this.alive && this.speed > 10))) {
         const sp = hitPillar.speed;
         if (sp > 12) this._wallImpact(hitPillar, sp);
@@ -1981,9 +2269,16 @@
         return;
       }
       if (speed > 8) {
-        this.anim.squash = U.clamp(speed * 0.012, 0.08, 0.22);
-        this.battle.vfx.dust(this.pos, 1, 10);
-        this.battle.sfx('jump', this, { vol: 0.8 });
+        // a heavy body lands like one (form.landing / def.landing = { dust, crack, quake }: Broly's powered forms,
+        // Bio-Broly, Hirudegarn): a deeper squash, a wide burst of dust, the ground cracking, the camera feeling it
+        const L = (this.form && this.form.landing) || this.def.landing;
+        this.anim.squash = U.clamp(speed * 0.012 * (L ? 1.6 : 1), 0.08, L ? 0.32 : 0.22);
+        this.battle.vfx.dust(this.pos, L ? L.dust || 2 : 1, L ? 22 : 10);
+        if (L) {
+          if (L.crack && stage.hasGround) stage.crater(this.pos, L.crack, 0.1, null);
+          if (L.quake && this.battle.camera && this.battle.camera.addTrauma) this.battle.camera.addTrauma(L.quake * U.clamp(speed / 30, 0.4, 1));
+          this.battle.sfx('groundImpact', this, { vol: 0.85 });
+        } else this.battle.sfx('jump', this, { vol: 0.8 });
       }
     }
 
@@ -2129,6 +2424,28 @@
   }
 
   /* =================== state handlers =================== */
+  /**
+   * HAKAI'S LIGHT on a fighter who survives it (a rush hit's h.hakai): the body lit violet, a ring of glowing motes
+   * climbing from the soles to the crown over `frames` (50), then the light let go. Battle ticks only; nothing to dispose.
+   */
+  function hakaiLight(b, v, o) {
+    const color = o.color || 0xb060ff, frames = o.frames || 50;
+    if (v.model && v.model.setTint) v.model.setTint(color, 0.5);
+    let n = 0;
+    b.onTick(() => {
+      if (b.disposed) return false;
+      n++;
+      const k = Math.min(1, n / frames), h = v.pos.y + v.height * k, r = 0.35 * (v.scale || 1);
+      for (let i = 0; i < 2; i++) {
+        const a = Math.random() * Math.PI * 2;
+        b.vfx.sparks(new V3(v.pos.x + Math.cos(a) * r, h, v.pos.z + Math.sin(a) * r), color, 1, 1.6, 0.09);
+      }
+      if (v.model && v.model.setTint) v.model.setTint(color, 0.5 * (1 - k));
+      return n < frames;
+    });
+    b.emit('hakaiLight', { fighter: v });
+  }
+
   const STATES = {
     free(it) {
       it = this._consumeBuffer(it);
@@ -2217,6 +2534,7 @@
           this.ghost(0.3, 0.5);
           this.battle.vfx.afterimage(this.pos, this.height, this.ghostColor());
           const dest = this._teleportDest(mv.teleport.to || 'above');
+          const from = this.pos.clone();
           this.pos.copy(dest);
           this.prevPos.copy(dest);
           this.grounded = false;
@@ -2224,6 +2542,7 @@
           this.faceTarget(100);
           this.battle.vfx.afterimage(this.pos, this.height, this.ghostColor());
           this.battle.sfx('vanish', this);
+          SL.mech(this, 'on', 'teleportStrike', { from, to: dest.clone() });
         }
       }
 
@@ -2244,12 +2563,35 @@
         this.vel.z = U.damp(this.vel.z, 0, 10, TICK);
         this.vel.y = this.grounded ? 0 : U.damp(this.vel.y, 0, 10, TICK);
       }
+      // OVERRUN (a blow slipped by Ultra Instinct, _godEvade): the momentum goes on through the empty air for a
+      // moment and a recovery step stops it — the miss is physical, not a teleport back into a stance
+      if (sd.overrun && f >= activeEnd - 1 && f < activeEnd + 14) {
+        const k = 1 - (f - activeEnd + 1) / 15;
+        this.vel.x = sd.overrunDir.x * sd.overrun * k;
+        this.vel.z = sd.overrunDir.z * sd.overrun * k;
+        if (!sd.overreached) {
+          sd.overreached = true;
+          this.anim.play('overreach', 12, { restart: true });
+        }
+        if (f === activeEnd + 13) this.anim.play(this.grounded ? 'idle' : 'flyIdle', 8);
+      }
       if (this.grounded) this.vel.y = Math.max(0, this.vel.y);
       if (f === startup) {
         this.anim.play(mv.pose.strike, 44, { restart: !!mv.multi });
         if (mv.stretch) this.anim.squash = -0.14;
         this.battle.sfx('swing', this, { pitch: sd.kind === 'light' ? 1.2 : 0.8 });
         if (mv.impact >= 3 && this.formIndex > 0) this.ghost(0.18, 0.35);
+        // mv.quake { r, trauma }: the blow comes down on the ground in front of him (Magetta's hammer, a god's fist):
+        // a crack, dust, a ring and a tremor the camera feels — whether or not it hits anybody
+        if (mv.quake && this.grounded && this.battle.stage.hasGround) {
+          const q = mv.quake, at = this.pos.clone().addScaledVector(this.forward, mv.reach * this.scale * 0.8);
+          at.y = this.battle.stage.heightAt(at.x, at.z);
+          this.battle.stage.crater(at, q.r * 0.6, 0.3, null);
+          this.battle.vfx.dust(at, q.r, 18);
+          this.battle.vfx.ring(at.clone().add(new V3(0, 0.15, 0)), q.r * 1.6, q.color === undefined ? 0xffe0b0 : q.color, 0.4, new V3(0, 1, 0));
+          this.battle.sfx('groundImpact', this, { vol: 1.1, pitch: 0.7 });
+          this.battle.cameraTraumaAt(at, q.trauma === undefined ? 0.4 : q.trauma);
+        }
       }
       if (f >= startup && f < activeEnd) {
         if (mv.multi) {
@@ -2265,7 +2607,7 @@
         } else this._meleeCheck(mv);
       }
       if (f === activeEnd && mv.pose.follow) this.anim.play(mv.pose.follow, 18);
-      if (f === activeEnd + Math.floor(mv.recovery * 0.4)) this.anim.play(this.grounded ? 'idle' : 'flyIdle', 9);
+      if (f === activeEnd + Math.floor(mv.recovery * 0.4) && !sd.overreached) this.anim.play(this.grounded ? 'idle' : 'flyIdle', 9);
       // A STRIKE THAT FOUND NOTHING (def.whiffRecovery, owner's Frieza fairness pass): he is
       // left finishing the swing, and a string cannot be chained off thin air — the miss is
       // the player's opening, not a free restart.
@@ -2458,6 +2800,8 @@
           battle.vfx.ring(hands, 1.5 + tier * 0.8, sp.color, 0.3);
           battle.sfx('tierUp', this, { pitch: 1 + tier * 0.18 });
           if (this.isPlayer) battle.camera.addTrauma(0.06 + tier * 0.03);
+          // the last tier: a fully charged technique's own presentation (cine event 'full')
+          if (tier === sp.tiers.length) this._cineEvent('full');
         }
       }
       // callout syllables across the charge (KA... ME... HA... ME...)
@@ -2477,7 +2821,7 @@
       if (this.grounded && sd.tier >= 2 && f % 10 === 0) battle.vfx.rock(this.pos.clone().add(new V3(U.rand(-3, 3), 0.2, U.rand(-3, 3))), new V3(0, U.rand(2, 5), 0), U.rand(0.08, 0.22), battle.stage.rockColor);
       if (this.isPlayer) battle.chargeFocus = frac;
 
-      if (f === 1 && (sp.cinematic || sp.ultimate)) battle.ultimateChargeShot(this, sp.chargeMax / 60);
+      if (f === 1 && (sp.cinematic || sp.ultimate) && !this.cine) battle.ultimateChargeShot(this, sp.chargeMax / 60);
       const held = slotHeld(sd.slot, it);
       const minDone = f >= (sd.quick ? Math.min(sp.chargeMin, R.QUICK_BEAM_MIN) : sp.chargeMin);
       // a story beat can force the beam out now (an attack arriving point-blank, an opponent answering at once)
@@ -2497,6 +2841,7 @@
         }
         if (sp.callout && !sd.instant) battle.emit('callout', { fighter: this, text: sp.callout[sp.callout.length - 1], index: sp.callout.length - 1, final: true, tier: sd.tier });
         this.setState('beamFire', { spec: sp, slot: sd.slot, beam, frac, aimYaw: 0, aimPitch: 0, tier: sd.tier });
+        this._cineEvent('release');
         this.anim.play(sp.poses.fire, 40);
         this.anim.squash = 0.12;
         battle.vfx.ring(hands, 2 + frac * 3, sp.color, 0.35, beam.dir);
@@ -2515,6 +2860,21 @@
       beam.aimYaw = sd.aimYaw;
       beam.aimPitch = sd.aimPitch;
       if (this.isPlayer && this.stateFrame < 40) this.battle.camera.addTrauma(0.02 + (sd.frac || 0) * 0.02);
+      // sp.push { at, radius, damage }: a second push into the beam while it still flows (Adult Gohan's Super
+      // Kamehameha follow-through) — wider and harder from that frame on; cine event 'push'
+      const pu = sd.spec.push;
+      if (pu && this.stateFrame === pu.at && !beam.done) {
+        beam.radius *= pu.radius || 1.2;
+        beam.damage *= pu.damage || 1.1;
+        const hands = this.handPos('R').add(this.handPos('L')).multiplyScalar(0.5);
+        this.battle.vfx.flash(hands, 2.4, sd.spec.core || 0xffffff, 0.2);
+        this.battle.vfx.ring(hands, 3, sd.spec.color, 0.35, beam.dir);
+        this.battle.sfx('tierUp', this, { pitch: 0.8 });
+        this.anim.play(sd.spec.poses.fire, 40);
+        this.anim.squash = 0.16;
+        if (this.isPlayer) this.battle.camera.addTrauma(0.2);
+        this._cineEvent('push');
+      }
       if (beam.done || this.stateFrame > 400) this.setState('recoverSpecial', { frames: sd.spec.recovery || 20 });
     },
 
@@ -2589,6 +2949,8 @@
           const a = count > 1 ? (k / (count - 1) - 0.5) * (sp.projectile.spread || 0.5) : 0;
           ball = this.battle.projectiles.spawnBlast(this, origin, a ? dir.clone().applyAxisAngle(UP, a) : dir, { ...sp.projectile, ...scaled, special: true, name: sp.name, wobble: k, charge: ch });
         }
+        sd.ball = ball;
+        this._cineEvent('release');
         this.anim.play(sp.pose.release, 44);
         this.battle.sfx('kiBlastBig', this, ch ? { pitch: 0.8 - ch * 0.2, vol: 1 + ch * 0.4 } : undefined);
         if (sp.releaseSfx) this.battle.sfx(sp.releaseSfx, this);
@@ -2653,7 +3015,30 @@
     rush(it) {
       const sd = this.sd, sp = sd.spec, f = this.stateFrame;
       const t = this.target;
-      if (sp.prop && this.model.setPropFill) this.model.setPropFill(sp.prop, sd.phase === 'recover' ? Math.max(0, 1 - (f - sd.recStart) / 8) : Math.min(1, f / 6));
+      // sp.propMax: the prop grown only that far (God Slicer: a short edge on the hand, not the Spirit Sword)
+      // a whip swing (h.swing.whip) hides the straight blade while it lasts
+      if (sp.prop && this.model.setPropFill) this.model.setPropFill(sp.prop, sd.swing && sd.swing.whip ? 0 : (sp.propMax || 1) * (sd.phase === 'recover' ? Math.max(0, 1 - (f - sd.recStart) / 8) : Math.min(1, f / 6)));
+      // missed (dodged, guarded, out of reach): the punish window, and the camera is back for it
+      const miss = () => {
+        sd.phase = 'recover';
+        sd.recStart = f;
+        if (this.cine) this._endCine(true);
+      };
+      // off his head (h.perch): a spring back, then down to the height he went up from — the ground, or where they were flying
+      const getOff = () => {
+        sd.hop = sd.perch.from.y;
+        sd.perch = null;
+        this.vel.copy(this.forward).multiplyScalar(-5 * this.scale).setY(8);
+        this.fallVel = 8;
+        this.grounded = false;
+      };
+      // sp.partner.alongside ('left' | 'right'): a team rush the two start together — the partner takes his place at that
+      // side of him for the wind-up (sp.partner.windPose), both auras up, the ground giving under them (sp.partner.ignite: a
+      // colour), flies the charge beside him (sp.partner.dashPose) and stays at his side for the blows, instead of
+      // appearing on the far side of the held one at the catch (the Super Saiyan Blue charge, the Goku Black research)
+      const along = sp.partner && sp.partner.alongside;
+      if (along && !sd.alongStarted) this._partnerAlongside(sd, sp);
+      if (along && sd.partnerOn && sd.phase !== 'combo') this._keepAlongside(sd, sp);
       if (sd.phase === 'wind') {
         this.vel.multiplyScalar(0.7);
         this.faceTarget(20);
@@ -2662,91 +3047,436 @@
           sd.dashStart = f;
           this.anim.play(sp.poses.dash || 'dash', 20); // most kits only author the wind-up; the common dash pose carries the lunge
           this.battle.sfx('dash', this, { vol: 1.3 });
+          if (along && sd.partnerOn) this._launchAlongside(sd, sp);
+          this._cineEvent('release');
         }
         return;
       }
       if (sd.phase === 'dash') {
-        if (!t || !t.alive) {
-          sd.phase = 'recover';
-          sd.recStart = f;
-          return;
-        }
+        if (!t || !t.alive) return miss();
         const d = t.chest().sub(this.chest());
         const dist = d.length();
         this.vel.copy(d.divideScalar(Math.max(0.01, dist))).multiplyScalar(sp.speed * this.mult().speed);
         this.grounded = false;
         this.faceTarget(30);
-        if (f % 2 === 0) this.battle.vfx.trail(this.chest(), 0xffffff, 0.5, 0.3);
+        if (along && sd.partnerOn) this._keepAlongside(sd, sp); // the same velocity as his this tick: side by side all the way
+        // sp.dragon: { color, core } — the golden dragon coiling round him on the way in (Dragon Fist)
+        if (sp.dragon) this.battle.vfx.dragonTrail(this.chest(), this.forward, f, sp.dragon.color, this.scale);
+        else if (f % 2 === 0) this.battle.vfx.trail(this.chest(), 0xffffff, 0.5, 0.3);
         if (f % 5 === 0) this.ghost(0.2, 0.3);
         if (dist < 1.8 * this.scale + t.radius) {
           const res = t.takeHit(this, { type: 'melee', damage: 120, knock: 'held', impact: 1, dir: this.dirTo(t), pose: 'hitBody', sfx: 'punchHeavy' });
           if (res === 'hit' && t.alive) {
-            t.setState('held', { by: this, frames: 160 });
+            // held for the whole chain: a long rush (over four seconds) outlasts the usual 160 frames
+            t.setState('held', { by: this, frames: Math.max(160, sp.hits.reduce((a, h) => a + (h.frames || 0), 0) + 40) });
             sd.victim = t;
             sd.phase = 'combo';
             sd.hitIndex = 0;
             sd.nextHit = f + 3;
+            sd.heldAt = f;
             this.vel.set(0, 0, 0);
-          } else {
-            sd.phase = 'recover';
-            sd.recStart = f;
-          }
+            // a team rush: the partner is there at once, on the far side of him (an afterimage where he was) — or already at
+            // his side, having charged with him (sp.partner.alongside: still with him, or the catch is lost)
+            const P = sd.partner;
+            const alongside = !!(sp.partner && sp.partner.alongside);
+            const ready = alongside ? !!(sd.partnerOn && P.alive && P.state === 'scripted' && P.sd.teamRush === this) : P && P.alive && !P.hidden && !['held', 'knockdown', 'knockback', 'hitstun', 'ko', 'scripted', 'clash', 'transform'].includes(P.state);
+            if (sp.partner && !ready) {
+              // the partner was taken out on the way in: nobody to pass him to — let him go
+              t.setState('free');
+              sd.victim = null;
+              return miss();
+            }
+            if (ready && !alongside) {
+              P.ghost(0.35, 0.5);
+              P.setState('scripted', { pose: sp.partner.pose || 'idle', speed: 20, teamRush: this });
+              sd.partnerOn = true;
+              this.battle.sfx('vanish', P, { vol: 0.8 });
+            } else if (ready) P.anim.play(sp.partner.pose || 'idle', 20);
+            sd.aura = undefined;
+            this._cineEvent('connect');
+          } else miss();
           return;
         }
-        if (f - sd.dashStart > sp.dashFrames) {
-          sd.phase = 'recover';
-          sd.recStart = f;
-        }
+        if (f - sd.dashStart > sp.dashFrames) miss();
         return;
       }
       if (sd.phase === 'combo') {
         const v = sd.victim;
         this.vel.set(0, 0, 0);
-        if (!v || !v.alive || v.state !== 'held') {
+        // a team rush whose partner was hit out of it, or went down, ends here too
+        const partnerLost = sd.partnerOn && !(sd.partner.alive && sd.partner.state === 'scripted' && sd.partner.sd.teamRush === this);
+        if (!v || !v.alive || v.state !== 'held' || partnerLost) {
+          if (sd.perch) getOff();
+          this._releasePartner();
           sd.phase = 'recover';
           sd.recStart = f;
           return;
         }
-        v.pos.copy(this.pos).addScaledVector(this.forward, 1.25 * this.scale);
+        // standing on his head: he stays where he is, Goku on top (a short hop up first); otherwise held in front
+        if (sd.perch) {
+          const k = Math.min(1, (f - sd.perch.at) / 6);
+          this.pos.lerpVectors(sd.perch.from, new V3(v.pos.x, v.pos.y + v.height, v.pos.z), k);
+          this.pos.y += Math.sin(k * Math.PI) * 0.6 * this.scale;
+          this.grounded = false;
+          this.fallVel = 0;
+        } else if (sd.swing) {
+          // h.swing: the held one on the end of the stretched blade, swung round him, breaking whatever he is dragged
+          // through; he turns with the swing
+          const w = sd.swing, k = Math.min(1, (f - w.at) / w.frames), a = w.a0 + U.easeInOutCubic(k) * w.turns * Math.PI * 2;
+          const st = this.battle.stage;
+          // the blade lengthens under him first: carried out from where he was to the end of it, not snapped there
+          const grow = U.easeOutCubic(Math.min(1, k / 0.12)), r = U.lerp(w.r0, w.radius, grow);
+          if (sd.propScaled && w.scale) sd.propScaled.scale.y = U.lerp(1, w.scale, grow);
+          v.pos.copy(this.pos).add(new V3(Math.sin(a) * r, w.lift, Math.cos(a) * r));
+          if (st.hasGround) v.pos.y = Math.max(v.pos.y, st.supportHeight(v.pos.x, v.pos.z, v.pos.y + 2));
+          this.yaw = a;
+          v.yaw = a + Math.PI;
+          for (const o of st.obstacles || []) {
+            if (!o.alive || o.fixture || o.hp > 1e8 || Math.hypot(o.x - v.pos.x, o.z - v.pos.z) > o.r + 0.9 * v.scale) continue;
+            st.destroyPillar(o);
+            w.broke++;
+            this.battle.vfx.debrisBurst(v.chest(), 6, 0x9a8a7a, 10, 0.2);
+            this.battle.sfx('rockBreak', v, { vol: 1 });
+            this.battle.cameraTraumaAt(v.chest(), 0.3);
+          }
+          if (f % 2 === 0) this.battle.vfx.trail(v.chest(), w.color, 0.7 * v.scale, 0.35);
+          // h.swing.whip: the blade let out into a whip of ki — a ribbon from the hand to him, bowed back against the
+          // swing, the more the faster he is carried round
+          if (w.whip) {
+            const p0 = this.handPos('R'), p2 = v.chest(), fast = (k < 0.5 ? 12 * k * k : 12 * (1 - k) * (1 - k)) / 3;
+            const p1 = p0.clone().lerp(p2, 0.5).addScaledVector(new V3(-Math.cos(a), 0, Math.sin(a)), fast * r * 0.35 * Math.sign(w.turns)).add(new V3(0, -0.25 * r * (0.4 + fast), 0));
+            let q0 = p0;
+            for (let i = 1; i <= 6; i++) {
+              // each piece overlaps the next (the glow fades at its ends: end to end they read as beads)
+              const s = i / 6, q = p0.clone().multiplyScalar((1 - s) * (1 - s)).addScaledVector(p1, 2 * (1 - s) * s).addScaledVector(p2, s * s);
+              const lap = q.clone().sub(q0).multiplyScalar(0.4), qa = q0.clone().sub(lap), qb = q.clone().add(lap);
+              this.battle.vfx.slash(qa, qb, w.color, 0.05, 0.15 * this.scale);
+              this.battle.vfx.slash(qa, qb, 0xffffff, 0.05, 0.05 * this.scale);
+              q0 = q;
+            }
+          }
+          // h.swing.smash: n — on open ground (the arenas keep their pillars far out) he is smashed through the rock at n
+          // points evenly round the circle: a burst of rock, and a crater where he is ploughed into the ground
+          if (w.smashed < w.smash && U.easeInOutCubic(k) >= (w.smashed + 1) / (w.smash + 1)) {
+            w.smashed++;
+            const p = v.chest();
+            this.battle.vfx.debrisBurst(p, 14, 0x8a7a6a, 12, 0.32 * v.scale);
+            this.battle.vfx.dust(v.pos.clone(), 2.2 * v.scale, 10);
+            if (st.hasGround) {
+              const gy = st.heightAt(v.pos.x, v.pos.z);
+              if (v.pos.y - gy < 1.5 * v.scale) st.crater(new V3(v.pos.x, gy, v.pos.z), 1.3 * v.scale, 0.3, null);
+            }
+            this.battle.sfx(w.smashed === w.smash ? 'groundImpact' : 'rockBreak', v, { vol: 1.1 });
+            this.battle.cameraTraumaAt(p, 0.35);
+          }
+          if (k >= 1) {
+            // the whip snaps taut into the long blade again for the blow that follows
+            if (w.whip) this.model.setPropFill(sp.prop, sp.propMax || 1);
+            sd.swing = null;
+            sd.swung = true;
+          }
+        } else if (sd.place) {
+          // after a step with h.to the held one stays where he is and he keeps his side of him (behind, above, below,
+          // in front), turned to face him; never under the ground
+          const p = v.pos.clone().add(sd.place);
+          const st = this.battle.stage;
+          if (st.hasGround) p.y = Math.max(p.y, st.supportHeight(p.x, p.z, p.y + 2));
+          this.pos.copy(p);
+          this.grounded = false;
+          this.fallVel = 0;
+          const dx = v.pos.x - p.x, dz = v.pos.z - p.z;
+          if (dx * dx + dz * dz > 0.04) this.yaw = Math.atan2(dx, dz);
+        } else if (sd.swung) {
+          // left where the swing ended: he stays there, turned to
+          const dx = v.pos.x - this.pos.x, dz = v.pos.z - this.pos.z;
+          if (dx * dx + dz * dz > 0.04) this.yaw = Math.atan2(dx, dz);
+        } else {
+          // just caught he is drawn in to the blows over five frames, not yanked there in one (up to 1.4 m for a big one)
+          v.pos.lerp(this.pos.clone().addScaledVector(this.forward, 1.25 * this.scale), Math.min(1, (f - (sd.heldAt || 0)) / 5));
+          v.yaw = this.yaw + Math.PI;
+        }
+        // h.lift: this step carries the two of them up (the held one where he is when anchored, else him with the held one in front)
+        if (sd.lift && f < sd.lift.until) {
+          if (sd.place || sd.perch) {
+            v.pos.y += sd.lift.rate;
+            // a blow driving him down (h.lift below 0) stops at the ground
+            const st = this.battle.stage;
+            if (st.hasGround) v.pos.y = Math.max(v.pos.y, st.supportHeight(v.pos.x, v.pos.z, v.pos.y + 2));
+            v.grounded = false;
+          } else this.pos.y += sd.lift.rate;
+          this.grounded = false;
+          this.fallVel = 0;
+        }
         v.vel.set(0, 0, 0);
-        v.yaw = this.yaw + Math.PI;
+        // the partner of a team rush keeps the far side of him, turned to him (alongside: the front corner on his own side)
+        if (sd.partnerOn) {
+          const P = sd.partner, S0 = Math.max(this.scale, v.scale, P.scale);
+          const away = v.pos.clone().sub(this.pos).setY(0);
+          if (away.lengthSq() < 0.01) away.copy(this.forward);
+          away.normalize();
+          if (sp.partner.alongside) away.negate().addScaledVector(new V3(-away.z, 0, away.x), sp.partner.alongside === 'left' ? 1.1 : -1.1).normalize();
+          P.pos.copy(v.pos).addScaledVector(away, 1.3 * S0);
+          P.vel.set(0, 0, 0);
+          P.grounded = false;
+          P.fallVel = 0;
+          P.yaw = Math.atan2(v.pos.x - P.pos.x, v.pos.z - P.pos.z);
+        }
+        // the ki gathering in the raised hand through an aim step (h.aim): a glow that grows, motes drawn into it
+        const aim = sd.aim;
+        if (aim && f < aim.at + aim.frames && (f - aim.at) % 2 === 0) {
+          const hp = this.handPos(aim.hand), k = (f - aim.at) / aim.frames;
+          this.battle.vfx.flash(hp, (0.35 + 0.9 * k) * this.scale, aim.color, 0.07, SL.Toon.tex.glow);
+          if ((f - aim.at) % 6 === 0) this.battle.vfx.streamInward(hp, 1.2 * this.scale, aim.color, 2, 0.08, 0.3);
+        }
+        // the rings pinning his wrists and ankles through a bind step (h.bind), pulsing on the spot
+        const bind = sd.bind;
+        if (bind && f < bind.at + bind.frames && (f - bind.at) % 5 === 0) {
+          const side = new V3(-v.forward.z, 0, v.forward.x).multiplyScalar(0.18 * v.scale), low = v.pos.y + 0.12 * v.scale;
+          for (const p of [v.handPos('L'), v.handPos('R'), v.pos.clone().add(side).setY(low), v.pos.clone().sub(side).setY(low)]) {
+            this.battle.vfx.ring(p, 0.3 * v.scale, bind.color, 0.3);
+            this.battle.vfx.flash(p, 0.5 * v.scale, bind.color, 0.1, SL.Toon.tex.glow);
+          }
+        }
         if (f >= sd.nextHit) {
           const h = sp.hits[sd.hitIndex];
-          this.anim.play(h.pose, 44, { restart: true });
+          // h.by: 'partner' — in a team rush this step is the partner's (h.pose from his pose library; h.selfPose what
+          // the leader does meanwhile); A is whoever strikes it
+          const A = h.by === 'partner' && sd.partnerOn ? sd.partner : this;
+          if (A !== this) {
+            A.sd.pose = h.pose;
+            A.anim.play(h.pose, 44, { restart: true });
+            if (h.selfPose) this.anim.play(h.selfPose, 30, { restart: true });
+          } else this.anim.play(h.pose, 44, { restart: true });
+          sd.aim = null;
+          sd.bind = null;
+          // h.cue: a cinematic event of this step's own (the rush's cine steps `on` it): a long rush cuts its shots step by step
+          if (h.cue) this._cineEvent(h.cue, true);
+          // h.to: 'behind' | 'above' | 'below' | 'front' | 'left' | 'right' — before this step he vanishes and is there, on
+          // that side of the held one (an afterimage where he was); from then on the held one stays where he is (Prince's
+          // Onslaught, the Meteor Combination). h.lift: m — over this step both rise that far (a juggle into the air); below 0
+          // the blow drives him down (to the ground at most)
+          const S = Math.max(this.scale, v.scale), vf = v.forward;
+          if (h.to) {
+            this.ghost(0.35, 0.5);
+            sd.perch = null;
+            sd.swung = false;
+            sd.place = h.to === 'behind' ? vf.clone().multiplyScalar(-1.3 * S)
+              : h.to === 'front' ? vf.clone().multiplyScalar(1.3 * S)
+              : h.to === 'left' || h.to === 'right' ? new V3(vf.z, 0, -vf.x).multiplyScalar((h.to === 'left' ? 1.3 : -1.3) * S)
+              : h.to === 'above' ? vf.clone().multiplyScalar(-0.35 * S).setY(v.height + 0.45 * S)
+              : vf.clone().multiplyScalar(0.55 * S).setY(-1.5 * S);
+            this.battle.sfx('vanish', this, { vol: 0.8 });
+            // there at once (this step's blow is struck from the new side), turned to him
+            const st = this.battle.stage, p = v.pos.clone().add(sd.place);
+            if (st.hasGround) p.y = Math.max(p.y, st.supportHeight(p.x, p.z, p.y + 2));
+            this.pos.copy(p);
+            this.prevPos.copy(p);
+            const dx = v.pos.x - p.x, dz = v.pos.z - p.z;
+            if (dx * dx + dz * dz > 0.04) this.yaw = Math.atan2(dx, dz);
+            this.battle.vfx.flash(this.chest(), 1.2 * S, 0xffffff, 0.1, SL.Toon.tex.glow);
+          }
+          sd.lift = h.lift ? { until: f + h.frames, rate: (h.lift * S) / h.frames } : null;
+          // h.swing: { radius, turns, scale, lift, color, smash, whip } — over this step the held one is swung round him on
+          // the end of the blade (the technique's prop stretched `scale` times as he is carried out), through whatever
+          // stands in the way, and left where the swing ends (the Spirit Sword hook and drag)
+          if (h.swing) {
+            const d0 = v.pos.clone().sub(this.pos).setY(0);
+            sd.swing = { at: f, frames: h.frames, radius: h.swing.radius * S, r0: Math.sqrt(d0.lengthSq()), turns: h.swing.turns || 1, lift: (h.swing.lift || 0) * S, a0: d0.lengthSq() > 1e-4 ? Math.atan2(d0.x, d0.z) : this.yaw, broke: 0, smash: h.swing.smash || 0, smashed: 0, scale: h.swing.scale || 0, whip: !!h.swing.whip, color: h.swing.color || 0xffe27a };
+            sd.place = null;
+            sd.swung = false;
+            const pr = sp.prop && this.model.props && this.model.props[sp.prop];
+            if (pr && h.swing.scale) sd.propScaled = pr;
+          }
+          // h.perch: 'head' — no blow: he springs up onto the held one's head (feet on the crown, from his height)
+          // and stands there for this step's frames; the blows after it come down from there (Nappa Rush). Its
+          // hitPose straightens him up under the feet (the hit reactions lean the head away from the crown).
+          // h.aim: { color, hand } — no blow either: the hand raised at the held one, the ki gathering in it for
+          // this step's frames before the shot that follows (Final Impact). h.bind: { color } — no blow: rings of ki
+          // close on his wrists and ankles and pin him for this step's frames (Atomic Rush; they fade with the step)
+          // h.move: no blow at all — only the step's pose and its to / lift (gliding over his head before the shot)
+          if (h.perch || h.aim || h.bind || h.move) {
+            if (h.move) {
+              // h.confetti: the "attack" fizzles into a puff of coloured streamers out of both hands (SSJ4 Gogeta's bluff)
+              if (h.confetti) {
+                for (const hd of ['R', 'L']) for (const col of [0xff5a8a, 0xffe04a, 0x5ad8ff, 0x8aff6a]) this.battle.vfx.sparks(this.handPos(hd), col, 6, 7, 0.12);
+                this.battle.sfx('puff', this);
+              }
+            } else if (h.perch) {
+              sd.perch = { from: this.pos.clone(), at: f };
+              this.battle.sfx('jump', this);
+            } else if (h.aim) {
+              sd.aim = { at: f, frames: h.frames, color: h.aim.color || 0xffe27a, hand: h.aim.hand || 'R' };
+              this.battle.sfx('kiCharge', this, { pitch: 1.4 });
+            } else {
+              sd.bind = { at: f, frames: h.frames, color: h.bind.color || 0xffd23a };
+              this.battle.sfx('kiBlast', this, { pitch: 1.3, vol: 0.7 });
+            }
+            if (h.hitPose) v.anim.play(h.hitPose, 30, { restart: true });
+            if (!h.move) this._cineEvent(h.perch ? 'perch' : h.aim ? 'aim' : 'bind');
+            sd.hitIndex++;
+            sd.nextHit = f + h.frames;
+            return;
+          }
           const last = sd.hitIndex === sp.hits.length - 1;
-          const dir = this.forward;
+          const dir = A === this ? this.forward : v.pos.clone().sub(A.pos).setY(0).normalize();
           if (h.knock === 'smash') dir.y = -0.7;
           // h.ki: { color, hand: 'R'|'L'|'both' } — a point-blank ki blast instead of a blow (Gogeta's
           // Blaster Meteor): the palm flares, the shot bursts on the body; h.explode: the last one
-          // detonates (radius)
+          // detonates (radius); h.ki.pierce: the shot goes on through him that far (m), a streak out of his back
           if (h.ki) {
             const col = h.ki.color || 0xffe27a;
             const hands = h.ki.hand === 'both' ? ['R', 'L'] : [h.ki.hand || 'R'];
-            for (const hd of hands) this.battle.vfx.flash(this.handPos(hd), 1.4, col, 0.14, SL.Toon.tex.glow);
-            this.battle.vfx.explosion(v.chest(), h.explode || 0.7, col, { smoke: false });
+            for (const hd of hands) this.battle.vfx.flash(A.handPos(hd), 1.4, col, 0.14, SL.Toon.tex.glow);
+            if (h.ki.pierce) {
+              const end = v.chest().addScaledVector(A.forward, h.ki.pierce * this.scale);
+              for (const hd of hands) {
+                this.battle.vfx.slash(A.handPos(hd), end, col, 0.26, 0.2 * this.scale);
+                this.battle.vfx.slash(A.handPos(hd), end, 0xffffff, 0.16, 0.07 * this.scale);
+              }
+            }
+            // h.hakai: no burst at all (below)
+            if (!h.hakai) this.battle.vfx.explosion(v.chest(), h.explode || 0.7, col, { smoke: false });
             this.battle.vfx.sparks(v.chest(), col, 10, 9, 0.1);
+            // h.beam: { length, radius, frames } — the shot is a point-blank beam (a Kamehameha fired into him from
+            // the hand): one hit, and the beam itself drawn on for its frames as he is carried off by it
+            if (h.beam) {
+              const from = A.handPos(hands[0]), to = v.chest();
+              const d = to.sub(from);
+              if (d.lengthSq() < 0.01) d.copy(A.forward);
+              sd.beamFx = { vis: this.battle.vfx.createBeam(col, h.beam.core || 0xffffff, {}), who: A, hand: hands[0], dir: d.normalize(), len: h.beam.length * S, radius: h.beam.radius * S, at: f, frames: h.beam.frames || 30 };
+              this.battle.sfx('beamFire', A, { vol: 0.9 });
+            }
           }
-          if (h.explode) {
+          // h.giantCut: { length, color } — a blade of light that long, brought straight down through him (Sword of Hope)
+          if (h.giantCut) {
+            const c = v.chest(), L = h.giantCut.length * S, col = h.giantCut.color || 0x8ad8ff;
+            const top = c.clone().add(new V3(0, L * 0.75, 0)).addScaledVector(this.forward, -0.4 * S), bot = c.clone().add(new V3(0, -L * 0.25, 0)).addScaledVector(this.forward, 0.6 * S);
+            this.battle.vfx.slash(top, bot, col, 0.45, 0.7 * S);
+            this.battle.vfx.slash(top, bot, 0xffffff, 0.3, 0.25 * S);
+            this.battle.vfx.flash(c, 2.4 * S, col, 0.18, SL.Toon.tex.glow);
+          }
+          // h.slashes: n — that many strike-lines cut across him at once (the blows too fast to see: Mastered Ultra Instinct)
+          for (let i = 0; i < (h.slashes || 0); i++) {
+            const c = v.chest(), a = new V3(U.rand(-1, 1), U.rand(-1, 1), U.rand(-1, 1)).normalize().multiplyScalar(0.9 * S);
+            this.battle.vfx.slash(c.clone().add(a), c.clone().sub(a), h.slashColor || 0xe8eeff, 0.22, 0.05 * S);
+          }
+          if (h.explode && !h.hakai) {
             this.battle.vfx.ring(v.chest(), h.explode * 2.2, h.ki ? h.ki.color || 0xffe27a : 0xffffff, 0.4);
             this.battle.cameraTraumaAt(v.chest(), 0.45);
             this.battle.sfx('explosionBig', v, { vol: 0.8 });
           }
-          v.takeHit(this, {
+          // h.hakai: { color, frames } — Beerus' Hakai (2026-10-19; the Goku Black arc research CS-HAK-01: "the body does
+          // not explode"): no burst and no blast sound; violet light over him and glowing dust coming off him from the feet
+          // up. The story's erasure (SL.data.trunksKit.erase) takes the body away; a fight goes on, so here he stays
+          if (h.hakai) hakaiLight(this.battle, v, h.hakai);
+          if (last) {
+            this._cineEvent('finish');
+            // sp.detonate: { at, damage, radius, color, pose } — the ki left in him goes off `at` frames after the last
+            // blow, wherever he has been thrown (Dirty Fireworks: two fingers pointed up); not if he is cut off first
+            if (sp.detonate) sd.detonate = { due: f + sp.detonate.at, poseAt: f + 10, target: v };
+            // the dragon goes through him and rises
+            if (sp.dragon) {
+              this.battle.vfx.dragonCoil(v.chest(), sp.dragon.color, sp.dragon.core || 0xffffff, sp.dragon.size || 1);
+              this.battle.sfx('explosionBig', v, { vol: 1, pitch: 0.8 });
+            }
+          }
+          // h.partnerKi: { pose, color, damage, hand } — in a team rush the partner fires with the leader's last blow (the
+          // coordinated finish): his shot lands first, the leader's sends him away
+          if (h.partnerKi && sd.partnerOn) {
+            const P = sd.partner, pk = h.partnerKi, col = pk.color || 0xff60c0, hp = P.handPos(pk.hand || 'R');
+            P.sd.pose = pk.pose;
+            P.anim.play(pk.pose, 44, { restart: true });
+            this.battle.vfx.flash(hp, 1.4, col, 0.14, SL.Toon.tex.glow);
+            this.battle.vfx.slash(hp, v.chest(), col, 0.26, 0.14 * S);
+            v.takeHit(P, { type: 'ki', damage: pk.damage || 0, knock: 'held', hitstun: 30, impact: 2, dir: v.pos.clone().sub(P.pos).setY(0).normalize(), pose: h.hitPose || 'hitBody', color: col });
+          }
+          v.takeHit(A, {
             type: h.ki ? 'ki' : 'melee', damage: h.damage, knock: last ? h.knock || 'heavy' : 'held', knockSpeed: h.knockSpeed || 24,
-            hitstun: 36, impact: last ? h.impact || 3 : 2, dir: dir.normalize(), pose: 'hitBody', sfx: h.sfx, color: h.ki ? h.ki.color : undefined,
+            // h.hitPose: how this blow lands on him (a knee doubles him up, a cross turns his head)
+            hitstun: 36, impact: last ? h.impact || 3 : 2, dir: dir.normalize(), pose: h.hitPose || 'hitBody', sfx: h.sfx, color: h.ki ? h.ki.color : undefined,
           });
+          // h.ring: { color, size } — a shockwave ring left in the air where the blow lands, flat to the blow (each kick of a
+          // cascade leaves its crescent)
+          if (h.ring) this.battle.vfx.ring(v.chest().lerp(A.chest(), 0.3), (h.ring.size || 1.2) * S, h.ring.color || 0xffffff, 0.35, dir.clone());
+          // h.impactFrame: frames — the anime impact frame on a blow the player is watching (his own rush's cinematic): the
+          // picture a hard negative, the two of them frozen (scaled by the Hit-Stop setting), then the colour back with
+          // the blow's white flash (held back: over the negative it only greys it out)
+          if (h.impactFrame && this.cine && this.cine.watch) {
+            const n = Math.round(h.impactFrame * SL.Settings.data.gameplay.hitStop);
+            for (const g of [this, v]) g.freeze = Math.max(g.freeze || 0, n);
+            const fx = SL.ScreenFX, white = fx.flashValue;
+            fx.flashValue = 0;
+            fx.impact(1);
+            this.battle.after(Math.max(2, h.impactFrame), () => {
+              fx.impact(0);
+              fx.flashValue = Math.max(fx.flashValue, white);
+            });
+          }
+          // h.slow: { scale, seconds } — this blow slows the whole battle for a moment (a team rush's key impacts, chosen a
+          // few at a time — not every blow); only when the player is in it; the battle's own slow motion gives the time back
+          if (h.slow && this.battle.involvesPlayer(this)) {
+            this.battle.slowmo(h.slow.scale || 0.25, h.slow.seconds || 0.5);
+            this.battle.emit('rushSlow', { fighter: this, step: sd.hitIndex, scale: h.slow.scale || 0.25 });
+          }
           sd.hitIndex++;
           sd.nextHit = f + h.frames;
           if (sd.hitIndex >= sp.hits.length) {
             sd.victim = null;
             sd.phase = 'recover';
             sd.recStart = f;
+            if (sd.perch) getOff();
+            this._releasePartner();
           }
         }
         return;
       }
-      this.vel.multiplyScalar(0.85);
-      if (f - sd.recStart >= sp.recovery) this.setState('free');
+      // the point-blank beam of the last blow (h.beam): out of the hand along the line it was fired, fading at the end
+      const bf = sd.beamFx;
+      if (bf) {
+        const k = (f - bf.at) / bf.frames;
+        if (k >= 1) {
+          bf.vis.dispose();
+          sd.beamFx = null;
+        } else {
+          const o = (bf.who || this).handPos(bf.hand);
+          bf.vis.update(o, o.clone().addScaledVector(bf.dir, bf.len * Math.min(1, k * 5)), bf.radius * (1 - 0.4 * k), k < 0.6 ? 1 : (1 - k) / 0.4, f / 60);
+        }
+      }
+      // the delayed detonation (sp.detonate): the fingers up, then the burst on him wherever he is
+      const dn = sd.detonate;
+      if (dn) {
+        const D = sp.detonate;
+        if (f === dn.poseAt && D.pose) this.anim.play(D.pose, 24, { restart: true });
+        if (f >= dn.due) {
+          sd.detonate = null;
+          const t2 = dn.target;
+          if (t2 && t2.alive && !t2.hidden) {
+            const c = t2.chest();
+            this.battle.vfx.explosion(c, D.radius || 1.4, D.color || 0xffc040, { smoke: true });
+            this.battle.vfx.ring(c, (D.radius || 1.4) * 2.4, D.color || 0xffc040, 0.5);
+            this.battle.sfx('explosionBig', t2, { vol: 0.9 });
+            this.battle.cameraTraumaAt(c, 0.5);
+            t2.takeHit(this, { type: 'explosion', damage: D.damage, knock: 'heavy', knockSpeed: D.knockSpeed || 30, hitstun: 40, impact: D.impact || 4, dir: UP.clone(), point: c, pose: 'hitHeavy' });
+          }
+        }
+      }
+      if (sd.hop != null) {
+        this.vel.y -= 40 * TICK;
+        this.fallVel = this.vel.y;
+        this.vel.x *= 0.94;
+        this.vel.z *= 0.94;
+        const st = this.battle.stage;
+        const gh = st.hasGround ? st.supportHeight(this.pos.x, this.pos.z, this.pos.y) : -Infinity;
+        // over open air he stops at the height he left; over ground the landing is the ground's (_physics)
+        if (this.grounded) sd.hop = null;
+        else if (sd.hop - gh > 1 && this.vel.y < 0 && this.pos.y + this.vel.y * TICK <= sd.hop) {
+          this.pos.y = sd.hop;
+          this.vel.set(0, 0, 0);
+          sd.hop = null;
+        }
+      } else this.vel.multiplyScalar(0.85);
+      // not free until he is down off the head (a second at most)
+      if (f - sd.recStart >= sp.recovery && (sd.hop == null || f - sd.recStart > 60)) this.setState('free');
     },
 
     spiritBomb(it) {
@@ -2759,7 +3489,7 @@
       if (f === 1) {
         sd.bomb = battle.projectiles.spawnSpiritBomb(this, sp);
         battle.bark(this, 'ultimate', true);
-        battle.ultimateChargeShot(this, Math.min(3, maxF / 60), true);
+        if (!this.cine) battle.ultimateChargeShot(this, Math.min(3, maxF / 60), true);
         if (sp.mood) battle.stage.setMood(sp.mood.amount, sp.mood.color, 1.2);
       }
       if (sd.bomb && !sd.released) {
@@ -2783,7 +3513,8 @@
         sd.bomb.launch(this.target);
         this.anim.play(sp.poses.release, 30);
         battle.sfx('kiBlastBig', this, { vol: 1.3, pitch: 0.6 });
-        battle.bombFollowShot(sd.bomb, this);
+        if (this.cine) this._cineEvent('release');
+        else battle.bombFollowShot(sd.bomb, this);
       }
       if (sd.released && f >= sd.releaseFrame + sp.recovery) this.setState('free');
     },
@@ -2792,7 +3523,9 @@
       const sd = this.sd, f = this.stateFrame;
       const style = sd.form.style || 'burst';
       const short = SL.Settings.data.gameplay.shortTransforms || SL.Settings.data.camera.cinematic === 'off';
-      const seq = sd.form.sequence;
+      // form.practiced: the change once it is his to call on (a short, controlled sequence); a story's own moment
+      // (boss: an awakening, an ascension a mission stages) keeps form.sequence
+      const seq = (!sd.boss && sd.form.practiced) || sd.form.sequence;
       if (style === 'full' && seq && !short) return STATES.transformSequence.call(this, it);
       const full = style === 'full' && !short;
       const applyAt = full ? 58 : style === 'full' ? 22 : 16;
@@ -2805,7 +3538,7 @@
         if (full) {
           sd.cinematic = true;
           this.battle.beginCinematic(this);
-          this.battle.transformShot(this, end / 60);
+          if (!sd.noShots) this.battle.transformShot(this, end / 60);
         }
         // sd.silent: a scene already said it (Super Saiyan 3's "even further beyond")
         if (sd.form.line && !sd.silent) this.battle.say(this, sd.form.line);
@@ -2831,7 +3564,7 @@
     /** Data-driven transformation event (form.sequence). */
     transformSequence(it) {
       const sd = this.sd, f = this.stateFrame;
-      const seq = sd.form.sequence;
+      const seq = (!sd.boss && sd.form.practiced) || sd.form.sequence;
       const battle = this.battle;
       this.vel.multiplyScalar(0.8);
       if (this.grounded) this.vel.y = 0;
@@ -2858,19 +3591,35 @@
         if (step.shot === 'face' && !sd.noShots) battle.faceShot(this, (seq.length - step.at) / 60);
         if (step.shot === 'pull' && !sd.noShots) battle.pullShot(this, (seq.length - step.at) / 60);
         if (step.crack && battle.stage.hasGround && this.grounded) battle.stage.crater(this.pos, 2.6, 0.18, null);
-        if (step.music !== undefined) SL.Music.setIntensity(step.music);
+        // step.dust: the dust driven out from his feet (radius, metres)
+        if (step.dust && battle.stage.hasGround && this.grounded) battle.vfx.dust(this.pos.clone(), step.dust, 16);
+        // step.music: the transformation drives the track's intensity (a build-up); outside a story the battle's own
+        // dynamic level waits a few seconds so it does not undo the build (2026-10-15: it reset it every half second)
+        if (step.music !== undefined) {
+          SL.Music.setIntensity(step.music);
+          if (!battle.mission) battle.musicHold = Math.max(battle.musicHold || 0, 4);
+        }
         // step.song: the transformation brings its own theme in (Gogeta's) — outside a story, where
-        // the mission owns the music, unless the mission says the fighter's song may play
-        if (step.song && (!battle.mission || battle.mission.def.formSongs) && SL.Music.songId !== step.song) SL.Music.play(step.song, { intensity: step.songLevel === undefined ? 3 : step.songLevel });
+        // the mission owns the music, unless the mission says the fighter's song may play. When that song is already
+        // playing (the Z-movie Broly picked against an opponent without a theme) the reveal is its full level instead
+        if (step.song && (!battle.mission || battle.mission.def.formSongs)) {
+          const lvl = step.songLevel === undefined ? 3 : step.songLevel;
+          if (SL.Music.songId !== step.song) SL.Music.play(step.song, { intensity: lvl });
+          else SL.Music.setIntensity(lvl);
+          if (!battle.mission) battle.musicHold = Math.max(battle.musicHold || 0, 6);
+        }
         if (step.sfx) battle.sfx(step.sfx, this);
         if (step.quake) battle.camera.addTrauma(step.quake);
         if (step.skyBolt) battle.vfx.skyBolt(this.pos.clone().add(new V3(U.rand(-6, 6), 0, U.rand(-6, 6))), 40);
+        // step.debris = { color, count }: shards thrown off the head (the Z-movie Broly's circlet breaking)
+        if (step.debris && battle.vfx.debrisBurst) battle.vfx.debrisBurst(this.headPos(), step.debris.count || 10, step.debris.color, 8, 0.12);
         if (step.hairFlicker !== undefined) sd.hairFlicker = step.hairFlicker;
         // step.hair: a stage of the new hair growing out of the scalp (Super Saiyan 3), in the form's hair colour
         if (step.hair) this.model.setHair(step.hair, (sd.form.look && sd.form.look.hair && sd.form.look.hair.color) || 0xffd23a);
         if (step.lightning !== undefined) sd.lightning = step.lightning;
         if (step.rocks !== undefined) sd.rocks = step.rocks;
-        if (step.burst) this._transformBurst(sd, true, step);
+        // step.small: a practiced change bursts like a quick one (smaller glow, ring and shake) — the silhouette stays readable
+        if (step.burst) this._transformBurst(sd, !step.small, step);
       }
       if (sd.auraLevel !== undefined) sd.aura = sd.auraLevel;
       if (this.loops.aura) this.loops.aura.set(f < seq.applyAt ? 0.3 + 0.7 * (f / seq.applyAt) : 1);

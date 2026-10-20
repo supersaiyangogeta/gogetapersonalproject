@@ -219,7 +219,8 @@
       a.setState('free');
       m.lock(false);
       b.aiLocked = false;
-      m.music('finale', 6);
+      // Super Saiyan Vegeta's first fight keeps his awakening's music (soundtrack PDF p.93–94)
+      m.music('vegeta_awakening', 6);
       m.objective('end19', 'Finish Android 19', { icon: 'fist', target: 100 });
       m.objective('noFeed', 'Do not feed him either', { icon: 'guard', optional: true });
       let fed = 0;

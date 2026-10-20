@@ -94,6 +94,9 @@
         b.cameraTraumaAt(f.chest(), 0.5);
       }
       b.emit('fusion', { fused: f, parts: [a, c], id: fusedId });
+      // the dance's fanfare (soundtrack PDF p.97) the moment the fingertips meet and the light comes — a fusion that
+      // came out right (data.fanfare), never the failures; it plays over whatever music the scene has
+      if (data.method === 'dance' && data.fanfare) SL.Music.stinger('fusion_fanfare');
       return h;
     },
 

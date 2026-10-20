@@ -191,6 +191,23 @@
         witnessLine: 'Wh-what IS this...?!',
         music: 6,
         dust: false,
+        // (2026-10-19, the transformation lesson from the Future Trunks Saga's Vegito Blue) the player's hold IS the
+        // anticipation: the change carries straight on from it in the same power stance and a low lens rising with the
+        // gold — not a 3.2 s idle push-in after the meter fills — and no stones thrown past the lens to clutter the reveal
+        transform: {
+          rocks: false,
+          hold: {
+            pose: 'vg_power', expression: 'shout', speed: 10, seconds: 1.3, aura: [0.7, 1],
+            shot: (t, o, el) => {
+              const c = v.chest(), fw = v.forward.clone().setY(0).normalize(), sd = new V3(fw.z, 0, -fw.x);
+              K.camAt(o, K.ground(b, v.pos.clone()).addScaledVector(fw, 4.6).addScaledVector(sd, 1.4).add(new V3(0, 0.3, 0)), c.clone().add(new V3(0, U.lerp(0.2, 1.1, Math.min(1, el / 1.3)), 0)), 52);
+            },
+            onFrame: (n) => {
+              if (n % 6 === 0) b.vfx.bolt(v.chest().add(new V3(U.rand(-0.6, 0.6), U.rand(-0.4, 1.2), U.rand(-0.6, 0.6))), 1.2, 0x8ac8ff);
+              if (n % 9 === 0) b.vfx.ring(K.ground(b, v.pos.clone()).add(new V3(0, 0.2, 0)), 1.6 + n / 40, 0xffe680, 0.35, new V3(0, 1, 0));
+            },
+          },
+        },
         beats: [
           // the ground gives first: cracks under the boots
           { at: 0.12, run: (mm, f) => (b.stage.crater(f.pos, 2.4, 0.2, null), b.sfx('rockBreak', f, { vol: 0.8, pitch: 0.7 }), b.camera.addTrauma(0.2)) },

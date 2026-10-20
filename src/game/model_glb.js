@@ -437,7 +437,7 @@
       this.formScale = look.bulk || 1;
       if (look.tint !== undefined) {
         this.tintColor.set(look.tint);
-        this.tintAmount = look.tintAmount || 0.3;
+        this.tintAmount = look.tintAmount !== undefined ? look.tintAmount : 0.3; // (0 means no tint: Perfect Cell clears Imperfect's)
       } else this.tintAmount = 0;
       this._updateEmissive();
     }

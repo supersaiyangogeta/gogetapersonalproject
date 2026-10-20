@@ -236,12 +236,34 @@
           rules: { timeLimit: c.time, hpMul: c.hp, balance: c.balance, allowTransform: c.transform, allowUltimates: c.ultimates, startKi: 30, maxFormLevel: c.formLevel === undefined || c.formLevel < 0 ? undefined : c.formLevel },
           fighters: [
             { charId: c.p1, player: true, team: 0, pos: new THREE.Vector3(-10, 0, 6), form: c.p1Form, autopilot: c.autopilot },
-            { charId: c.cpu, team: 1, pos: new THREE.Vector3(10, 0, -6), form: c.cpuForm, difficulty: c.difficulty },
-          ],
+            { charId: c.cpu, team: 1, pos: new THREE.Vector3(10, 0, -6), form: c.cpuForm, difficulty: c.difficulty, wardrobe: this._opponentLook(c) },
+          ].concat(this._extraFighters(c, true)),
           onEnd: (b, r) => this._onFreeEnd(b, r),
         });
+        this._partyUp(battle, c);
         return battle;
       });
+    },
+
+    /**
+     * The setup screen's Partner (a CPU ally on your side) and, in Free Battle, Second Opponent (2026-10-17). 'none' or
+     * missing keeps the old one-on-one. The partner fights with the battle's CPU difficulty; in Training it cannot die.
+     */
+    _extraFighters(c, free) {
+      const out = [];
+      if (c.partner && c.partner !== 'none') out.push({ charId: c.partner, team: 0, pos: new THREE.Vector3(free ? -12 : -8, 0, free ? -2 : 4), form: c.partnerForm || 0, difficulty: c.difficulty || 'normal', cannotDie: !free });
+      if (free && c.cpu2 && c.cpu2 !== 'none') out.push({ charId: c.cpu2, team: 1, pos: new THREE.Vector3(12, 0, 2), difficulty: c.difficulty });
+      return out;
+    },
+
+    /** With a partner the two of you are a party: the party key switches who you control (Battle.setParty). */
+    _partyUp(battle, c) {
+      if (c.partner && c.partner !== 'none') battle.setParty(battle.fighters.filter((f) => f.team === 0));
+    },
+
+    /** The opponent's outfit for this battle (the setup screen's Opponent Outfit; Auto dresses a mirror match apart). */
+    _opponentLook(c) {
+      return (SL.Wardrobe && SL.Wardrobe.opponentLook(c.cpu, c.cpuOutfit, c.p1)) || undefined;
     },
 
     startTraining(cfg) {
@@ -255,10 +277,11 @@
           rules: { timeLimit: 0, allowTransform: true, allowUltimates: true, startKi: 100 },
           fighters: [
             { charId: c.p1, player: true, team: 0, pos: new THREE.Vector3(-6, 0, 0), form: c.p1Form, infiniteHp: c.infHp, infiniteKi: c.infKi, infiniteStamina: c.infStamina, cannotDie: true },
-            { charId: c.cpu, team: 1, pos: new THREE.Vector3(6, 0, 0), form: c.cpuForm, difficulty: c.difficulty, dummy: c.dummy, infiniteHp: c.dummyInfHp, cannotDie: true },
-          ],
+            { charId: c.cpu, team: 1, pos: new THREE.Vector3(6, 0, 0), form: c.cpuForm, difficulty: c.difficulty, dummy: c.dummy, infiniteHp: c.dummyInfHp, cannotDie: true, wardrobe: this._opponentLook(c) },
+          ].concat(this._extraFighters(c, false)),
           onEnd: () => {},
         });
+        this._partyUp(battle, c);
         return battle;
       });
     },
@@ -295,7 +318,8 @@
     resetTraining() {
       const b = this.battle;
       if (!b || b.mode !== 'training') return;
-      const pts = [new THREE.Vector3(-6, 0, 0), new THREE.Vector3(6, 0, 0)];
+      // (a partner, when there is one, is the third fighter)
+      const pts = [new THREE.Vector3(-6, 0, 0), new THREE.Vector3(6, 0, 0), new THREE.Vector3(-8, 0, 4)];
       b.fighters.forEach((f, i) => {
         const p = pts[i] || new THREE.Vector3();
         p.y = b.stage.hasGround ? b.stage.heightAt(p.x, p.z) : 0;
@@ -306,7 +330,7 @@
         f.ki = f.kiMax;
         f.stamina = f.staminaMax;
         f.setState('free');
-        f.yaw = i === 0 ? Math.PI / 2 : -Math.PI / 2;
+        f.yaw = f.team === 0 ? Math.PI / 2 : -Math.PI / 2;
       });
       for (const pr of b.projectiles.list) b.projectiles._explode(pr, true);
       for (const bm of b.projectiles.beams) bm.dispose();
@@ -319,6 +343,13 @@
       const b = this.battle;
       if (!b || b.paused) return;
       b.pause();
+      // the story's "commercial break": the eyecatch bumper (soundtrack PDF p.95, an original stand-in) as a story
+      // mission pauses — at most once a minute, so it stays a wink and not a nuisance
+      const now = performance.now();
+      if (b.mission && now - (this._eyecatchAt === undefined ? -1e9 : this._eyecatchAt) > 60000) {
+        this._eyecatchAt = now;
+        SL.Music.stinger('eyecatch');
+      }
       SL.UI.push(SL.Screens.pause(b));
     },
 
@@ -351,6 +382,7 @@
         if (dest === 'training') SL.UI.push(SL.Screens.select('training'));
         if (dest === 'story') SL.UI.push(SL.Screens.story(this.storyFocus));
         if (dest === 'whatif') SL.UI.push(SL.Screens.whatIf(this.storyFocus));
+        if (dest === 'movies' && SL.Screens.movies) SL.UI.push(SL.Screens.movies(this.storyFocus));
         if (dest === 'dragonballs' && SL.Screens.dragonBalls) SL.UI.push(SL.Screens.dragonBalls());
         this._hideLoading();
       }, 40);

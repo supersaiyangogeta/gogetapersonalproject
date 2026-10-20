@@ -68,6 +68,31 @@
     },
   };
 
+  /* 18 IS NOT 17 (ToP refinement brief §26: quick counters, efficient punches and kicks, good recovery after a blocked
+     blow, awareness of the edge — "she should not simply share Android 17's animations"): her own guard, a left-handed
+     straight, a spinning back elbow, a high roundhouse with the other leg, an axe heel, a one-handed shot. */
+  const P18 = {
+    // unimpressed: the weight on one hip, the hands loose and low — she does not bother with a guard until she needs one
+    a18_idle: (t) => {
+      const b = Math.sin(t * 1.9);
+      return { root: { y: -0.015 + b * 0.006, rz: 3 }, hips: [0, -8, 6], spine: [2, 4, -3], chest: [0, 10, 0], head: [-4, -10, 4], shoulderL: [-20, 0, 18], elbowL: [-50, 0, 0], shoulderR: [-30, 0, -14], elbowR: [-70, 0, 0], thighL: [-8, 4, 6], kneeL: [10, 0, 0], thighR: [6, -4, -10], kneeR: [6, 0, 0], hands: ['open', 'open'] };
+    },
+    a18_jabW: { root: { y: -0.03 }, chest: [0, -18, 0], head: [-2, 12, 0], shoulderL: [-44, 0, 20], elbowL: [-104, 0, 0], shoulderR: [-30, 0, -16], elbowR: [-80, 0, 0], thighL: [-14, 0, 10], kneeL: [20, 0, 0], thighR: [10, 0, -10], kneeR: [14, 0, 0], hands: ['fist', 'fist'] },
+    a18_jab: { root: { y: -0.05, rx: 4 }, chest: [2, 20, 0], head: [-4, -14, 0], shoulderL: [-94, 0, 4], elbowL: [-2, 0, 0], shoulderR: [-30, 0, -22], elbowR: [-80, 0, 0], thighL: [-24, 0, 10], kneeL: [28, 0, 0], thighR: [16, 0, -10], kneeR: [14, 0, 0], hands: ['fist', 'fist'] },
+    // the spinning back elbow: she turns away... and the elbow comes round
+    a18_elbowW: { root: { y: -0.04 }, hips: [0, 30, 0], chest: [0, 36, 0], head: [0, -36, 0], shoulderR: [-60, 0, 40], elbowR: [-140, 0, 0], shoulderL: [-30, 0, 20], elbowL: [-70, 0, 0], thighL: [-12, 0, 10], kneeL: [18, 0, 0], thighR: [8, 0, -10], kneeR: [14, 0, 0], hands: ['fist', 'fist'] },
+    a18_elbow: { root: { y: -0.05, rx: 6 }, hips: [0, -24, 0], chest: [4, -40, 0], head: [-4, 30, 0], shoulderR: [-90, 0, -60], elbowR: [-140, 0, 0], shoulderL: [-30, 0, 30], elbowL: [-70, 0, 0], thighL: [-20, 0, 10], kneeL: [26, 0, 0], thighR: [14, 0, -10], kneeR: [14, 0, 0], hands: ['fist', 'fist'] },
+    // the high roundhouse with the LEFT leg (17 side-kicks with the right)
+    a18_kickW: { root: { y: -0.04 }, chest: [-4, 20, 0], head: [-4, -14, 0], shoulderL: [-30, 0, 30], elbowL: [-60, 0, 0], shoulderR: [-40, 0, -30], elbowR: [-70, 0, 0], thighL: [-30, 0, 30], kneeL: [80, 0, 0], thighR: [6, 0, -8], kneeR: [18, 0, 0], hands: ['fist', 'fist'] },
+    a18_kick: { root: { y: 0.02, rz: 10 }, chest: [-6, -30, 0], head: [-4, 24, 0], shoulderL: [-20, 0, 50], elbowL: [-40, 0, 0], shoulderR: [-20, 0, -50], elbowR: [-40, 0, 0], thighL: [-96, 0, 30], kneeL: [10, 0, 0], footL: [26, 0, 0], thighR: [10, 0, -8], kneeR: [16, 0, 0], hands: ['fist', 'fist'] },
+    // the axe heel: the leg straight up... and down
+    a18_heelW: { root: { y: 0, rx: -8 }, chest: [-10, 0, 0], head: [-6, 0, 0], shoulderL: [-30, 0, 46], elbowL: [-30, 0, 0], shoulderR: [-30, 0, -46], elbowR: [-30, 0, 0], thighR: [-140, 0, -4], kneeR: [10, 0, 0], thighL: [4, 0, 6], kneeL: [12, 0, 0], hands: ['fist', 'fist'] },
+    a18_heel: { root: { y: -0.08, rx: 14 }, chest: [16, 0, 0], head: [-14, 0, 0], shoulderL: [-50, 0, 30], elbowL: [-50, 0, 0], shoulderR: [-50, 0, -30], elbowR: [-50, 0, 0], thighR: [-40, 0, -4], kneeR: [20, 0, 0], thighL: [14, 0, 6], kneeL: [26, 0, 0], hands: ['fist', 'fist'] },
+    // one hand: the shot, the other hand still loose at her side
+    a18_shotW: { root: { y: -0.02 }, chest: [0, -10, 0], head: [-4, 8, 0], shoulderR: [-60, 0, -20], elbowR: [-90, 0, 0], shoulderL: [-20, 0, 18], elbowL: [-50, 0, 0], thighL: [-10, 0, 8], kneeL: [14, 0, 0], thighR: [6, 0, -8], kneeR: [8, 0, 0], hands: ['open', 'open'] },
+    a18_shot: { root: { y: -0.03 }, chest: [2, 16, 0], head: [-4, -12, 0], shoulderR: [-92, 0, 0], elbowR: [0, 0, 0], shoulderL: [-20, 0, 18], elbowL: [-50, 0, 0], thighL: [-14, 0, 8], kneeL: [18, 0, 0], thighR: [10, 0, -8], kneeR: [10, 0, 0], hands: ['open', 'open'] },
+  };
+
   const common = {
     assetLevel: 1,
     era: 'Android Saga',
@@ -79,6 +104,7 @@
 
   SL.data.characters.android_17 = Object.assign({}, common, {
     id: 'android_17',
+    playable: true, // the Android Saga's 17: Free Battle after "The Pair on the Road" (unlocks.js)
     name: 'Android 17',
     blurb: 'Bored, unhurried, and genuinely never tired.',
     ratings: { power: 4, speed: 5, ki: 5, defense: 4 },
@@ -88,13 +114,17 @@
     appearance: {
       height: 0.94,
       skin: 0xf2d4b4,
-      build: { chestW: 0.225, chestD: 0.16, shoulderX: 0.225, waistW: 0.18, upperArmR: 0.062, foreArmR: 0.054, fist: 0.058, thighR: 0.094, shinR: 0.074, headR: 0.142, neckLen: 0.05 },
-      hair: { style: 'yamcha', color: 0x1a1a22 },
+      // the visual pass (2026-10-14): the Android Saga's own clothes and hair — he wore Yamcha's short cut and a white
+      // gi. Now: straight black hair to the shoulders, the orange scarf, a black T-shirt over white long sleeves, jeans
+      // with a belt, green trainers; the head a little smaller (it read as a child's next to Goku)
+      build: { chestW: 0.225, chestD: 0.16, shoulderX: 0.225, waistW: 0.18, upperArmR: 0.062, foreArmR: 0.054, fist: 0.058, thighR: 0.094, shinR: 0.074, headR: 0.13, neckLen: 0.06 },
+      hair: { style: 'a17', color: 0x16161c },
       face: { pupil: 0x2a5a8a, sclera: 0xffffff, eyeW: 0.95, brow: 0x1a1a22 },
       outfit: {
-        topStyle: 'gi', top: 0xe8e4dc, sleeves: 'short', sleeveColor: 0xe8e4dc, wrist: 0x2a4a8a,
-        belt: 0x3a3a44, pants: 0x2a4a8a, pantsStyle: 'tight', boots: 0xc8c2b4, bootStyle: 'gi',
+        topStyle: 'shirt', top: 0x1e1e26, sleeves: 'short', sleeveColor: 0x1e1e26, arms: 0xeeeeea,
+        belt: 0x6a4428, beltStyle: 'belt', buckle: 0xd8c890, pants: 0x3a5a9a, pantsStyle: 'slacks', boots: 0x3f6f48, bootStyle: 'shoe',
       },
+      props: [{ id: 'scarf', shape: 'neckRing', joint: 'neck', pos: [0, 0.018, 0.008], radius: 0.082, thick: 0.46, color: 0xe86a2a }],
       portraitColor: '#5a8ad0',
     },
     forms: [{ id: 'base', name: 'Base', aura: { color: 0x8ad4ff, core: 0xffffff, particles: 0xbfe4ff, speed: 1.2 }, mult: {} }],
@@ -149,6 +179,7 @@
 
   SL.data.characters.android_18 = Object.assign({}, common, {
     id: 'android_18',
+    playable: true, // Free Battle after "The Pair on the Road" (unlocks.js)
     name: 'Android 18',
     blurb: 'Unimpressed by everything, including the people trying to kill her.',
     ratings: { power: 4, speed: 5, ki: 5, defense: 4 },
@@ -158,43 +189,57 @@
     appearance: {
       height: 0.92,
       skin: 0xf4dcc0,
-      build: { chestW: 0.205, chestD: 0.15, shoulderX: 0.205, waistW: 0.165, upperArmR: 0.054, foreArmR: 0.048, fist: 0.052, thighR: 0.086, shinR: 0.068, headR: 0.14, neckLen: 0.05 },
+      // the visual pass (2026-10-14): her own build (she had 17's shoulders and arms) and the Android Saga's clothes —
+      // the open denim waistcoat and denim skirt over a dark long-sleeved top, black leggings, brown boots, a belt
+      // (2026-10-16, the owner's brief and reference: a fuller lower body — a narrower waist over wider hips, a fuller seat,
+      // shaped thighs with the hamstrings raised, firmer calves. Future 18 inherits it)
+      build: {
+        chestW: 0.19, chestD: 0.14, shoulderX: 0.19, waistW: 0.122, waistD: 0.096, upperArmR: 0.047, foreArmR: 0.042, fist: 0.048,
+        pelvisW: 0.168, pelvisH: 0.118, pelvisD: 0.134, hipX: 0.098, thighR: 0.096, shinR: 0.065, headR: 0.13, neckLen: 0.05, bust: 0.75,
+        thighShape: { top: 1.14, mid: 1.04, knee: 1.08, quad: 0.08, ham: 0.16 }, seat: 1,
+      },
       hair: { style: 'trunks', color: 0xf0d878 },
-      face: { pupil: 0x2a5a8a, sclera: 0xffffff, eyeW: 1, brow: 0xe0c868 },
+      face: { pupil: 0x2a5a8a, sclera: 0xffffff, eyeW: 1.04, brow: 0xe0c868, lashWing: true },
       outfit: {
-        topStyle: 'gi', top: 0x3a4a6a, sleeves: 'long', sleeveColor: 0x3a4a6a, wrist: 0xe8e4dc,
-        belt: 0x8a6a4a, pants: 0x2a2a33, pantsStyle: 'tight', boots: 0x6a4a3a, bootStyle: 'gi',
+        topStyle: 'shirt', top: 0x24242c, sleeves: 'long', sleeveColor: 0x24242c, arms: 0x24242c,
+        // the black shirt is striped white across (2026-10-15 visual pass; it was plain black): Future 18 inherits it
+        stripes: { color: 0x24242c, with: 0xe8e8ee, every: 0.055 },
+        jacket: { color: 0x4a6aa8, open: 0.32, collar: 0x3f5f98 },
+        hem: { color: 0x4a6aa8, len: 0.17, flare: 1.18 },
+        belt: 0x6a4428, beltStyle: 'belt', buckle: 0xd8c890, pants: 0x1c1c22, pantsStyle: 'tight', boots: 0x6a4630, bootStyle: 'gi',
       },
       portraitColor: '#d0b060',
     },
     forms: [{ id: 'base', name: 'Base', aura: { color: 0xffb0d0, core: 0xffffff, particles: 0xffd8e8, speed: 1.2 }, mult: {} }],
+    poses: Object.assign({}, common.poses, P18, { idle: P18.a18_idle }),
+    // efficient and quick to recover: a blocked blow costs her less time than it costs 17 (shorter recoveries)
     moves: {
       light: [
-        { id: 'a18Jab', startup: 3, active: 2, recovery: 9, cancel: 5, damage: 700, reach: 1.28, radius: 0.76, lunge: 14, hitstun: 16, knock: 'flinch', impact: 1, pose: { wind: 'a17_jabW', strike: 'a17_jab' }, sfx: 'punchLight', hitPose: 'hitLight' },
-        { id: 'a18Elbow', startup: 4, active: 2, recovery: 10, cancel: 6, damage: 760, reach: 1.2, radius: 0.8, lunge: 13, hitstun: 18, knock: 'flinch', impact: 1, pose: { wind: 'a17_jabW', strike: 'a17_jab' }, sfx: 'punchLight', hitPose: 'hitBody' },
-        { id: 'a18Kick', startup: 5, active: 3, recovery: 13, cancel: 7, damage: 1080, reach: 1.6, radius: 0.9, lunge: 16, hitstun: 22, knock: 'push', knockSpeed: 15, impact: 2, pose: { wind: 'a17_kickW', strike: 'a17_kick' }, sfx: 'punchHeavy', hitPose: 'hitBody' },
+        { id: 'a18Jab', startup: 3, active: 2, recovery: 8, cancel: 5, damage: 700, reach: 1.28, radius: 0.76, lunge: 14, hitstun: 16, knock: 'flinch', impact: 1, pose: { wind: 'a18_jabW', strike: 'a18_jab' }, sfx: 'punchLight', hitPose: 'hitLight' },
+        { id: 'a18Elbow', startup: 4, active: 2, recovery: 9, cancel: 5, damage: 760, reach: 1.2, radius: 0.8, lunge: 13, hitstun: 18, knock: 'flinch', impact: 1, pose: { wind: 'a18_elbowW', strike: 'a18_elbow' }, sfx: 'punchLight', hitPose: 'hitSideR' },
+        { id: 'a18Kick', startup: 5, active: 3, recovery: 12, cancel: 7, damage: 1080, reach: 1.6, radius: 0.9, lunge: 16, hitstun: 22, knock: 'push', knockSpeed: 15, impact: 2, pose: { wind: 'a18_kickW', strike: 'a18_kick' }, sfx: 'punchHeavy', hitPose: 'hitBody' },
       ],
       heavy: {
-        0: { id: 'a18Snap', startup: 10, active: 4, recovery: 20, damage: 2100, reach: 1.65, radius: 1, lunge: 22, hitstun: 34, knock: 'smash', knockSpeed: 34, impact: 3, pose: { wind: 'a17_kickW', strike: 'a17_kick' }, sfx: 'punchHeavy', hitPose: 'hitHeavy' },
-        3: { id: 'a18Axe', startup: 12, active: 4, recovery: 22, damage: 2300, reach: 1.5, radius: 1.05, lunge: 16, hitstun: 36, knock: 'smash', knockSpeed: 30, impact: 4, pose: { wind: 'hammerWind', strike: 'hammer' }, sfx: 'punchHeavy', hitPose: 'hitHeavy' },
+        0: { id: 'a18Snap', startup: 10, active: 4, recovery: 18, damage: 2100, reach: 1.65, radius: 1, lunge: 22, hitstun: 34, knock: 'smash', knockSpeed: 34, impact: 3, pose: { wind: 'a18_kickW', strike: 'a18_kick' }, sfx: 'punchHeavy', hitPose: 'hitHeavy' },
+        3: { id: 'a18Axe', startup: 12, active: 4, recovery: 20, damage: 2300, reach: 1.5, radius: 1.05, lunge: 16, hitstun: 36, knock: 'smash', knockSpeed: 30, impact: 4, pose: { wind: 'a18_heelW', strike: 'a18_heel' }, sfx: 'punchHeavy', hitPose: 'hitHeavy' },
       },
-      dash: { id: 'a18Blink', startup: 4, active: 7, recovery: 14, damage: 1280, reach: 1.5, radius: 0.95, lunge: 48, hitstun: 26, knock: 'push', knockSpeed: 18, impact: 2, pose: { wind: 'a17_jabW', strike: 'a17_jab' }, sfx: 'punchHeavy', hitPose: 'hitBody' },
-      throw: { id: 'a18Throw', name: 'Dismissive Throw', damage: 1500, knockSpeed: 28, poses: ['grab', 'a17_jabW', 'a17_kick'] },
+      dash: { id: 'a18Blink', startup: 4, active: 7, recovery: 13, damage: 1280, reach: 1.5, radius: 0.95, lunge: 48, hitstun: 26, knock: 'push', knockSpeed: 18, impact: 2, pose: { wind: 'a18_jabW', strike: 'a18_jab' }, sfx: 'punchHeavy', hitPose: 'hitBody' },
+      throw: { id: 'a18Throw', name: 'Dismissive Throw', damage: 1500, knockSpeed: 28, poses: ['grab', 'a18_jabW', 'a18_kick'] },
     },
     specials: {
       special1: {
         id: 'a18Blast', name: 'Energy Shot', type: 'projectile', kiCost: 20, icon: 'ball', cooldown: 120,
-        startup: 10, recovery: 14, pose: { wind: 'a17_barrierW', release: 'a17_barrier' },
+        startup: 10, recovery: 14, pose: { wind: 'a18_shotW', release: 'a18_shot' },
         projectile: { kind: 'ball', speed: 82, radius: 0.8, damage: 1900, homing: 0.7, color: 0xffb0d0, core: 0xffffff, explode: 5, knock: 'heavy', knockSpeed: 26, impact: 3, life: 3 },
       },
       special2: {
         id: 'a18Rush', name: 'Deadly Dance', type: 'rush', kiCost: 34, icon: 'rush',
         startup: 8, dashFrames: 20, speed: 50, recovery: 24,
-        poses: { wind: 'a17_jabW' },
+        poses: { wind: 'a18_jabW' },
         hits: [
-          { pose: 'a17_jab', damage: 700, frames: 8, sfx: 'punchLight' },
-          { pose: 'a17_kick', damage: 800, frames: 9, sfx: 'punchLight' },
-          { pose: 'a17_kick', damage: 1700, frames: 16, sfx: 'punchHeavy', knock: 'smash', knockSpeed: 34, impact: 4 },
+          { pose: 'a18_jab', damage: 700, frames: 8, sfx: 'punchLight' },
+          { pose: 'a18_elbow', damage: 800, frames: 9, sfx: 'punchLight' },
+          { pose: 'a18_kick', damage: 1700, frames: 16, sfx: 'punchHeavy', knock: 'smash', knockSpeed: 34, impact: 4 },
         ],
       },
       ultimate: {
@@ -216,7 +261,8 @@
       techniques: {},
     },
     mechanic: { type: 'tireless', name: 'Infinite Energy', desc: 'The same reactor as her brother: she never tires, and waiting her out is not a plan.' },
-    ai: { personality: 'adaptive', aggression: 0.72, defense: 0.5, ranged: 0.35, beam: 0.25, transformHp: 0, preferredRange: 3 },
+    // quick counters, the edge always in mind (AIHooks.android_18)
+    ai: { personality: 'adaptive', aggression: 0.68, defense: 0.66, ranged: 0.35, beam: 0.25, transformHp: 0, preferredRange: 2.8, hooks: 'android_18', rhythm: { burst: 3, rest: 30 } },
     intro: { pose: 'a17_bored', expression: 'smirk' },
     victory: { poses: ['a17_bored'], expression: 'smirk' },
     defeat: { pose: 'knockdown', expression: 'ko' },
@@ -225,6 +271,7 @@
   /** Android 16: in this chapter he is a body in a capsule that nobody opens. */
   SL.data.characters.android_16 = Object.assign({}, common, {
     id: 'android_16',
+    playable: true, // Free Battle after "Gohan's Turn" (unlocks.js); in the Android Saga he is a body in a capsule
     name: 'Android 16',
     blurb: 'The one Gero would not switch on.',
     ratings: { power: 5, speed: 2, ki: 3, defense: 5 },
@@ -234,9 +281,11 @@
     appearance: {
       height: 1.1,
       skin: 0xf0d0b0,
-      build: { chestW: 0.3, chestD: 0.21, shoulderX: 0.3, waistW: 0.24, upperArmR: 0.092, foreArmR: 0.08, fist: 0.082, thighR: 0.13, shinR: 0.1, headR: 0.152, neckLen: 0.05 },
-      hair: { style: 'soldier_crest', color: 0xe86a2a },
-      face: { pupil: 0x2a5a4a, sclera: 0xffffff, eyeW: 0.9, brow: 0xe86a2a },
+      // the visual pass (2026-10-14): his own red crest, a smaller head on the big body, and a harder face — blue eyes
+      // under heavy brows, a square jaw (it was a round, friendly face)
+      build: { chestW: 0.3, chestD: 0.21, shoulderX: 0.3, waistW: 0.24, upperArmR: 0.092, foreArmR: 0.08, fist: 0.082, thighR: 0.13, shinR: 0.1, headR: 0.14, neckLen: 0.05 },
+      hair: { style: 'a16', color: 0xd8502a },
+      face: { pupil: 0x2a5a8a, sclera: 0xffffff, eyeW: 0.84, eyeH: 0.8, brow: 0xd8502a, browThick: 1.5, jaw: 1.18, jawW: 1.12, cheeks: 0.6 },
       outfit: {
         topStyle: 'armor', top: 0x2a6a4a, arms: 0x2a6a4a, pants: 0x2a2a33, pantsStyle: 'tight', legs: 0x2a6a4a,
         boots: 0x2a2a33, bootStyle: 'gi',
@@ -276,8 +325,8 @@
     },
     mechanic: { type: 'tireless', name: 'Infinite Energy', desc: 'Built on the same reactor, and never switched on in this chapter.' },
     ai: { personality: 'adaptive', aggression: 0.5, defense: 0.7, ranged: 0.4, beam: 0.4, transformHp: 0, preferredRange: 3 },
-    intro: { pose: 'idle', expression: 'calm' },
-    victory: { poses: ['idle'], expression: 'calm' },
+    intro: { pose: 'stand', expression: 'calm' }, // no guard: he does not need one
+    victory: { poses: ['lookAround'], expression: 'calm' }, // already looking past the fight
     defeat: { pose: 'knockdown', expression: 'ko' },
   });
 })();

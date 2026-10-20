@@ -563,7 +563,16 @@ module.exports = function buuCTests({ test, eq, ok }) {
     const gg = H.create({ quiet: true, seed: 3 });
     const { SL } = gg;
     const G = SL.data.characters.goku;
-    eq(G.forms.map((f) => f.id).join(','), 'base,kaioken,ssj,ssj2,ssj3', 'Goku: up to Super Saiyan 3');
+    // Battle of Gods (2026-10-05) added Super Saiyan God and God Ki after the third level
+    const ids = G.forms.map((f) => f.id);
+    eq(ids.slice(0, 5).join(','), 'base,kaioken,ssj,ssj2,ssj3', 'Goku: up to Super Saiyan 3');
+    // ...and Movie 2 · Super Broly (2026-10-10) Super Saiyan Blue after them, handed over only inside that film
+    // ...and Chapters 18-21 (2026-10-13) Blue Kaioken (Goku vs Hit) and the two stages of Ultra Instinct (the Tournament of Power)
+    eq(ids.slice(5).join(','), 'god,godki,blue,blueKaioken,uiSign,mui', 'then only the god forms');
+    eq(['blueKaioken', 'uiSign', 'mui'].map((id) => SL.data.formGivenBy['goku:' + id]).join(','), 'u6_goku_hit,top_jiren,top_mui', 'each handed over by its own mission');
+    eq(SL.data.formGivenBy['goku:god'] + ',' + SL.data.formGivenBy['goku:godki'], 'bog_ritual,bog_sphere', 'each given by its own Battle of Gods mission');
+    eq(SL.data.formGivenBy['goku:blue'], 'rof_goku', 'Blue is Resurrection of F\'s to give in canon');
+    eq(SL.data.formGivenByMovie['goku:blue'], 'bb_legend', 'the Broly film keeps its own Blue handover');
     const f3 = G.forms.find((f) => f.id === 'ssj3');
     eq(f3.look.hair.style, 'goku_ssj3', 'its own hair');
     ok(SL.data.hair.goku_ssj3.spikes.concat(SL.data.hair.goku_ssj3.mirror).filter((sp) => sp.d[1] < -0.8 && sp.l > 0.6).length >= 6, 'a long mane down the back');
@@ -582,6 +591,7 @@ module.exports = function buuCTests({ test, eq, ok }) {
     fb = gg.battle({ p1: 'goku', p2: 'vegeta', distance: 12 });
     const p = fb.player;
     ok(!(p.lockedForms && p.lockedForms.ssj3), 'unlocked after');
+    ok(p.lockedForms && p.lockedForms.god && p.lockedForms.godki, 'the god forms stay locked until their own missions');
     p.applyForm(G.forms.indexOf(f3));
     p.ki = 60;
     gg.step(fb, 120);

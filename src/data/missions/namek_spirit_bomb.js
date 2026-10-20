@@ -90,6 +90,7 @@
     const goku = b.spawn({ charId: 'goku', player: true, team: 0, pos: ground(b, FIELD.clone().add(new V3(0, 0, 10))), startKi: 100 });
     goku.lockedSlots = { transform: true };
     goku.formCaps = { kaioken: 4 };
+    goku.setDamage(2); // what Frieza and the x20 did to the gi (namek_goku, namek_kaioken20)
     // the Spirit Bomb here is a set piece, not a move: it takes as long as it takes
     goku.specOverrides = { ultimate: { chargeFrames: CHARGE_FRAMES, chargeMin: 300 } };
     const krillin = b.spawn({ charId: 'krillin', team: 0, pos: ground(b, FIELD.clone().add(new V3(9, 0, 8))), startKi: 60 });

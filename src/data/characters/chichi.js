@@ -72,17 +72,35 @@
     blurb: 'She married a man who keeps leaving to save the world, and she has opinions about it.',
     ratings: { power: 1, speed: 2, ki: 1, defense: 1 },
     stats: { hp: 6000, ki: 40, stamina: 80, speed: 0.95, power: 0.6, defense: 0.7, weight: 0.8, kiRegen: 1, chargeRate: 10, canonPower: 0.01 },
+    // (2026-10-16, the owner's collage — her with Goku at home: a purple dress over a pink long-sleeved shirt and pink
+    // trousers. She wore a plain purple gi, a man's build with a big head, and a ragged short cap; now a grown woman's
+    // build — the one young Chi-Chi grows into at the 23rd World Tournament (wardrobe profile young_chichi) — and her
+    // own hair: drawn back into a bun with a gold band, parted, with a lock by each cheek)
     appearance: {
       height: 0.9,
       skin: 0xf6d2b0,
-      build: { chestW: 0.19, chestD: 0.14, shoulderX: 0.19, waistW: 0.15, upperArmR: 0.045, foreArmR: 0.04, fist: 0.045, thighR: 0.08, shinR: 0.06, headR: 0.14, neckLen: 0.055 },
-      hair: { style: 'chichi', color: 0x121216 },
-      face: { pupil: 0x141414, eyeW: 1.05 },
-      outfit: {
-        topStyle: 'gi', top: 0x6a4aa0, sleeves: 'long', sleeveColor: 0x6a4aa0, wrist: 0x6a4aa0,
-        belt: 0x6a4aa0, pants: 0x5a3e8a, pantsStyle: 'gi', boots: 0x2a2226, bootStyle: 'gi',
+      build: {
+        chestW: 0.174, chestD: 0.124, chestTop: 0.27, shoulderX: 0.174, shoulderY: 0.22, delt: 0.055, waistW: 0.11, waistD: 0.09, absLen: 0.19,
+        pelvisW: 0.15, pelvisH: 0.11, pelvisD: 0.12, hipX: 0.086, upperArmR: 0.04, foreArmR: 0.035, fist: 0.043, thighR: 0.076, shinR: 0.055,
+        neckR: 0.042, neckLen: 0.068, headR: 0.124, footLen: 0.85, bustShape: 1,
       },
-      portraitColor: '#6a4aa0',
+      hair: { style: 'chichi_bun', color: 0x121216 },
+      // the bun high on the back of the head, and the gold band round its base
+      headExtras: [
+        { shape: 'ball', a: [0, 0.62, -0.78], d: [0, 0.62, -0.78], l: 0.082, r: 0.088, flat: 0.92, depth: 1.22, color: 0x121216 },
+        { shape: 'cyl', a: [0, 0.62, -0.78], d: [0, 0.62, -0.78], l: 0.028, r: 0.088, flat: 1, depth: 1.0, color: 0xe0b030 },
+      ],
+      face: { pupil: 0x141414, eyeW: 1.08, eyeH: 1.1, lashWing: true, browThick: 0.75, jaw: 0.92, jawW: 0.9, cheeks: 0, nose: 0.7 },
+      // the dress: purple, a standing collar, sleeveless over the pink shirt's long sleeves, gold cuffs and sash; the
+      // skirt to the shins, open at the sides over the pink trousers
+      outfit: {
+        topStyle: 'shirt', top: 0x6a3c9c, collar: 0x6a3c9c, collarStyle: 'turtle',
+        sleeves: 'long', sleeveColor: 0xf2a6c8, wrist: 0xe0b030,
+        belt: 0xe0b030, beltStyle: 'sash',
+        hem: { color: 0x6a3c9c, len: 0.66, flare: 1.18, arc: 2.2 },
+        pants: 0xf2a6c8, pantsStyle: 'gi', boots: 0x3a2440, bootStyle: 'shoe',
+      },
+      portraitColor: '#6a3c9c',
     },
     forms: [{ id: 'base', name: 'Base', aura: { color: 0xffffff, core: 0xffffff }, mult: {} }],
     poses: Object.assign({ idle: poses.cc_idle }, poses),

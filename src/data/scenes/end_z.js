@@ -100,7 +100,9 @@
   S.ez_goku = {
     id: 'ez_goku',
     cast,
-    music: { song: 'peaceful', level: 1 },
+    // Mount Paozu at dawn: the soft acoustic Cha-La (soundtrack PDF p.95–96, an original stand-in) — piano, a plucked
+    // guitar, gentle strings, no drums
+    music: { song: 'soft_chala', level: 2 },
     events: [
       // a field on the mountain at dawn; a man doing a kata alone
       {

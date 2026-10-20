@@ -131,6 +131,7 @@
     goku.lockedForms = {};
     const ssj = goku.def.forms.findIndex((f) => f.id === 'ssj');
     if (ssj > 0) goku.applyForm(ssj);
+    goku.setDamage(2); // the trousers as the whole fight left them
     goku.setTorn(true); // he has not had a chance to change
     goku.hp = Math.round(goku.hpMax * 0.5);
     goku.cannotDie = true; // canon: nothing on this planet kills him, he simply runs out of time

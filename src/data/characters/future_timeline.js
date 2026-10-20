@@ -139,7 +139,7 @@
     name: 'Gohan',
     fullName: 'Son Gohan (the future Trunks came from)',
     era: 'Future Timeline',
-    playable: false,
+    playable: true, // Free Battle after "What He Came To Say" (unlocks.js): his own one-armed fighter, never the present Gohan
     blurb: 'Trunks’ teacher, and the last of the Z Fighters in a world the Androids took apart.',
     appearance: Object.assign({}, AG.appearance, {
       face: Object.assign({}, AG.appearance.face, { scar: true }),
@@ -152,8 +152,11 @@
       },
       portraitColor: '#c86a2a',
     }),
-    // he never reached the second level in that timeline
-    forms: AG.forms.filter((f) => f.id !== 'ssj2'),
+    // he never reached the second level in that timeline, and the Elder Kai's release is the present Gohan's (the
+    // owner's reference: no transformation a character never had) — base and Super Saiyan only
+    forms: AG.forms.filter((f) => f.id === 'base' || f.id === 'ssj'),
+    // the Ultimate form's wheel rushes stay adult Gohan's: this Gohan never reaches it
+    extras: (AG.extras || []).filter((x) => !x.forms || x.forms.some((id) => id === 'base' || id === 'ssj')),
     poses: Object.assign({}, AG.poses, futurePoses),
     intro: { pose: 'fg_stance', expression: 'calm' },
   });

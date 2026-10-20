@@ -119,9 +119,10 @@
       check: (r) => r.formsSeen.includes('kaioken') && r.formsSeen.includes('ssj'),
     },
     {
+      // his Super Saiyan is a staged 196-frame event (vegeta.js): power down once it is over
       name: 'Vegeta transforms to Super Saiyan and powers down',
-      p1: 'vegeta', p2: 'goku', ticks: 170,
-      script: [press(2, { transform: true }), press(150, { revert: true })],
+      p1: 'vegeta', p2: 'goku', ticks: 240,
+      script: [press(2, { transform: true }), press(212, { revert: true })],
       check: (r) => r.formsSeen.includes('ssj') && r.finalForm === 'base',
     },
     {
@@ -222,15 +223,20 @@
       check: (r) => r.formsSeen.includes('kaioken') && r.custom.level >= 2 && r.events.formLevel >= 2,
     },
     {
-      name: 'Goku V0.2: Super Saiyan plays the full transformation event',
+      // since the ToP refinement brief §5 (2026-10-13) a player's Super Saiyan is the practiced change (form.practiced:
+      // the clench, the burst, the reveal — no lightning, no darkened sky); the long awakening (g_ssjRage, the dark sky)
+      // belongs to the story's own moment (a boss / mission sequence)
+      name: 'Goku V0.2: Super Saiyan plays its practiced transformation event (clench, burst, reveal; no darkened sky)',
       p1: 'goku', p2: 'vegeta', ticks: 190, distance: 12,
       setupP1: (p) => p.applyForm(1),
       script: [press(2, { transform: true })],
       probe: (p, d, r, b) => {
         if (b.stage.mood && b.stage.mood.target > 0.5) r.custom.mood = true;
         if (p.anim.name === 'g_ssjRage') r.custom.rage = true;
+        if (p.anim.name === 'g_ssjClench') r.custom.clench = true;
+        if (p.anim.name === 'g_ssjReveal') r.custom.reveal = true;
       },
-      check: (r) => r.formsSeen.includes('ssj') && r.finalForm === 'ssj' && r.custom.mood && r.custom.rage && r.events.transformBurst >= 1,
+      check: (r) => r.formsSeen.includes('ssj') && r.finalForm === 'ssj' && r.custom.clench && r.custom.reveal && !r.custom.mood && !r.custom.rage && r.events.transformBurst >= 1,
     },
     {
       name: 'Goku V0.2: holding the Spirit Bomb grows it bigger before release',

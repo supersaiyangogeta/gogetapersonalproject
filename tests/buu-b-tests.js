@@ -292,7 +292,7 @@ module.exports = function buuBTests({ test, eq, ok }) {
     const gg = H.create({ quiet: true, seed: 2 });
     const { SL } = gg;
     // the Ultimate exists since Chapter 12 (the Z Sword); these chapters come before it
-    eq(SL.data.characters.adult_gohan.forms.map((f) => f.id).join(','), 'base,ssj,ssj2,ultimate', 'base, Super Saiyan, Super Saiyan 2 — and the Ultimate, which only the Z Sword hands over');
+    eq(SL.data.characters.adult_gohan.forms.map((f) => f.id).join(','), 'base,ssj,ssj2,ultimate,beast', 'base, Super Saiyan, Super Saiyan 2 — and the Ultimate, which only the Z Sword hands over (Beast: the Super Hero film, story-locked)');
     for (const id of NEW_MISSIONS) {
       const src = fs.readFileSync(path.join(__dirname, '..', 'src', 'data', 'missions', (id === 'buu_puipui' || id === 'buu_yakon' || id === 'buu_dabura' ? 'buu_ship' : id) + '.js'), 'utf8');
       ok(!/['"]ultimate_gohan['"]|['"]gohan_ultimate['"]|id: 'ultimate'/.test(src), id + ' never refers to an Ultimate Gohan form');

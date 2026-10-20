@@ -1138,4 +1138,7 @@
     b.camera.endShot();
   };
   SL.data.cinematics.bardockEnding.BEATS = ['defeat', 'attack', 'realize', 'visionStart', 'visionEnd', 'smile', 'armorBreak', 'blownAway', 'consumed', 'planetImpact', 'planetDestroyed', 'transition', 'end'];
+  // the planet's end, for any mission that has to show it again (Movie 2's prologue): fissures over the shell, the
+  // chunks, the cloud of fire, Earth, a pod. Each returns { update(dt), dispose() } (plus its meshes)
+  SL.data.cinematics.planetFX = { crackShell, planetChunks, emberCloud, earthFx, podFx };
 })();

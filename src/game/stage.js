@@ -53,6 +53,8 @@
       else if (def.builder === 'room') this._buildRoom();
       else if (def.builder === 'city') this._buildCity();
       else if (def.builder === 'heights') this._buildHeights();
+      // the Tournament of Power's platform in the void (stage_top.js)
+      else if (def.builder === 'top') this._buildTop();
     }
 
     track(obj) {
@@ -156,6 +158,12 @@
         if (def.chamber) {
           // the Room of Spirit and Time: a floor with no end and no slope
           h = 0;
+        } else if (def.otherworld) {
+          // the Other World round the Check-In Station (stage_otherworld.js, Fusion Reborn)
+          h = this._owHeight(def, x, z, d, noise);
+        } else if (def.glacier) {
+          // the glacier of the Super Broly film (stage_broly.js): a snowfield, a dark channel of sea, ice walls
+          h = this._glHeight(def, x, z, d, noise);
         } else if (def.islet || def.liner || def.cavern) {
           // the Battle of Gods places (stage_gods.js): Beerus' floating world, the cruise liner on the
           // ocean, the crystal cavern under the sea floor
@@ -192,6 +200,8 @@
           c.set(def.chamber.floor).lerp(new THREE.Color(def.chamber.shade), U.clamp01(noise(px * 0.01, pz * 0.01) * 0.5 + 0.25));
         }
         if (def.islet || def.liner || def.cavern) this._godsColor(def, pos.getX(i), pos.getZ(i), this.heights[i], c, noise);
+        if (def.otherworld) this._owColor(def, pos.getX(i), pos.getZ(i), this.heights[i], c, noise);
+        if (def.glacier) this._glColor(def, pos.getX(i), pos.getZ(i), this.heights[i], c, noise, slope);
         if (def.lookout) {
           // flagstones in rings round the middle, a darker band inside the rim
           const L = def.lookout, px = pos.getX(i), pz = pos.getZ(i), dd = Math.hypot(px, pz);
@@ -236,6 +246,8 @@
         this._buildChamber(def.chamber);
         return;
       }
+      if (def.otherworld) return this._buildCheckInWorld(def.otherworld);
+      if (def.glacier) return this._buildGlacier(def.glacier);
       if (def.islet) return this._buildIslet(def.islet);
       if (def.liner) return this._buildLiner(def.liner);
       if (def.cavern) return this._buildCavern(def.cavern);
@@ -259,18 +271,11 @@
       this.boulders = boulders;
 
       if (def.babidiShip) this._buildBabidiShip(def.babidiShip);
+      // the Super Broly film's other places (stage_broly.js)
+      if (def.vampa) this._buildVampa(def.vampa);
+      if (def.saiyanCity) this._buildSaiyanCity(def.saiyanCity);
 
-      // water (rivers and lakes fill the low ground; visual only)
-      if (def.water) {
-        const wg = this.track(new THREE.PlaneGeometry(S, S, 1, 1));
-        wg.rotateX(-Math.PI / 2);
-        const wm = this.track(new THREE.MeshBasicMaterial({ color: def.water.color, transparent: true, opacity: def.water.opacity || 0.78, depthWrite: false }));
-        const water = new THREE.Mesh(wg, wm);
-        water.position.y = def.water.level;
-        water.renderOrder = 1;
-        this.scene.add(water);
-        this.water = water;
-      }
+      this._addWater(def, S);
 
       // trees (grassland stages): instanced trunks + layered canopies, decorative only
       if (def.trees && def.trees.count) {
@@ -982,6 +987,19 @@
       this.isCity = true;
     }
 
+    /** Water filling the low ground (rivers, lakes; visual only): def.water { level, color, opacity }. */
+    _addWater(def, S) {
+      if (!def.water) return;
+      const wg = this.track(new THREE.PlaneGeometry(S, S, 1, 1));
+      wg.rotateX(-Math.PI / 2);
+      const wm = this.track(new THREE.MeshBasicMaterial({ color: def.water.color, transparent: true, opacity: def.water.opacity || 0.78, depthWrite: false }));
+      const water = new THREE.Mesh(wg, wm);
+      water.position.y = def.water.level;
+      water.renderOrder = 1;
+      this.scene.add(water);
+      this.water = water;
+    }
+
     /* ---------------- tournament arena ---------------- */
     /**
      * A raised stone ring on a rocky flat, built for one fight rather than for
@@ -1012,7 +1030,10 @@
         h *= U.smooth(U.clamp01((d - A.half - 6) / 46));
         // a stadium yard is paved flat right out to its wall
         if (A.stadium && Math.max(Math.abs(x), Math.abs(z)) < A.stadium.yard + A.stadium.tiers * 3.2 + 6) h = 0;
-        if (d > 150) h += Math.pow((d - 150) / 52, 2) * 60 * (0.6 + noise(x * 0.02, z * 0.02) * 0.8);
+        // the rim: cliffs rising round the field — or (A.fallAway) the ground breaking off into the void below
+        if (A.fallAway) {
+          if (d > A.fallAway) h -= Math.pow((d - A.fallAway) / 26, 2) * 40 * (0.7 + noise(x * 0.03, z * 0.03) * 0.6);
+        } else if (d > 150) h += Math.pow((d - 150) / 52, 2) * 60 * (0.6 + noise(x * 0.02, z * 0.02) * 0.8);
         // a flat-topped ridge with steep sides (the Cell Games: where the Z Fighters watch from)
         if (A.ridge) {
           const rd = Math.hypot(x - A.ridge.x, z - A.ridge.z);
@@ -1052,6 +1073,10 @@
 
       this._buildRing(A);
       this._buildArenaSurrounds(A);
+      // a ring over a lake (the Fortuneteller Crone's arena, 2026-10-19)
+      this._addWater(def, S);
+      // Universe 6's arena: the void, the Super Dragon Balls, the gods' boxes (stage_u6.js)
+      if (def.cosmos) this._buildCosmos(def.cosmos);
     }
 
     /** The platform: paved top, stone skirt, raised trim, corner posts and one flight of steps. */
@@ -1078,6 +1103,9 @@
         ctx.strokeRect(10, 10, w - 20, h - 20);
       });
       const top = new THREE.Mesh(this.track(new THREE.PlaneGeometry(half * 2, half * 2)), this.track(T.makeMat(0xffffff, { map: tex })));
+      // the paving always wins over the block's top face 2 cm under it (seen from far off — a wide or overhead shot —
+      // the two used to depth-fight and half the floor turned flat grey)
+      Object.assign(top.material, { polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 });
       top.rotation.x = -Math.PI / 2;
       top.position.y = hgt + 0.02;
       top.receiveShadow = true;
@@ -1235,7 +1263,7 @@
         }
       }
       // the cliff wall that closes the horizon
-      for (let i = 0; i < (A.mesas ? 0 : 30); i++) {
+      for (let i = 0; i < (A.mesas || A.noCliffs ? 0 : 30); i++) {
         const a = (i / 30) * Math.PI * 2 + rng() * 0.15;
         const d = 210 + rng() * 150;
         const r = 24 + rng() * 40, h = 50 + rng() * 90;
@@ -2193,10 +2221,13 @@
     }
 
     /* ---------------- destruction ---------------- */
-    crater(pos, radius, depth, fighter) {
-      // Snake Way has no terrain mesh to dent
-      if (!this.hasGround || !this.terrainGeo) return;
+    // opts.clean: dug, not blasted (a lake basin a story makes): the ground keeps its colour
+    crater(pos, radius, depth, fighter, opts = {}) {
+      if (!this.hasGround) return;
+      // a tournament platform cracks (even one with no landscape round it: the Tournament of Power's void)
       if (this.arena && this.arena.onRing(pos.x, pos.z)) return this.ringCrack(pos, radius, depth);
+      // Snake Way has no terrain mesh to dent
+      if (!this.terrainGeo) return;
       const S = this.size, N = this.seg, step = this.step, w = N + 1;
       const cx = (pos.x + S / 2) / step, cz = (pos.z + S / 2) / step;
       const rr = (radius * 1.4) / step;
@@ -2215,7 +2246,7 @@
           this.heights[i] = Math.max(-30, this.heights[i] + dh);
           posAttr.setY(i, this.heights[i]);
           // a painted ground (the city streets) carries no vertex colours to scorch
-          if (col && d < 1.15) {
+          if (col && d < 1.15 && !opts.clean) {
             const k = U.clamp01((1.15 - d) * 0.8);
             col.setXYZ(i, U.lerp(col.getX(i), scorch.r, k), U.lerp(col.getY(i), scorch.g, k), U.lerp(col.getZ(i), scorch.b, k));
           }
@@ -2228,6 +2259,8 @@
     }
 
     explode(pos, radius, damage, stageHit, owner) {
+      // whose blast landed where (a mission can answer it: "The Park Ranger" minds his animals)
+      this.battle.emit('stageExplode', { pos: pos.clone(), radius, owner: owner || null });
       if (this.hasGround) {
         const gh = this.heightAt(pos.x, pos.z);
         if (pos.y - gh < radius * 0.7) {

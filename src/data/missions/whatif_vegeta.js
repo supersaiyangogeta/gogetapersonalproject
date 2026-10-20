@@ -94,7 +94,8 @@
       m.lock(true);
       m.clearObjectives();
       fz.setState('scripted', { pose: 'fz_finger', expression: 'shock' });
-      m.music('super_saiyan', 1);
+      // Vegeta's own awakening cue (soundtrack PDF p.93–94, an original stand-in), not Goku's
+      m.music('vegeta_awakening', 1);
       m.objective('rise', 'Hold Charge: the legend is yours', { icon: 'transform' });
       yield* SL.data.cinematics.ascend(m, {
         fighter: v,

@@ -55,6 +55,8 @@
 
   SL.data.characters.buutenks = Object.assign({}, SB, {
     id: 'buutenks',
+    // story bodies: Super Buu himself is the playable one (he is copied here, so this has to say so)
+    playable: false,
     name: 'Super Buu',
     fullName: 'Super Buu (Gotenks absorbed)',
     style: 'Stolen Genius',
@@ -131,6 +133,10 @@
 
   SL.data.characters.buuccolo = Object.assign({}, SB, {
     id: 'buuccolo',
+    // story bodies: Super Buu himself is the playable one (he is copied here, so this has to say so)
+    playable: false,
+    // Super Buu's two techniques without the ultimate he was given as a playable fighter (the story fight is unchanged)
+    specials: { special1: SB.specials.special1, special2: SB.specials.special2 },
     name: 'Super Buu',
     fullName: 'Super Buu (Piccolo absorbed)',
     style: 'Borrowed Cape',
@@ -333,6 +339,8 @@
   const NAVY = 0x16225a, ORANGE = 0xe86a1c;
   SL.data.characters.buuhan = Object.assign({}, SB, {
     id: 'buuhan',
+    // story bodies: Super Buu himself is the playable one (he is copied here, so this has to say so)
+    playable: false,
     name: 'Buuhan',
     fullName: 'Super Buu (Ultimate Gohan absorbed)',
     style: 'The Strongest Buu',

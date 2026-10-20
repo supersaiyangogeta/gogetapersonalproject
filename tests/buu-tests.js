@@ -54,7 +54,7 @@ module.exports = function buuTests({ test, eq, ok }) {
     ok(o.helmet !== undefined && o.cape !== undefined && o.visor !== undefined, 'helmet, visor and cape');
     ok(C.great_saiyaman.victory.poses.includes('gs_pose1'), 'and he poses when he wins');
     // adult Gohan: the two Super Saiyan levels, and the Ultimate the Old Kai unlocks (Chapter 12)
-    eq(C.adult_gohan.forms.map((f) => f.id).join(','), 'base,ssj,ssj2,ultimate', 'adult Gohan: base, Super Saiyan, Super Saiyan 2, the Ultimate');
+    eq(C.adult_gohan.forms.map((f) => f.id).join(','), 'base,ssj,ssj2,ultimate,beast', 'adult Gohan: base, Super Saiyan, Super Saiyan 2, the Ultimate (and Beast, the Super Hero film)');
     ok(C.adult_gohan.forms[2].ai && C.adult_gohan.forms[2].poses, 'his Super Saiyan 2 fights differently, not just harder');
     // they all build, pose and fight in the engine without errors
     const b = gg.battle({ p1: 'great_saiyaman', p2: 'videl', distance: 3 });

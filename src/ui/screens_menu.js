@@ -144,6 +144,10 @@
       const wi = SL.UI.menuButton(s, 'What If?', 'Alternate timelines', () => SL.UI.push(SL.Screens.whatIf()), { isNew: !SL.Save.data.whatIf.seen });
       col.append(wi.node);
     }
+    if (SL.Save.isUnlocked('modes', 'movies')) {
+      const mv = SL.UI.menuButton(s, 'Movies', 'Films & specials · not canon', () => SL.UI.push(SL.Screens.movies()), { isNew: !(SL.Save.data.movies && SL.Save.data.movies.seen) });
+      col.append(mv.node);
+    }
     if (SL.Save.isUnlocked('modes', 'dragonballs') && SL.Screens.dragonBalls) {
       const n = SL.DragonBalls ? SL.DragonBalls.count() : 0;
       const dbb = SL.UI.menuButton(s, 'Dragon Balls', n >= 7 ? 'All seven — call the Eternal Dragon' : n + ' / 7 found · the Dragon Radar', () => SL.UI.push(SL.Screens.dragonBalls()));
@@ -195,7 +199,7 @@
   function missionCard(id, locked, hint) {
     const m = SL.data.missions[id];
     const res = SL.Save.missionResult(id);
-    const card = el('div', { class: 'mcard' + (locked ? ' locked' : '') + (m.whatIf ? ' whatif' : '') });
+    const card = el('div', { class: 'mcard' + (locked ? ' locked' : '') + (m.whatIf ? ' whatif' : '') + (m.movie ? ' movie' : '') });
     card.append(
       el('img', { class: 'portrait', src: SL.Portraits.get(m.character), alt: '' }),
       el('div', { class: 'm-title', text: m.title }),
@@ -207,6 +211,7 @@
     else if (res && res.completed) status.append(el('span', { class: 'rank', text: res.bestRank || '—' }), el('span', { class: 'badge done', text: 'CLEARED' }));
     else status.append(el('span', { class: 'badge', text: 'NEW' }));
     if (m.whatIf) status.append(el('span', { class: 'badge whatif', text: 'WHAT IF' }));
+    if (m.movie) status.append(el('span', { class: 'badge whatif', text: m.challenge ? 'CHALLENGE' : 'MOVIE' }));
     card.appendChild(status);
     return card;
   }
@@ -348,9 +353,65 @@
     return s;
   };
 
+  /* ---------------- Movies & Specials (separate from the canon timeline, own progress) ---------------- */
+  SL.Screens.movies = function (opts = {}) {
+    const s = new SL.Screen('story dim');
+    s.el.appendChild(el('h1', { class: 'title-font gradient-text', text: 'Movies' }));
+    s.el.appendChild(el('div', { class: 'hint', text: 'Films and specials. They borrow the story\'s world but are not part of its chronology — nothing here changes the canon story or its progress.' }));
+    const tl = el('div', { class: 'timeline' });
+    const res = (x) => SL.Save.missionResult(x);
+    let first = null;
+    for (const mv of SL.data.story.movies || []) {
+      const gate = SL.Save.conditionMet(SL.Save.data, mv.unlock);
+      const lists = [[mv.missions, mv.head + ' · ' + mv.title.toUpperCase(), mv.subtitle], [mv.challenges || [], 'CHALLENGES · ' + mv.title.toUpperCase(), 'Optional replays, apart from the film']];
+      for (const [list, head, title] of lists) {
+        if (!list.length) continue;
+        const col = el('div', { class: 'chapter' }, [el('div', { class: 'ch-head', text: head }), el('div', { class: 'ch-title', text: title })]);
+        for (const e of list) {
+          const m = SL.data.missions[e.id];
+          if (!m) {
+            // a part of the film that is planned but not built: said honestly, never playable
+            if (e.title) col.appendChild(el('div', { class: 'mcard locked' }, [el('div', { class: 'm-title', text: e.title }), el('div', { class: 'm-sub', text: 'IN DEVELOPMENT · NOT IN THIS BUILD' })]));
+            continue;
+          }
+          const locked = SL.data.movieLocked(e.id, res, gate);
+          const i = mv.missions.indexOf(e);
+          const needs = e.after || (i > 0 ? [SL.data.movieBefore(mv, i)].filter(Boolean) : []);
+          const hint = !gate ? mv.hint + ' to open the film.' : 'Clear ' + needs.map((x) => '"' + (SL.data.missions[x] ? SL.data.missions[x].title : x) + '"').join(' and ') + ' first.';
+          const card = missionCard(e.id, locked, hint);
+          col.appendChild(card);
+          const item = s.addItem(card, { disabled: locked, onSelect: () => SL.App.startMission(e.id, {}) });
+          item.missionId = e.id;
+          const done = res(e.id) && res(e.id).completed;
+          if (!locked && (!first || (first.done && !done))) first = Object.assign(item, { done });
+          if (!locked && opts.mission === e.id) {
+            first = item;
+            if (opts.cleared) card.classList.add('just-cleared');
+          }
+        }
+        tl.appendChild(col);
+      }
+    }
+    const next = el('div', { class: 'chapter' }, [el('div', { class: 'ch-head', text: 'NEXT FILM' }), el('div', { class: 'ch-title', text: '???' })]);
+    next.appendChild(el('div', { class: 'mcard locked' }, [el('div', { class: 'm-title', text: 'In Development' }), el('div', { class: 'm-sub', text: 'NOT IN THIS BUILD' }), el('div', { class: 'm-blurb', text: 'More films and specials will open as the story reaches their worlds.' })]));
+    tl.appendChild(next);
+    s.el.appendChild(tl);
+    s.el.appendChild(difficultyRow(s));
+    if (first) s.focus(s.items.indexOf(first), true);
+    s.onShow = () => {
+      const it = s.items[s.index];
+      if (it && it.node.scrollIntoView) it.node.scrollIntoView({ block: 'center', inline: 'center' });
+    };
+    const footer = SL.UI.footer([['confirm', 'Start'], ['adjust', 'Difficulty'], ['back', 'Back']]);
+    s.el.appendChild(footer);
+    s.refreshGlyphs = () => footer.render();
+    s.onBack = () => SL.UI.pop();
+    return s;
+  };
+
   /* ---------------- records ---------------- */
   SL.Screens.records = function () {
-    const s = new SL.Screen('story dim');
+    const s = new SL.Screen('story dim records');
     const st = SL.Save.data.stats;
     s.el.appendChild(el('h1', { class: 'title-font gradient-text', text: 'Records' }));
     const wrap = el('div', { style: { display: 'flex', gap: '28px', flexWrap: 'wrap', alignItems: 'flex-start' } });
@@ -412,7 +473,6 @@
       }
       wrap.appendChild(lp);
     }
-    s.el.appendChild(wrap);
     // SOUND TEST (a wish to the Eternal Dragon): every song, at full intensity
     const flags = SL.Save.data.flags || {};
     const extra = el('div', { class: 'rows', style: { maxWidth: '520px' } });
@@ -428,7 +488,16 @@
         },
       }).node);
     }
-    s.el.appendChild(extra);
+    // the panels and the Sound Test scroll in the space left; the title and Back stay put
+    const scroll = el('div', { class: 'scroll' }, [wrap, extra]);
+    s.el.appendChild(scroll);
+    // up / down scroll the records first, and move between Sound Test and Back once at the end
+    const move = s._move.bind(s);
+    s._move = (d) => {
+      const room = d < 0 ? scroll.scrollTop : scroll.scrollHeight - scroll.clientHeight - scroll.scrollTop;
+      if (room < 1) return move(d);
+      scroll.scrollTop += d * scroll.clientHeight * 0.4;
+    };
     const leave = () => {
       if (SL.Music.songId !== 'menu') SL.Music.play('menu', { intensity: 1 });
       SL.UI.pop();

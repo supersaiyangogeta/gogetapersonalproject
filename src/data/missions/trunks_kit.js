@@ -175,6 +175,46 @@
     pr.alive = false;
     if (pr.group) pr.group.visible = false;
   };
+  /**
+   * The tear in the sky Goku Black comes through (Chapter 19): a dark disc ringed by two turning bands of purple light,
+   * facing `face`. Returns { set(k) (0 shut .. 1 open), dispose() }; disposed with the mission.
+   */
+  K.portal = (m, at, face) => {
+    const b = m.battle;
+    const add = (color, opacity) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+    const g = new THREE.Group();
+    const disc = new THREE.Mesh(new THREE.CircleGeometry(3.2, 40), new THREE.MeshBasicMaterial({ color: 0x14061e, transparent: true, opacity: 0.9, depthWrite: false, side: THREE.DoubleSide }));
+    const ringA = new THREE.Mesh(new THREE.TorusGeometry(3.3, 0.22, 8, 48), add(0x8a3adf, 0.9));
+    const ringB = new THREE.Mesh(new THREE.TorusGeometry(2.6, 0.12, 8, 40), add(0xc89aff, 0.7));
+    g.add(disc, ringA, ringB);
+    g.position.copy(at);
+    g.lookAt(face);
+    g.scale.setScalar(0.01);
+    b.scene.add(g);
+    const spin = () => {
+      ringA.rotation.z += 0.05;
+      ringB.rotation.z -= 0.08;
+      ringB.scale.setScalar(1 + Math.sin(b.frame * 0.3) * 0.06);
+    };
+    m.tickHooks.push(spin);
+    const out = {
+      set(v) {
+        g.scale.setScalar(Math.max(0.01, U.clamp01(v)));
+      },
+      dispose() {
+        const i = m.tickHooks.indexOf(spin);
+        if (i >= 0) m.tickHooks.splice(i, 1);
+        if (!g.parent) return;
+        b.scene.remove(g);
+        for (const o of [disc, ringA, ringB]) {
+          o.geometry.dispose();
+          o.material.dispose();
+        }
+      },
+    };
+    m.onDispose(out.dispose);
+    return out;
+  };
 
   /* ================================================================ the sword */
 
@@ -620,6 +660,121 @@
       },
     };
     return cut;
+  };
+
+  /**
+   * HAKAI'S ERASURE (2026-10-19; the Goku Black arc research CS-HAK-01: "Zamasu's body does not explode ... transparent
+   * purple light engulfs his skin, and his entire physical form dissolves into fine, glowing purple dust particles from
+   * the feet up"). A frozen copy of the body as it stands, lit violet and a little see-through, clipped by a level plane
+   * that climbs from the soles to the crown over `opts.seconds` (2.6); glowing motes come off the line as it rises. No
+   * explosion, no sound of its own. The fighter is hidden and out of reach at once. Ticks itself on the mission; a skip
+   * finishes it. Returns { progress() 0..1, done(), dispose() }; disposed with the mission.
+   */
+  K.erase = (m, f, opts = {}) => {
+    const b = m.battle;
+    if (SL.Render && SL.Render.renderer) SL.Render.renderer.localClippingEnabled = true;
+    const color = new THREE.Color(opts.color || 0xb060ff);
+    const seconds = opts.seconds || 2.6;
+    const src = f.model.root;
+    src.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(src);
+    const y0 = box.min.y - 0.02, y1 = box.max.y + 0.02;
+    const cx = (box.min.x + box.max.x) / 2, cz = (box.min.z + box.max.z) / 2;
+    const plane = new THREE.Plane(new V3(0, 1, 0), -y0);
+    const clone = src.clone(true);
+    const mats = [];
+    clone.traverse((o) => {
+      if (!o.isMesh) return;
+      if (o.userData.isOutline) {
+        o.visible = false;
+        return;
+      }
+      const mat = o.material.clone();
+      mat.clippingPlanes = [plane];
+      mat.transparent = true;
+      mat.opacity = 0.88;
+      if (mat.emissive) mat.emissive.copy(color).multiplyScalar(0.55);
+      o.material = mat;
+      o.castShadow = false;
+      mats.push(mat);
+    });
+    const holder = new THREE.Group();
+    src.matrixWorld.decompose(holder.position, holder.quaternion, holder.scale);
+    clone.position.set(0, 0, 0);
+    clone.quaternion.identity();
+    clone.scale.set(1, 1, 1);
+    holder.add(clone);
+    holder.userData.erased = true;
+    b.scene.add(holder);
+    f.setHidden(true);
+    f.untargetable = f.intangible = true;
+    let k = 0, gone = false;
+    const R = Math.max(0.25, Math.min(0.6, Math.hypot(box.max.x - box.min.x, box.max.z - box.min.z) * 0.35));
+    const hook = () => {
+      if (gone) return;
+      k = b.skipRequested ? 1 : Math.min(1, k + 1 / (seconds * 60));
+      const h = U.lerp(y0, y1, U.easeInOutCubic ? U.easeInOutCubic(k) : k);
+      plane.constant = -h;
+      if (!b.skipRequested && k < 1) {
+        for (let i = 0; i < 3; i++) {
+          const a = Math.random() * Math.PI * 2;
+          b.vfx.sparks(new V3(cx + Math.cos(a) * R, h, cz + Math.sin(a) * R), color.getHex(), 1, 1.6, 0.09);
+        }
+        if (b.frame % 6 === 0) b.vfx.flash(new V3(cx, h, cz), R * 3, color.getHex(), 0.12, SL.Toon.tex.glow);
+      }
+      if (k >= 1) api.dispose();
+    };
+    const api = {
+      progress: () => k,
+      done: () => gone,
+      dispose() {
+        if (gone) return;
+        gone = true;
+        K.removeHook(m, hook);
+        b.scene.remove(holder);
+        for (const mt of mats) mt.dispose();
+      },
+    };
+    m.tickHooks.push(hook);
+    m.onDispose(api.dispose);
+    return api;
+  };
+
+  /**
+   * JUDGMENT (2026-10-19; shared by "Vegito"'s FIGHT 2 and "The Sword of Hope"): a story boss calls the engine's
+   * telegraphed 'eruption' down on `target` every so often when he is free — marks flash at the feet, then columns come
+   * down on them; he recovers after it: the opening. opts: { first, every (frames), flag (m.flags counter, 'judgments') }.
+   * Emits 'judgment'. Returns { stop() no more calls, pending() columns marked and not yet down, off() } — a stretch
+   * waits for pending() before it ends, so none lands in the scene after it.
+   */
+  K.judgment = (m, caster, target, spec, opts = {}) => {
+    const b = m.battle;
+    const flag = opts.flag || 'judgments';
+    let wait = opts.first, stopped = false, marked = 0, landed = 0;
+    // his own marks only (another mission mark — the lightning bird's — can share the delay)
+    const offT = b.on('telegraph', (e) => e.fighter === caster && e.frames === spec.delay && marked++);
+    const offE = b.on('eruption', (e) => e.fighter === caster && landed++);
+    const hook = () => {
+      if (stopped || --wait > 0) return;
+      if (caster.state !== 'free' || !caster.alive || !target.alive || target.hidden || !b.stage.hasGround) {
+        wait = 30;
+        return;
+      }
+      caster.target = target;
+      if (SL.Techniques.eruption.start(caster, spec, 'boss')) {
+        m.flags[flag] = (m.flags[flag] || 0) + 1;
+        b.emit('judgment', { fighter: caster });
+        wait = opts.every;
+      } else wait = 30;
+    };
+    m.tickHooks.push(hook);
+    const off = () => {
+      K.removeHook(m, hook);
+      offT();
+      offE();
+    };
+    m.onDispose(off);
+    return { stop: () => (stopped = true), pending: () => marked - landed, off };
   };
 
   /**

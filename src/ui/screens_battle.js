@@ -83,8 +83,8 @@
       const m = battle.mission;
       if (m.checkpoint) add(SL.UI.actionRow(s, 'Retry from Checkpoint', () => SL.UI.confirm('Retry from checkpoint?', 'Progress since the last checkpoint will be lost.', () => SL.App.startMission(m.def.id, { startPhase: m.checkpoint, retries: m.retries + 1 }), 'Retry')));
       add(SL.UI.actionRow(s, 'Restart Mission', () => SL.UI.confirm('Restart mission?', 'The mission starts over from the beginning.', () => SL.App.startMission(m.def.id, {}), 'Restart')));
-      const wi = !!m.def.whatIf;
-      add(SL.UI.actionRow(s, wi ? 'Back to What If?' : 'Back to Story', () => SL.UI.confirm('Leave the mission?', 'Mission progress will be lost.', () => SL.App.quitToMenu(wi ? 'whatif' : 'story', { mission: m.def.id }), 'Leave')));
+      const wi = !!m.def.whatIf, mov = !!m.def.movie;
+      add(SL.UI.actionRow(s, wi ? 'Back to What If?' : mov ? 'Back to Movies' : 'Back to Story', () => SL.UI.confirm('Leave the mission?', 'Mission progress will be lost.', () => SL.App.quitToMenu(wi ? 'whatif' : mov ? 'movies' : 'story', { mission: m.def.id }), 'Leave')));
     } else {
       add(SL.UI.actionRow(s, 'Restart Battle', () => SL.UI.confirm('Restart battle?', 'The current fight will be lost.', () => SL.App.rematch(), 'Restart')));
       add(SL.UI.actionRow(s, 'Change Characters', () => SL.UI.confirm('Leave this battle?', 'Return to character select.', () => SL.App.quitToMenu('free'), 'Leave')));
@@ -177,7 +177,7 @@
     const def = SL.data.missions[result.mission];
     const left = el('div', { style: { textAlign: 'center' } }, [
       el('div', { class: 'hint', text: def.chapter }),
-      el('div', { class: 'outcome title-font gradient-text', text: def.whatIf ? 'What-If Complete' : def.hunt ? 'Dragon Ball Hunt' : 'Mission Complete' }),
+      el('div', { class: 'outcome title-font gradient-text', text: def.whatIf ? 'What-If Complete' : def.hunt ? 'Dragon Ball Hunt' : def.movie ? (def.challenge ? 'Challenge Complete' : 'Movie Mission Complete') : 'Mission Complete' }),
       el('div', { class: 'big-rank gradient-text', text: result.rank }),
       el('div', { class: 'hint', text: 'Score ' + U.fmtInt(result.score) }),
     ]);
@@ -197,7 +197,7 @@
       rows,
     ]);
     s.el.append(left, right);
-    const back = def.whatIf ? 'whatif' : def.hunt ? 'dragonballs' : 'story';
+    const back = def.whatIf ? 'whatif' : def.hunt ? 'dragonballs' : def.movie ? 'movies' : 'story';
     const here = { mission: result.mission, cleared: true };
     rows.appendChild(SL.UI.actionRow(s, 'Continue', () => SL.App.quitToMenu(back, here)).node);
     rows.appendChild(SL.UI.actionRow(s, 'Replay Mission', () => SL.App.startMission(result.mission, {})).node);
@@ -225,8 +225,8 @@
       SL.App.startMission(result.mission, { startPhase: result.checkpoint || 0, retries: result.retries + 1 });
     }).node);
     const fdef = SL.data.missions[result.mission];
-    const fback = fdef && fdef.whatIf ? 'whatif' : fdef && fdef.hunt ? 'dragonballs' : 'story';
-    rows.appendChild(SL.UI.actionRow(s, fback === 'whatif' ? 'Back to What If?' : fback === 'dragonballs' ? 'Back to the Dragon Balls' : 'Back to Story', () => SL.App.quitToMenu(fback, { mission: result.mission })).node);
+    const fback = fdef && fdef.whatIf ? 'whatif' : fdef && fdef.hunt ? 'dragonballs' : fdef && fdef.movie ? 'movies' : 'story';
+    rows.appendChild(SL.UI.actionRow(s, fback === 'whatif' ? 'Back to What If?' : fback === 'dragonballs' ? 'Back to the Dragon Balls' : fback === 'movies' ? 'Back to Movies' : 'Back to Story', () => SL.App.quitToMenu(fback, { mission: result.mission })).node);
     rows.appendChild(SL.UI.actionRow(s, 'Quit to Main Menu', () => SL.App.quitToMenu()).node);
     s.el.appendChild(el('div', { class: 'panel' }, [el('h2', { text: 'Defeated' }), rows]));
     s.onBack = () => {};

@@ -16,6 +16,17 @@
   const MASH = ['ultimate', 'special1', 'light', 'heavy', 'blast'];
   // a cue's intent key → the input action whose binding the prompt shows
   const CUE_ACTIONS = { s1: 'special1', s2: 'special2', ult: 'ultimate' };
+
+  /**
+   * Is the player pressing this cue / rhythm key? The player body's intent — or, when a scene has
+   * handed that body to a script (a scripted controller gives no intent, so the presses never
+   * reached the cue), the button itself (Battle.tick polls SL.Input every tick).
+   */
+  function playerDown(p, key) {
+    const it = p && p.intent;
+    if (it && (it[key] || it[key + 'Held'])) return true;
+    return !!(p && SL.PlayerController && !(p.controller instanceof SL.PlayerController) && SL.Input.held(CUE_ACTIONS[key] || key));
+  }
   const ALL_OFF = { light: false, heavy: false, blast: false, s1: false, s2: false, ult: false, dodge: false, guard: false, charge: false, transform: false, boost: false, boostPressed: false, up: false, upPressed: false, down: false, mx: false, my: false, target: false };
 
   const DIFF_RULES = {
@@ -85,6 +96,15 @@
      * field, whatever the mission itself wrote.
      */
     _lockUnearnedForms() {
+      // def.lockForms { charId: [formIds] }: forms this story never shows, whatever the timeline allows
+      // (Fusion Reborn: Goku fights in base, Super Saiyan and Super Saiyan 3 — no second level, no Kaio-ken)
+      for (const f of this.battle.fighters) {
+        const ids = (this.def.lockForms || {})[f.def.id];
+        if (!ids) continue;
+        f.storyLocks = f.storyLocks || {};
+        for (const id of ids) f.storyLocks[id] = true;
+        f.lockedForms = f.lockedForms;
+      }
       const given = SL.data.formGivenBy;
       if (!given) return;
       const order = SL.data.storyOrder();
@@ -94,14 +114,35 @@
       // Saiyan Saga What-If
       if (!this.def.canon) {
         const w = SL.data.story && SL.data.story.whatIf.find((x) => x.mission === this.def.id);
-        here = w ? order.indexOf(w.branchOf) : -1;
+        // a film stands where its premise does (story.js movies[].placedAfter)
+        const mv = !w && SL.data.movieOf && SL.data.movieOf(this.def.id);
+        here = w ? order.indexOf(w.branchOf) : mv ? order.indexOf(mv.placedAfter) : -1;
       }
       if (here < 0) return;
+      // a form only a FILM hands over (Super Broly: Vegeta's God and Blue, Broly's own) is given by a
+      // mission outside the canon order: locked in the whole canon story and every What-If, and inside its own
+      // film until the film's mission that gives it
+      const ownFilm = !this.def.canon && SL.data.movieOf ? SL.data.movieOf(this.def.id) : null;
+      const movieGiven = SL.data.formGivenByMovie || {};
+      const filmIndex = (mv, id) => {
+        const i = mv.missions.findIndex((e) => e.id === id);
+        return i >= 0 ? i : mv.missions.length; // a challenge comes after the whole film
+      };
+      const later = (by) => {
+        const bi = order.indexOf(by);
+        if (bi >= 0) return bi > here;
+        const mvBy = SL.data.movieOf ? SL.data.movieOf(by) : null;
+        return !(mvBy && mvBy === ownFilm && filmIndex(mvBy, by) < filmIndex(ownFilm, this.def.id));
+      };
       for (const f of this.battle.fighters) {
         for (const fm of f.def.forms || []) {
-          const by = given[f.def.id + ':' + fm.id];
+          const key = f.def.id + ':' + fm.id;
+          // A form shared with canon still arrives at this film's original checkpoint, even on a save
+          // that already cleared its canon reveal. Other films and What-Ifs keep the canon boundary.
+          const filmBy = movieGiven[key];
+          const by = ownFilm && filmBy && SL.data.movieOf(filmBy) === ownFilm ? filmBy : given[key];
           if (!by || by === this.def.id) continue;
-          if (order.indexOf(by) > here) {
+          if (later(by)) {
             // kept apart from the mission's own locks: every later `lockedForms = {...}` merges it back in
             f.storyLocks = f.storyLocks || {};
             f.storyLocks[fm.id] = true;
@@ -141,7 +182,16 @@
     tick() {
       if (this.state !== 'running') return;
       for (const sp of this.spawners) sp.tick();
-      for (const h of this.tickHooks) h();
+      // each hook once a tick, safe when one removes itself or another (K.removeHook, a finished effect): the old
+      // for-of skipped the next hook for a tick. A hook added meanwhile still runs this tick, as before
+      const hs = this.tickHooks, ran = new Set();
+      for (let i = 0; i < hs.length; i++) {
+        const h = hs[i];
+        if (ran.has(h)) continue;
+        ran.add(h);
+        h();
+        if (hs[i] !== h) i = -1; // the list changed under it: look again from the top
+      }
       for (const h of this.itemHooks) h();
     }
 
@@ -501,9 +551,7 @@
       const t0 = performance.now();
       const hook = () => {
         if (opts.slow) b.slowmo(opts.slow, 0.1);
-        const p = this.player;
-        const it = p && p.intent;
-        if (it && (it[key] || it[key + 'Held'])) pressed = true;
+        if (playerDown(this.player, key)) pressed = true;
       };
       this.tickHooks.push(hook);
       b.emit('cue', { key, label, action });
@@ -565,10 +613,9 @@
           beatDone++;
           if (opts.onBeat) opts.onBeat(beatDone);
         }
-        const p = this.player, it = p && p.intent;
         if (live < steps.length) {
           const key = keyOf(steps[live]), at = live * beat;
-          const down = !!(it && (it[key] || it[key + 'Held']));
+          const down = playerDown(this.player, key);
           const press = down && !prevDown;
           prevDown = down;
           if (press && t >= at - win * 1.8) {
@@ -686,6 +733,16 @@
 
     /** The subtitle of a mission's closing title: the next mission in the story, by name. */
     nextLine() {
+      const mv = SL.data.movieOf && SL.data.movieOf(this.def.id);
+      if (mv) {
+        const i = mv.missions.findIndex((e) => e.id === this.def.id);
+        const rest = i >= 0 ? mv.missions.slice(i + 1) : [];
+        // a film still being built: the next mission it has, or the honest truth that the rest is not here yet
+        const nxe = rest.find((e) => SL.data.missions[e.id]);
+        const nx = nxe ? SL.data.missions[nxe.id] : null;
+        if (!nx && rest.length) return 'Next: ' + (rest[0].title || 'the film continues') + ' (in development)';
+        return nx ? 'Next: ' + nx.title : i >= 0 ? mv.title.toUpperCase() + ' — THE END' : 'Challenge complete';
+      }
       const order = SL.data.storyOrder ? SL.data.storyOrder() : [];
       const i = order.indexOf(this.def.id);
       const next = i >= 0 ? SL.data.missions[order[i + 1]] : null;

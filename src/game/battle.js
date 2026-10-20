@@ -152,15 +152,22 @@
       return this.stage;
     }
 
-    /** Run fn every simulation tick until it returns false. */
+    /**
+     * Run fn every simulation tick until it returns false, or until the returned function is called (safe from
+     * inside a handler: fn does not run again). Registered from inside a handler, fn first runs on the next tick.
+     */
     onTick(fn) {
-      this.tickHandlers.push(fn);
+      let live = true;
+      this.tickHandlers.push(() => live && fn());
+      return () => {
+        live = false;
+      };
     }
 
-    /** Run fn once after a number of simulation ticks. */
+    /** Run fn once after a number of simulation ticks (the returned function cancels it). */
     after(frames, fn) {
       let n = frames;
-      this.onTick(() => {
+      return this.onTick(() => {
         if (--n > 0) return true;
         fn();
         return false;
@@ -315,12 +322,14 @@
       this.player = to;
       if (!to.target || !to.target.alive || to.target.untargetable) to.target = this.pickTarget(to);
       this.partyCooldown = opts.force ? 20 : 40;
-      // show the hand-off: a flash on the incoming hero
-      const c = to.chest();
-      this.vfx.ring(c, 3.2, (to.form.aura && to.form.aura.color) || 0xffffff, 0.35);
-      this.vfx.flash(c, 2.2, 0xffffff, 0.18, SL.Toon.tex.glow);
-      to.flash = 0.5;
-      SL.Audio.play('uiSelect', { vol: 0.6 });
+      // show the hand-off: a flash on the incoming hero (opts.quiet: a story cut hands over silently)
+      if (!opts.quiet) {
+        const c = to.chest();
+        this.vfx.ring(c, 3.2, (to.form.aura && to.form.aura.color) || 0xffffff, 0.35);
+        this.vfx.flash(c, 2.2, 0xffffff, 0.18, SL.Toon.tex.glow);
+        to.flash = 0.5;
+        SL.Audio.play('uiSelect', { vol: 0.6 });
+      }
       this.emit('playerSwitched', { from, to, forced: !!opts.force });
       return true;
     }
@@ -797,7 +806,9 @@
       const trauma = R.TRAUMA[U.clamp(impact, 0, 5)];
       if (this.involvesPlayer(att) || this.involvesPlayer(target)) this.camera.addTrauma(trauma);
       else this.cameraTraumaAt(point, trauma * 0.5);
-      if (impact >= 4) SL.ScreenFX.flash(0.12 * impact);
+      // a heavy blow whitens the screen a little, and only when the player is in it (2026-10-17, the shared bright-flash
+      // task: 0.12 × impact for every heavy hit anywhere turned the frame white on every finisher and hid the blow)
+      if (impact >= 4 && (this.involvesPlayer(att) || this.involvesPlayer(target))) SL.ScreenFX.flash(0.05 * impact);
       if (att === this.player || target === this.player) {
         SL.Input.rumble(0.15 * impact, 0.12 * impact, 50 + impact * 30);
         if (impact >= 3 && hit.type === 'melee') this.slowmo(0.45, 0.1);
@@ -995,6 +1006,195 @@
       }, Math.min(seconds, 2.2), { blendIn: 0.25 });
     }
 
+    /** Low behind his shoulder, tilting up to what he raises overhead as it grows (the Spirit Bomb). */
+    riseShot(f, bomb, seconds) {
+      this.camera.playShot((t, out) => {
+        const c = f.chest();
+        const fw = f.forward;
+        const top = bomb ? bomb.pos : c.clone().add(new V3(0, 3 * f.scale, 0));
+        out.pos.copy(c).addScaledVector(fw, -3.4 * f.scale).add(new V3(-fw.z * 1.6 * f.scale, -0.8 * f.scale, fw.x * 1.6 * f.scale));
+        out.look.copy(c).lerp(top, U.easeInOutCubic(t));
+        out.fov = U.lerp(52, 64, t);
+        this._clearLens(out);
+      }, seconds, { blendIn: 0.3 });
+    }
+
+    /** Low and in front, up at a one-handed pose, moving in tight on what is in the hand (the Big Bang Attack's sphere). */
+    handShot(f, seconds) {
+      this.camera.playShot((t, out) => {
+        const c = f.chest(), fw = f.forward;
+        const k = U.easeInOutCubic(t);
+        const look = c.clone().lerp(f.handPos('R'), k);
+        const r = U.lerp(3.6, 1.7, k) * f.scale;
+        out.pos.copy(look).addScaledVector(fw, r).add(new V3(-fw.z * 1.1 * f.scale, U.lerp(-1.1, -0.3, k) * f.scale, fw.x * 1.1 * f.scale));
+        out.look.copy(look);
+        out.fov = U.lerp(50, 42, k);
+        this._clearLens(out);
+      }, seconds, { blendIn: 0.08 });
+    }
+
+    /** Square in front of him, centred and closing in (the Final Flash as his hands come together). */
+    frontShot(f, seconds) {
+      this.camera.playShot((t, out) => {
+        const c = f.chest();
+        out.pos.copy(c).addScaledVector(f.forward, U.lerp(4.4, 3.2, U.easeOutCubic(t)) * f.scale).add(new V3(0, -0.25 * f.scale, 0));
+        out.look.copy(c);
+        out.fov = U.lerp(48, 44, t);
+        this._clearLens(out);
+      }, seconds, { blendIn: 0.15 });
+    }
+
+    /** Cut in behind his shoulder along the path of what he threw, the lens following it out to where it bursts. */
+    pathShot(f, p, seconds) {
+      const dir = p.vel.clone().normalize();
+      const last = p.pos.clone();
+      this.camera.playShot((t, out) => {
+        const c = f.chest();
+        if (p.alive) last.copy(p.pos);
+        out.pos.copy(c).addScaledVector(dir, -3 * f.scale).add(new V3(-dir.z * 0.9 * f.scale, 0.7 * f.scale, dir.x * 0.9 * f.scale));
+        out.look.copy(last);
+        out.fov = 54;
+        this._clearLens(out);
+      }, seconds, { blendIn: 0, cut: true });
+    }
+
+    /** Alongside a fighter rushing in, low and a little behind him: his trail behind, where he is going ahead (Dragon Fist). */
+    rushTrackShot(f, seconds) {
+      this.camera.playShot((t, out) => {
+        const c = f.chest();
+        const fw = f.forward;
+        const side = new V3(-fw.z, 0, fw.x);
+        out.pos.copy(c).addScaledVector(side, 4.6 * f.scale).addScaledVector(fw, U.lerp(-0.4, -1, t) * f.scale).add(new V3(0, -0.5 * f.scale, 0));
+        out.look.copy(c).addScaledVector(fw, 1.2 * f.scale);
+        out.fov = U.lerp(58, 50, t);
+        this._clearLens(out);
+      }, seconds, { blendIn: 0.12 });
+    }
+
+    /** Low beside the two of them, a little ahead of him, looking up at one standing on the other's head (Nappa Rush). */
+    perchShot(f, tg, seconds) {
+      this.camera.playShot((t, out) => {
+        const low = tg.chest(), c = low.clone().lerp(f.chest(), 0.5);
+        const fw = f.forward, s = Math.max(f.scale, tg.scale);
+        out.pos.copy(c).addScaledVector(new V3(-fw.z, 0, fw.x), U.lerp(5.6, 5, t) * s).addScaledVector(fw, 1.2 * s).setY(low.y - 0.5 * s);
+        out.look.copy(c);
+        out.fov = 50;
+        this._clearLens(out);
+      }, seconds, { blendIn: 0.15 });
+    }
+
+    /**
+     * On the side of the raised hand, a little ahead of him, closing in on the hand he holds at the other's chest — his
+     * face and the hand in frame, the one in front of it beyond (Final Impact).
+     */
+    aimShot(f, tg, seconds) {
+      this.camera.playShot((t, out) => {
+        const hand = f.handPos('R'), c = hand.clone().lerp(tg.chest(), 0.3);
+        const fw = f.forward, s = Math.max(f.scale, tg.scale), k = U.easeOutCubic(t);
+        out.pos.copy(c).addScaledVector(new V3(fw.z, 0, -fw.x), U.lerp(5, 4.1, k) * s).addScaledVector(fw, 0.9 * s).add(new V3(0, 0.1 * s, 0));
+        out.look.copy(c).add(new V3(0, 0.2 * s, 0));
+        out.fov = U.lerp(46, 42, k);
+        this._clearLens(out);
+      }, seconds, { blendIn: 0.1 });
+    }
+
+    /**
+     * Far off to one side and above, outside a blast of the given reach that bursts out of him, drawing further back
+     * as it swells (Final Explosion) — the sphere, the ground and whoever it catches in frame, never the inside of it.
+     */
+    novaShot(f, reach, seconds) {
+      const c = f.chest(), fw = f.forward, side = new V3(-fw.z, 0, fw.x);
+      this.camera.playShot((t, out) => {
+        const k = U.easeOutCubic(t);
+        out.pos.copy(c).addScaledVector(side, reach * U.lerp(1.25, 1.7, k)).addScaledVector(fw, reach * 0.35).add(new V3(0, reach * U.lerp(0.25, 0.4, k), 0));
+        out.look.copy(c).add(new V3(0, reach * 0.12, 0));
+        out.fov = 60;
+        this._clearLens(out);
+      }, seconds, { blendIn: 0, cut: true });
+    }
+
+    /**
+     * Both of them from one side of the line between them, drifting a little (the phases of a long rush): view 'low' —
+     * from under them looking up (a launch, blows from below), 'high' — over them looking down (a blow driving him down).
+     */
+    pairShot(f, tg, seconds, view) {
+      this.camera.playShot((t, out) => {
+        const a = f.chest(), b = tg.chest(), c = a.clone().lerp(b, 0.5);
+        const axis = b.clone().sub(a).setY(0);
+        if (axis.lengthSq() < 0.04) axis.copy(f.forward);
+        axis.normalize();
+        const side = new V3(-axis.z, 0, axis.x), s = Math.max(f.scale, tg.scale);
+        const r = (4.4 + Math.abs(a.y - b.y) * 0.6) * s, swing = U.lerp(-0.18, 0.18, t);
+        out.pos.copy(c).addScaledVector(side, r * Math.cos(swing)).addScaledVector(axis, r * Math.sin(swing)).add(new V3(0, view === 'high' ? 3.4 * s : -1.6 * s, 0));
+        if (this.stage.hasGround) out.pos.y = Math.max(out.pos.y, this.stage.heightAt(out.pos.x, out.pos.z) + 0.4);
+        out.look.copy(c);
+        out.fov = 52;
+        this._clearLens(out);
+      }, seconds, { blendIn: 0.08 });
+    }
+
+    /**
+     * Wide and high outside the circle a swung opponent is dragged round (the Spirit Sword hook and drag): the lens trails
+     * the swing round, the attacker at the centre and the one on the blade both in frame.
+     */
+    swingShot(f, seconds) {
+      const r0 = (f.sd.swing && f.sd.swing.radius) || 4.5;
+      this.camera.playShot((t, out) => {
+        const tg = f.sd.victim || f.target;
+        const c = f.chest(), d = tg ? tg.chest().sub(c).setY(0) : f.forward.clone();
+        if (d.lengthSq() < 1e-4) d.copy(f.forward);
+        const a = Math.atan2(d.x, d.z) - 0.9;
+        out.pos.copy(c).add(new V3(Math.sin(a) * r0 * 1.9, r0 * 0.8, Math.cos(a) * r0 * 1.9));
+        out.look.copy(c).addScaledVector(d.normalize(), r0 * 0.4);
+        out.fov = 56;
+        this._clearLens(out);
+      }, seconds, { blendIn: 0.1 });
+    }
+
+    /** Over the target's shoulder at the attacker, cut in (Goku reappearing behind him to fire). */
+    reverseShot(f, tg, seconds) {
+      this.camera.playShot((t, out) => {
+        const a = f.chest(), b = tg.chest();
+        const dir = a.clone().sub(b).setY(0);
+        if (dir.lengthSq() < 1e-4) dir.set(0, 0, 1);
+        dir.normalize();
+        out.pos.copy(b).addScaledVector(dir, -2.4 * tg.scale).add(new V3(-dir.z * 1.1 * tg.scale, 0.5 * tg.scale, dir.x * 1.1 * tg.scale));
+        out.look.copy(a).lerp(b, 0.15);
+        out.fov = U.lerp(50, 56, t);
+        this._clearLens(out);
+      }, seconds, { blendIn: 0, cut: true });
+    }
+
+    /**
+     * Wide, from the side of the line between them with both in frame, drifting slowly (the arena a finisher is
+     * thrown across); onTarget: held on the point where it hit, closer, cut in — what rises out of the impact stays
+     * in frame while he is thrown through it.
+     */
+    wideShot(f, tg, seconds, onTarget, cut) {
+      const hit = onTarget ? tg.chest() : null;
+      const from = onTarget ? f.chest() : null;
+      this.camera.playShot((t, out) => {
+        const a = from || f.chest(), b = hit || tg.chest();
+        const axis = b.clone().sub(a);
+        // one straight above the other (struck from on top of his head): the line is the way the attacker faces
+        if (axis.x * axis.x + axis.z * axis.z < 0.04) axis.copy(f.forward);
+        const sep = Math.max(1, axis.length());
+        axis.normalize();
+        const side = new V3().crossVectors(axis, UP);
+        if (side.lengthSq() < 0.01) side.set(1, 0, 0);
+        side.normalize();
+        const center = onTarget ? b : a.clone().lerp(b, 0.5);
+        // one launched high over the other (a finisher kicked up into the sky): far enough back for the height between them
+        const r = onTarget ? 8 : U.clamp(Math.max(sep * 0.9, Math.abs(b.y - a.y) * 1.25), 9, 40);
+        const swing = U.lerp(-0.25, 0.25, t);
+        out.pos.copy(center).addScaledVector(side, r * Math.cos(swing)).addScaledVector(axis, r * Math.sin(swing)).add(new V3(0, r * 0.3, 0));
+        // the impact: the lens tips up after what climbs out of it
+        out.look.copy(center).add(new V3(0, onTarget ? U.lerp(0, 2.5, U.easeOutCubic(t)) : 0, 0));
+        out.fov = onTarget ? 56 : 52;
+        this._clearLens(out);
+      }, seconds, { blendIn: onTarget || cut ? 0 : 0.3, cut: !!(onTarget || cut) }); // cut: no blend (a beat shorter than the 0.3 s)
+    }
+
     clashShot(a, b, clash) {
       this.camera.playShot((t, out, el) => {
         const pa = a.chest(), pb = b.chest();
@@ -1051,6 +1251,8 @@
     start() {
       SL.Input.setBattleMode(true);
       this.on('transformBurst', (e) => this._formTheme(e));
+      this.on('special', (e) => this._ultimateMusic(e));
+      this.on('storyEvade', (e) => this._uiDrop(e));
       this.phase = 'intro';
       if (this.config.onStart) this.config.onStart(this);
       if (this.mission) {
@@ -1345,7 +1547,19 @@
       }
       this._separate();
       for (const c of this.creatures.slice()) c.update();
-      if (this.tickHandlers.length) this.tickHandlers = this.tickHandlers.filter((h) => h() !== false);
+      if (this.tickHandlers.length) {
+        // run this tick's handlers from their own list: one registered meanwhile (b.onTick / b.after inside a
+        // handler) used to be lost when the list was rebuilt — now it is kept and first runs next tick, after these
+        const run = this.tickHandlers, keep = [];
+        this.tickHandlers = [];
+        let i = 0;
+        try {
+          for (; i < run.length; i++) if (run[i]() !== false) keep.push(run[i]);
+        } finally {
+          // a handler that throws keeps its place (as before), with every one not yet run
+          this.tickHandlers = keep.concat(run.slice(i), this.tickHandlers);
+        }
+      }
       this.projectiles.update();
       this.clash.update();
       this._mixCharges();
@@ -1441,9 +1655,23 @@
     }
 
     /** Free Battle / Training: the player's first time in a form with music of its own (Music.FORM_THEMES). */
+    /**
+     * An ultimate is a peak: outside a story (a mission owns its score) the battle music jumps to its fullest and holds
+     * there a few seconds, and an ultimate with its own `sting` (an original stinger — the three Gogetas' finishers)
+     * lands it over the music.
+     */
+    _ultimateMusic(e) {
+      if (this.mission || !e.spec || !(e.slot === 'ultimate' || e.spec.ultimate)) return;
+      SL.Music.setIntensity(3);
+      this.musicHold = Math.max(this.musicHold || 0, 5);
+      if (e.spec.sting) SL.Music.stinger(e.spec.sting);
+    }
+
     _formTheme(e) {
       if (this.mission || e.fighter !== this.player) return;
-      const song = SL.Music.FORM_THEMES && SL.Music.FORM_THEMES[e.form.id];
+      // a character's own key first ('vegeta:ssj' — his awakening is not Goku's), then the form's
+      const FT = SL.Music.FORM_THEMES || {};
+      const song = FT[e.fighter.def.id + ':' + e.form.id] || FT[e.form.id];
       if (!song || SL.Music.songId === song) return;
       // an opponent's own theme, or a character song the transformation itself brought in, wins
       const T = SL.Music.THEMES || {};
@@ -1452,6 +1680,19 @@
       const seq = e.form.sequence;
       if (seq && seq.steps && seq.steps.some((st) => st.song)) return;
       SL.Music.play(song, { intensity: 3 });
+    }
+
+    /**
+     * The drop (the soundtrack PDF, p.90–91): when a body that evades by itself (Ultra Instinct's form.evade) makes a
+     * full blow miss, the staccato brass lands over the music — the player's own fighter, outside the story (a mission
+     * owns its score), at most once in fifteen seconds so it stays a moment.
+     */
+    _uiDrop(e) {
+      const f = e.fighter;
+      if (this.mission || f !== this.player || !f.form || !f.form.evade) return;
+      if (this.frame - (this._uiDropAt === undefined ? -99999 : this._uiDropAt) < 900) return;
+      this._uiDropAt = this.frame;
+      SL.Music.stinger('ui_drop');
     }
 
     _separate() {
@@ -1480,7 +1721,9 @@
     }
 
     render() {
-      SL.Render.render(this.scene, this.camera.camera);
+      // this.split: two cameras for one frame, side by side (a mission's split shot sets it and clears it)
+      if (this.split) SL.Render.renderSplit(this.scene, this.split);
+      else SL.Render.render(this.scene, this.camera.camera);
     }
 
     dispose() {

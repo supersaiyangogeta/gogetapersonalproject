@@ -191,7 +191,7 @@
   const def = {
     id: 'endz_village',
     canon: true,
-    chapter: 'CHAPTER 17 · THE END OF Z',
+    chapter: 'CHAPTER 23 · THE END OF Z',
     title: 'Ten Years Later',
     subtitle: 'A boy from the south · Age 784',
     character: 'uub',

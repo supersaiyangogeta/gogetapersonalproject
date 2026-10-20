@@ -19,7 +19,7 @@
  * (src/game/mechanics.js), the play-then-violence rhythm is the `buu` AI hook
  * (src/game/controllers.js), and the numbers live in `majin` below.
  *
- * Level 1 functional prototype (procedural body). Story only: not playable.
+ * Level 1 functional prototype (procedural body). Playable in Free Battle after "The Prince's Pride" (unlocks.js).
  */
 (function () {
   'use strict';
@@ -263,7 +263,7 @@
     name: 'Majin Buu',
     fullName: 'Majin Buu',
     era: 'Buu Saga',
-    playable: false,
+    playable: true,
     prototype: true,
     style: 'Unkillable',
     blurb: 'A child with no rules and a body that does not stay broken. He plays with you. Then he stops playing.',
@@ -295,14 +295,23 @@
       face: { noEars: true, pupil: 0x1a0a14, eyeW: 0.72, browThick: 1.3, brow: 0x1a0a14 },
       outfit: {
         topStyle: 'bare', top: PINK, arms: PINK,
-        jacket: { color: VEST, collar: TRIM, open: 1.7, short: true },
+        // the 2026-10-15 visual pass (the board p.42): the short vest closes in to frame the chest from the front (it sat
+        // round the back only), the wide black belt sits UNDER the belly round the top of the trousers (it stood out of
+        // his sides like a ring) with the gold plate of the Majin mark in front, and the cape is knotted at the throat
+        jacket: { color: VEST, collar: TRIM, open: 1.22, short: true },
         belly: true,
         cape: CAPE,
         pants: WHITE, pantsStyle: 'gi',
-        belt: 0x1a1a22, beltStyle: 'belt', buckle: TRIM,
+        belt: 0x1a1a22, beltStyle: 'sash', beltAt: -0.1, beltFit: 0.86,
         gloves: WHITE, wrist: TRIM,
         boots: 0xe0b84a, bootTip: 0x1a1a1a, bootStyle: 'saiyan',
       },
+      props: [
+        { id: 'majinPlate', joint: 'spine', shape: 'tri', pos: [0, -0.1, 0.395], rot: [-0.1, 0, 0], size: [0.075, 0.055, 0.02], color: TRIM, mark: 'majin' },
+        { id: 'capeKnot', joint: 'chest', shape: 'ball', pos: [0, 0.24, 0.29], size: [0.055, 0.045, 0.04], color: CAPE },
+        { id: 'capeTailL', joint: 'chest', shape: 'tri', pos: [0.045, 0.19, 0.31], rot: [-0.3, 0, 0.35], size: [0.035, 0.06, 0.008], color: CAPE },
+        { id: 'capeTailR', joint: 'chest', shape: 'tri', pos: [-0.045, 0.19, 0.31], rot: [-0.3, 0, -0.35], size: [0.035, 0.06, 0.008], color: CAPE },
+      ],
       portraitColor: '#f2a2c4',
     },
     vfx: { ghost: 0xffb8d8, trail: 0xffc8e0 },

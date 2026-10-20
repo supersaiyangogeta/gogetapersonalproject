@@ -755,7 +755,9 @@
           K().faceTo(t, new V3(0, 0, -30));
           ctx.m.battle.stage.setMood(0.45, 0x202430, 1.4);
         },
-        music: { song: 'vision', level: 1 },
+        // what Gohan's death left him: the strings and the piano of the tragic theme (soundtrack PDF p.96, "Future Trunks
+        // finding Gohan's body": an original stand-in)
+        music: { song: 'tragic_sacrifice', level: 2 },
         cam: { from: { at: 'trunks', off: [0, 14, 22] }, to: { at: 'trunks', off: [0, 20, 30] }, look: { at: 'trunks', off: [0, 0, 0] }, fov: 50, fov2: 54, ease: 'inOut' },
         say: { who: 'future_trunks', line: 'I’m all that’s left. Me and my mother. That’s the future you’re walking into.', duration: 4.6, style: 'quiet' },
         hold: 4.7,

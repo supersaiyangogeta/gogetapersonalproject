@@ -21,7 +21,11 @@ module.exports = function buuKidTests({ test, eq, ok }) {
     eq(k.ai.hooks, 'kid_buu', 'his own AI hooks');
     ok(gg.SL.AIHooks.kid_buu && gg.SL.AIHooks.kid_buu.pre, 'and they exist');
     ok(k.majin && k.majin.maxReforms >= 1, 'he grows back');
-    ok(!k.playable, 'not playable');
+    // the roster expansion (2026-10-14): a Free Battle fighter once his story is over ("Goodbye, Buu"), not before
+    ok(k.playable, 'playable in Free Battle');
+    const uk = gg.SL.data.unlocks.find((u) => u.type === 'characters' && u.target === 'kid_buu');
+    ok(uk && uk.condition.missionComplete === 'buu_spiritbomb', 'unlocked by "Goodbye, Buu": ' + JSON.stringify(uk && uk.condition));
+    ok(!gg.SL.Save.isUnlocked('characters', 'kid_buu'), 'and locked until then');
     eq(gg.errors.length, 0, 'engine errors: ' + gg.errors.slice(0, 2).join(' | '));
   });
 

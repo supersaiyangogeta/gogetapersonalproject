@@ -18,6 +18,7 @@
     burrow: ['digFrames', 'maxFrames', 'speed', 'warnFrames', 'riseSpeed', 'radius', 'damage', 'knockSpeed', 'recovery'],
     scatter: ['windup', 'rise', 'height', 'count', 'damage', 'speed', 'range', 'recovery'],
     stardustFall: ['rise', 'height', 'shots', 'interval', 'damage', 'finalDamage', 'speed', 'recovery'],
+    stardustBreaker: ['raise', 'damage', 'recovery'],
     solarFlare: ['startup', 'recovery', 'range', 'stunFrames', 'cooldown'],
     stretchGrab: ['reach', 'extendFrames', 'pullFrames', 'damage', 'hitstunAfter', 'recovery', 'armLength'],
     groundSlam: ['crouch', 'hang', 'height', 'maxRange', 'radius', 'clearHeight', 'damage', 'knockSpeed', 'recovery'],
@@ -29,6 +30,15 @@
     bossTransform: ['form'],
     // Guldo stops time while he holds his breath: nobody else acts until he runs out of air
     timeFreeze: ['range', 'startup', 'holdFrames', 'kiPerSecond', 'recovery'],
+    // God Goku's divine restraint (Super Broly): one enemy held in a crimson ring while his ki drains
+    godBind: ['range', 'startup', 'holdFrames', 'kiPerSecond', 'recovery'],
+    // Rosé Black's Divine Lasso: the crescent, the needles that hold whoever they reach, the burst
+    divineLasso: ['range', 'windup', 'flight', 'holdFrames', 'recovery', 'needleDamage', 'damage', 'knockSpeed'],
+    // Rosé Black's Divine Scythe: the swing that cuts the air, the tear, the smoke clones out of it
+    divineScythe: ['windup', 'reach', 'arc', 'damage', 'knockSpeed', 'clones', 'cloneSeconds', 'cloneDealt', 'reform', 'recovery'],
+    // Future Trunks' Mafuba: the jar, the wind, the pull (mashed), the seal that will not hold
+    mafuba: ['range', 'setFrames', 'stanceFrames', 'pullFrames', 'pullPress', 'sealFrames', 'catchDamage', 'damage', 'knockSpeed', 'kiDrain', 'staminaDrain', 'recovery'],
+    beamSurf: ['rideFrames', 'flipFrames', 'recovery', 'damage'],
     // Burter circles the target and strikes from a new angle each pass; guarding bounces him off
     speedOrbit: ['range', 'frames', 'radius', 'interval', 'damage', 'speed', 'recovery'],
     // Frieza's final form throws discs that follow you, and eventually stop taking sides
@@ -44,13 +54,21 @@
     giantSweep: ['windup', 'range', 'half', 'height', 'damage', 'knockSpeed', 'recovery'],
     senzu: ['count', 'eatAt', 'recovery', 'heal', 'ki', 'tossRange', 'allyBelow'],
     telekinesis: ['range', 'startup', 'maxFrames', 'bossFrames', 'kiPerSecond', 'releaseStagger', 'recovery', 'mashGain', 'escapeDecay', 'cpuEscape'],
+    // the dimensional techniques (Janemba, Fusion Reborn)
+    portalGuard: ['startup', 'frames', 'recovery'],
+    phantomShift: ['frames', 'appearAt', 'dist', 'recovery'],
+    portalStrike: ['windup', 'reach', 'radius', 'damage', 'knockSpeed', 'recovery'],
+    // Hit's time-skip: a still preparation, gone for a moment, back inside the guard with one blow (Tournament of Power pass)
+    timeSkip: ['prepFrames', 'gapFrames', 'damage', 'hitstun', 'recovery', 'reach'],
+    // Android 17's shell: blasts burst on it, a swing into it is pushed off
+    barrier: ['radius', 'holdFrames', 'damage', 'knockSpeed'],
     giantGrab: ['reach', 'windup', 'grabRadius', 'grabHeight', 'grabDamage', 'holdFrames', 'crushEvery', 'crushDamage', 'throwDamage', 'mashGain', 'holdGain', 'escapeDecay', 'cpuEscape', 'escapeStagger', 'missRecovery', 'recovery'],
   };
   const SPECIAL_TYPES = ['beam', 'projectile', 'rush', 'teleport', 'spiritBomb'].concat(Object.keys(TECHNIQUE_FIELDS));
   const TELEPORT_MODES = ['behind', 'front', 'away', 'above'];
   const HAND_SHAPES = ['fist', 'open', 'point', 'thumb'];
   const KNOCKS = ['flinch', 'push', 'crumple', 'launch', 'smash', 'heavy', 'held'];
-  const EXPRESSIONS = ['neutral', 'angry', 'shout', 'grit', 'hurt', 'smirk', 'grin', 'calm', 'ko', 'shock', 'soft', 'sad', 'majin', 'cocky', 'wicked', 'nervous', 'focused', 'serious', 'exhausted', 'closed', 'determined'];
+  const EXPRESSIONS = ['neutral', 'angry', 'shout', 'grit', 'hurt', 'smirk', 'grin', 'calm', 'ko', 'shock', 'soft', 'sad', 'majin', 'cocky', 'wicked', 'nervous', 'focused', 'serious', 'exhausted', 'closed', 'determined', 'cold', 'warm'];
   const MOVE_NUMBERS = ['startup', 'active', 'recovery', 'damage', 'reach', 'radius'];
 
   const isNum = (v) => typeof v === 'number' && isFinite(v);
@@ -117,17 +135,19 @@
           if (!lv.mult) err(w + ' level ' + j + ': missing mult');
         });
       }
-      if (f.sequence) {
-        const q = f.sequence;
-        if (!(q.length > 0) || !(q.applyAt > 0) || q.applyAt >= q.length) err(w + ': sequence needs 0 < applyAt < length');
+      // sequence: the change as the story first shows it; practiced: every time after (see Fighter transform)
+      for (const key of ['sequence', 'practiced']) {
+        const q = f[key];
+        if (!q) continue;
+        if (!(q.length > 0) || !(q.applyAt > 0) || q.applyAt >= q.length) err(w + ': ' + key + ' needs 0 < applyAt < length');
         let last = -1;
         for (const st of q.steps || []) {
-          if (!isNum(st.at) || st.at < last || st.at >= q.length) err(w + ': sequence step "at" must ascend and stay below length');
+          if (!isNum(st.at) || st.at < last || st.at >= q.length) err(w + ': ' + key + ' step "at" must ascend and stay below length');
           last = st.at;
-          if (st.pose) pose(st.pose, w + ' sequence');
+          if (st.pose) pose(st.pose, w + ' ' + key);
           if (st.expression && !EXPRESSIONS.includes(st.expression)) err(w + ': unknown expression "' + st.expression + '"');
         }
-        if (!(q.steps || []).some((st) => st.burst)) err(w + ': sequence has no burst step (the form would never apply mid-sequence)');
+        if (!(q.steps || []).some((st) => st.burst)) err(w + ': ' + key + ' has no burst step (the form would never apply mid-sequence)');
       }
     });
 
@@ -214,7 +234,36 @@
       if (x.type === 'projectile' && !x.projectile) err(w + ': missing projectile block');
       if (x.type === 'rush' && !(Array.isArray(x.hits) && x.hits.length)) err(w + ': rush needs hits');
       if (TECHNIQUE_FIELDS[x.type]) for (const k of TECHNIQUE_FIELDS[x.type]) if (!isNum(x[k])) err(w + ': ' + k + ' must be a number');
-      if (x.hits) x.hits.forEach((h, i) => pose(h.pose, w + ' hit ' + i));
+      // a team rush (x.partner): the partner's steps (h.by 'partner', h.partnerKi) use the partner's own poses
+      const partnerDefs = x.partner && Array.isArray(x.partner.ids) ? x.partner.ids.map((id) => SL.data.characters && SL.data.characters[id]).filter(Boolean) : [];
+      const partnerPose = (n, where) => n && !(SL.data.poses && SL.data.poses[n]) && partnerDefs.some((pc) => !(pc.poses && pc.poses[n])) && err(where + ': partner pose "' + n + '" does not exist');
+      if (x.partner && !(Array.isArray(x.partner.ids) && x.partner.ids.length)) err(w + ': partner needs ids');
+      if (x.hits) x.hits.forEach((h, i) => {
+        if (h.by && h.by !== 'partner') err(w + ' hit ' + i + ': by must be "partner"');
+        if (h.by === 'partner' && !x.partner) err(w + ' hit ' + i + ': a partner step needs spec.partner');
+        if (h.by === 'partner') partnerPose(h.pose, w + ' hit ' + i);
+        else pose(h.pose, w + ' hit ' + i);
+        if (h.partnerKi) partnerPose(h.partnerKi.pose, w + ' hit ' + i + ' partnerKi');
+      });
+      // the reaction a rush blow plays on whoever it lands on (any fighter: the shared hit poses)
+      if (x.hits) x.hits.forEach((h, i) => h.hitPose && !(SL.data.poses && SL.data.poses[h.hitPose]) && err(w + ' hit ' + i + ': hitPose "' + h.hitPose + '" is not a shared pose'));
+      // a step that moves him instead of striking (fighter.js rush): onto the held one's head, and a blow after it
+      if (x.hits) x.hits.forEach((h, i) => h.perch && (h.perch !== 'head' || i === x.hits.length - 1) && err(w + ' hit ' + i + ': perch must be "head" and not the last step'));
+      if (x.hits) x.hits.forEach((h, i) => (h.aim || h.bind || h.move) && i === x.hits.length - 1 && err(w + ' hit ' + i + ': an aim, bind or move step needs a blow after it'));
+      if (x.hits) x.hits.forEach((h, i) => h.to && !['behind', 'above', 'below', 'front', 'left', 'right'].includes(h.to) && err(w + ' hit ' + i + ': to must be behind, above, below, front, left or right'));
+      if (x.hits) x.hits.forEach((h, i) => h.swing && !(isNum(h.swing.radius) && h.frames > 0 && x.prop) && err(w + ' hit ' + i + ': a swing needs a radius, frames and the technique prop'));
+      if (x.hits) x.hits.forEach((h, i) => h.beam && !(h.ki && i === x.hits.length - 1 && isNum(h.beam.length) && isNum(h.beam.radius)) && err(w + ' hit ' + i + ': a beam is the last blow, a ki blow, with a length and a radius'));
+      if (x.detonate && !(isNum(x.detonate.at) && isNum(x.detonate.damage) && x.recovery > x.detonate.at)) err(w + ': detonate needs at and damage, and a recovery longer than its delay');
+      // a technique's cinematic (fighter.js CINE_STATES): a step on an event or a shot that does not exist never plays
+      for (const cine of [x.cine, x.instant && x.instant.cine]) {
+        for (const st of (cine && cine.steps) || []) {
+          // a rush step's own cue (h.cue) is an event too
+          const cues = (x.hits || []).map((h) => h.cue).filter(Boolean);
+          if (!['start', 'release', 'connect', 'perch', 'aim', 'bind', 'finish', 'full', 'push'].includes(st.on) && !cues.includes(st.on)) err(w + ': cine step on unknown event "' + st.on + '"');
+          if (st.shot && SL.cineShots && !SL.cineShots[st.shot]) err(w + ': cine step uses unknown shot "' + st.shot + '"');
+        }
+      }
+      for (const fid of x.forms || []) if (!formIds.includes(fid)) err(w + ': forms refers to unknown form "' + fid + '"');
     }
 
     // bosses: phases, patterns and the techniques they start
@@ -259,6 +308,7 @@
         pose(st.pose, where + ' step ' + i);
         if (!(st.dur > 0)) err(where + ' step ' + i + ': dur must be > 0');
         if (st.expression && !EXPRESSIONS.includes(st.expression)) err(where + ' step ' + i + ': unknown expression "' + st.expression + '"');
+        if (st.needs !== undefined && !(typeof st.needs === 'string' && st.needs.replace('!', ''))) err(where + ' step ' + i + ': needs must name what is worn ("scouter", a prop id, "!" for absent)');
       });
     };
     if (seqs.intro) checkSeq(seqs.intro, 'sequences.intro');

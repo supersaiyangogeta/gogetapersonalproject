@@ -631,7 +631,9 @@
       if (bs.hpFrac > B.floors.edge + 0.02) bs.hp = bs.hpMax * B.floors.edge;
       K().air(m, g, -5, 0, 0, B.edge);
       K().air(m, bs, 5, 1.5, 0, g.pos);
-      const fight = godFight(m, { floor: B.floors.godki, evade: 0.25, song: 'final_clash', music: 6 });
+      // the red gone, the gold back by will alone in deep space: the soundtrack PDF's "HERO ~Song of Hope~" moment (p.92;
+      // an original stand-in plays it)
+      const fight = godFight(m, { floor: B.floors.godki, evade: 0.25, song: 'song_of_hope', music: 6 });
       m.objective('push', 'SPACE · God Ki');
       const meter = pushMeter(m, 'Keep up with a god', B.floors.godki);
       let t = 0;

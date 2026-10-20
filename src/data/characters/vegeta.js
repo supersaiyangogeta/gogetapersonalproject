@@ -161,6 +161,129 @@
       shoulderR: [-96, 0, 10], elbowR: [-4, 0, 0], shoulderL: [-40, 0, 30], elbowL: [-100, 0, 0],
       thighL: [-44, 10, 16], kneeL: [50, 0, 0], thighR: [26, -8, -12], kneeR: [20, 0, 0],
     },
+    // FINAL IMPACT (the wheel): the knee driven up into the stomach, both hands pulling him onto it by the shoulders
+    v_majinKnee: {
+      hands: ['open', 'open'],
+      root: { y: 0.04, rx: 4 }, spine: [16, 0, 0], chest: [16, 0, 0], neck: [8, 0, 0], head: [-18, 0, 0],
+      shoulderL: [-80, 0, -14], elbowL: [-66, 0, 0], shoulderR: [-80, 0, 14], elbowR: [-66, 0, 0],
+      thighL: [-112, 0, 4], kneeL: [120, 0, 0], footL: [30, 0, 0], thighR: [8, 0, -6], kneeR: [16, 0, 0],
+    },
+    // then the hand raised at his chest, the fingers out, the other fist low and back; head down, eyes up, savouring it
+    v_finalImpactAim: (t) => {
+      const q = Math.sin(t * 30) * 0.8;
+      return {
+        hands: ['fist', 'open'],
+        root: { y: -0.08 }, hips: [0, 16, 0], spine: [10, 12, 0], chest: [8, 20, 0], neck: [6, 0, 0], head: [-16, -26, q],
+        shoulderR: [-88 + q, 0, 6], elbowR: [-4, 0, 0], handR: [-78, 0, 0],
+        shoulderL: [-24, 0, 30], elbowL: [-70, 0, 0], handL: [-16, 0, 0],
+        thighL: [-26, 12, 14], kneeL: [36, 0, 0], thighR: [16, -10, -14], kneeR: [24, 0, 0],
+      };
+    },
+    // the shot: the arm locked straight through the recoil, shoulder behind it, braced low
+    v_finalImpact: {
+      hands: ['fist', 'open'],
+      root: { y: -0.12, rx: 6 }, hips: [0, 24, 0], spine: [8, 18, 0], chest: [2, 30, 0], neck: [4, 0, 0], head: [-12, -38, 0],
+      shoulderR: [-92, 0, 2], elbowR: [0, 0, 0], handR: [-84, 0, 0],
+      shoulderL: [-14, 0, 34], elbowL: [-80, 0, 0],
+      thighL: [-38, 12, 16], kneeL: [48, 0, 0], thighR: [24, -10, -16], kneeR: [16, 0, 0],
+    },
+    // ATOMIC RUSH (the wheel): the roundhouse that swept Goku through the rocks — the whole hip turned through it
+    v_atomicKick: {
+      hands: ['fist', 'fist'],
+      root: { y: 0.02, rx: -4 }, hips: [0, -50, 0], spine: [-6, -30, 0], chest: [-8, -30, 0], neck: [0, 0, 0], head: [-10, 60, 0],
+      shoulderL: [-30, 0, 60], elbowL: [-50, 0, 0], shoulderR: [-40, 0, -50], elbowR: [-70, 0, 0],
+      thighL: [-6, 0, 10], kneeL: [14, 0, 0], footL: [10, 0, 0], thighR: [-80, 0, -84], kneeR: [10, 0, 0], footR: [30, 0, 0],
+    },
+    // ...walking up to the pinned one, one hand open toward him, enjoying it
+    v_atomicLoom: (t) => {
+      const b = Math.sin(t * 3);
+      return {
+        hands: ['fist', 'open'],
+        root: { y: -0.06 + b * 0.01 }, hips: [0, 10, 0], spine: [12, 6, 0], chest: [10, 10, 0], neck: [10, 0, 0], head: [-20, -10, 0],
+        shoulderR: [-70, 0, -10], elbowR: [-30, 0, 0], handR: [-30, 0, 0], shoulderL: [-20, 0, 36], elbowL: [-60, 0, 0],
+        thighL: [-24, 10, 14], kneeL: [32, 0, 0], thighR: [14, -8, -14], kneeR: [22, 0, 0],
+      };
+    },
+    // the headbutt: neck and back thrown forward behind the forehead, both fists pulling him onto it
+    v_headbutt: {
+      hands: ['fist', 'fist'],
+      root: { y: -0.04, rx: 18 }, spine: [22, 0, 0], chest: [20, 0, 0], neck: [18, 0, 0], head: [20, 0, 0],
+      shoulderL: [-66, 0, -20], elbowL: [-80, 0, 0], shoulderR: [-66, 0, 20], elbowR: [-80, 0, 0],
+      thighL: [-40, 6, 12], kneeL: [44, 0, 0], thighR: [20, -6, -12], kneeR: [16, 0, 0],
+    },
+    // FINAL EXPLOSION (the wheel): gathering everything — crouched, fists clenched at his sides, head down, the
+    // whole body trembling harder as it builds
+    v_feGather: (t) => {
+      const s = Math.sin(t * 50) * 1.6;
+      return {
+        hands: ['fist', 'fist'],
+        root: { y: -0.2 + s * 0.003, rx: 6 }, spine: [16, 0, 0], chest: [12 + s * 0.4, 0, 0], neck: [10, 0, 0], head: [12 + s, 0, 0],
+        shoulderL: [6, 0, 30 + s], elbowL: [-36, 0, 0], handL: [-16, 0, 0], shoulderR: [6, 0, -30 - s], elbowR: [-36, 0, 0], handR: [-16, 0, 0],
+        thighL: [-46, 0, 26], kneeL: [74, 0, 0], footL: [-22, 0, 0], thighR: [-46, 0, -26], kneeR: [74, 0, 0], footR: [-22, 0, 0],
+      };
+    },
+    // after it: spent, bent over his knees, arms hanging, breathing hard
+    v_feSpent: (t) => {
+      const b = Math.sin(t * 5);
+      return {
+        hands: ['open', 'open'],
+        root: { y: -0.22 + b * 0.012, rx: 22 }, spine: [24 + b * 2, 0, 0], chest: [14, 0, 0], neck: [8, 0, 0], head: [6, 0, 0],
+        shoulderL: [-30, 0, 12], elbowL: [-24, 0, 0], shoulderR: [-30, 0, -12], elbowR: [-24, 0, 0],
+        thighL: [-56, 0, 16], kneeL: [70, 0, 0], thighR: [-40, 0, -16], kneeR: [56, 0, 0],
+      };
+    },
+    // PRINCE'S ONSLAUGHT (the wheel): dropped low, the leg swept round through his ankles
+    v_poSweep: {
+      hands: ['fist', 'open'],
+      root: { y: -0.42, rx: 10 }, hips: [0, -40, 0], spine: [18, -20, 0], chest: [10, -20, 0], neck: [0, 0, 0], head: [-16, 40, 0],
+      shoulderL: [-10, 0, 40], elbowL: [-20, 0, 0], shoulderR: [30, 0, -60], elbowR: [-10, 0, 0], handR: [-60, 0, 0],
+      thighL: [-80, 10, 20], kneeL: [120, 0, 0], footL: [-20, 0, 0], thighR: [-20, 0, -86], kneeR: [6, 0, 0], footR: [20, 0, 0],
+    },
+    // ...and from behind and above, the knee driven down into his back
+    v_poKnee: {
+      hands: ['fist', 'fist'],
+      root: { y: 0.1, rx: 24 }, spine: [10, 0, 0], chest: [10, 0, 0], neck: [6, 0, 0], head: [10, 0, 0],
+      shoulderL: [-110, 0, 30], elbowL: [-60, 0, 0], shoulderR: [-110, 0, -30], elbowR: [-60, 0, 0],
+      thighL: [-100, 0, 4], kneeL: [130, 0, 0], footL: [40, 0, 0], thighR: [10, 0, -6], kneeR: [30, 0, 0], footR: [30, 0, 0],
+    },
+    // DIRTY FIREWORKS (the wheel): two fingers pointed at the sky, the other hand at the hip, a cruel smirk upward
+    v_dirtyFireworks: (t) => {
+      const b = Math.sin(t * 2.4);
+      return {
+        hands: ['fist', 'point'],
+        root: { y: -0.02 + b * 0.006 }, hips: [0, 10, 0], spine: [-4, 6, 0], chest: [-8, 10, 0], neck: [-10, 0, 0], head: [-34, -8, 0],
+        shoulderR: [-172, 0, -6], elbowR: [-6, 0, 0], handR: [-10, 0, 0], shoulderL: [-14, 0, 26], elbowL: [-60, 0, 0],
+        thighL: [-12, 8, 12], kneeL: [14, 0, 0], thighR: [8, -6, -12], kneeR: [10, 0, 0],
+      };
+    },
+    // GODLY EXECUTION (the wheel, Super Saiyan God): one arm folded behind his back, the other driving the palm in
+    v_godPalm: {
+      hands: ['fist', 'open'],
+      root: { y: -0.06, rx: 6 }, hips: [0, 20, 0], spine: [6, 14, 0], chest: [4, 22, 0], neck: [0, 0, 0], head: [-6, -30, 0],
+      shoulderR: [-88, 0, 6], elbowR: [-6, 0, 0], handR: [-76, 0, 0], shoulderL: [40, 0, 36], elbowL: [-110, 0, 0], handL: [0, 0, 20],
+      thighL: [-30, 10, 12], kneeL: [36, 0, 0], thighR: [18, -8, -12], kneeR: [18, 0, 0],
+    },
+    // ...the second palm higher, at the throat
+    v_godPalmHigh: {
+      hands: ['fist', 'open'],
+      root: { y: -0.02, rx: 2 }, hips: [0, 14, 0], spine: [0, 10, 0], chest: [-4, 18, 0], neck: [-2, 0, 0], head: [-10, -26, 0],
+      shoulderR: [-112, 0, 4], elbowR: [-6, 0, 0], handR: [-80, 0, 0], shoulderL: [40, 0, 36], elbowL: [-110, 0, 0], handL: [0, 0, 20],
+      thighL: [-24, 10, 12], kneeL: [26, 0, 0], thighR: [16, -8, -12], kneeR: [12, 0, 0],
+    },
+    // ...and after the flip over his head, the palm flat against his back for the shot
+    v_godShot: {
+      hands: ['fist', 'open'],
+      root: { y: -0.1, rx: 10 }, hips: [0, 24, 0], spine: [10, 16, 0], chest: [6, 26, 0], neck: [2, 0, 0], head: [-10, -34, 0],
+      shoulderR: [-90, 0, 2], elbowR: [0, 0, 0], handR: [-86, 0, 0], shoulderL: [40, 0, 36], elbowL: [-110, 0, 0], handL: [0, 0, 20],
+      thighL: [-40, 10, 16], kneeL: [50, 0, 0], thighR: [24, -10, -16], kneeR: [14, 0, 0],
+    },
+    // BLUE GALICK RUSH / FINAL GOD STRIKE (the wheel): the spinning back-kick, heel driven back through him
+    v_spinBack: {
+      hands: ['fist', 'fist'],
+      root: { y: 0.04, rx: -6 }, hips: [0, 160, 0], spine: [-10, 10, 0], chest: [-12, 10, 0], neck: [0, 0, 0], head: [-6, -150, 0],
+      shoulderL: [-20, 0, 50], elbowL: [-70, 0, 0], shoulderR: [-20, 0, -50], elbowR: [-70, 0, 0],
+      thighL: [-6, 0, 10], kneeL: [16, 0, 0], thighR: [60, 0, -20], kneeR: [10, 0, 0], footR: [40, 0, 0],
+    },
     // STORY (playtest round 2): bending to take a hand he has no intention of helping up
     v_offerHand: {
       root: { y: -0.08, rx: 14 }, spine: [16, 0, 0], chest: [10, 6, 0], neck: [8, 0, 0], head: [18, -6, 0],
@@ -228,6 +351,26 @@
       root: { y: -0.07, rx: 8 }, spine: [8, -12, 0], chest: [10, -32, 0], head: [-14, 26, 0],
       shoulderL: [-86, 0, -22], elbowL: [-78, 0, 0], shoulderR: [-40, 0, -20], elbowR: [-118, 0, 0],
       thighL: [-28, 8, 11], kneeL: [34, 0, 0], thighR: [16, -6, -11], kneeR: [16, 0, 0],
+    },
+    // the slip: the head and chest pulled back off the line of a punch, the weight on the rear foot, the fists low
+    v_leanBack: {
+      root: { y: -0.06 }, spine: [-12, 8, 0], chest: [-22, 14, 0], head: [-20, -12, 0],
+      shoulderL: [-28, 0, 40], elbowL: [-100, 0, 0], shoulderR: [-24, 0, -36], elbowR: [-105, 0, 0],
+      thighL: [-26, 8, 11], kneeL: [20, 0, 0], thighR: [18, -6, -11], kneeR: [32, 0, 0],
+    },
+    // a blow taken on the right forearm, raised across the face; the left hand drawn back, ready (the air exchange, B02)
+    v_forearmBlock: {
+      hands: ['open', 'fist'],
+      root: { y: -0.05, rx: -4 }, spine: [4, -6, 0], chest: [6, -12, 0], head: [8, 4, 0],
+      shoulderR: [-96, 0, 26], elbowR: [-112, 0, 0], shoulderL: [-26, 0, 22], elbowL: [-118, 0, 0],
+      thighL: [-26, 8, 11], kneeL: [34, 0, 0], thighR: [14, -6, -11], kneeR: [24, 0, 0],
+    },
+    // ...and straight off it, the left palm into the chest (v_godPalm on the other hand)
+    v_palmL: {
+      hands: ['open', 'fist'],
+      root: { y: -0.06, rx: 6 }, hips: [0, -20, 0], spine: [6, -14, 0], chest: [4, -22, 0], head: [-6, 30, 0],
+      shoulderL: [-88, 0, -6], elbowL: [-6, 0, 0], handL: [-76, 0, 0], shoulderR: [40, 0, -36], elbowR: [-110, 0, 0],
+      thighL: [18, 8, 12], kneeL: [18, 0, 0], thighR: [-30, -10, -12], kneeR: [36, 0, 0],
     },
     v_kneeW: {
       root: { y: -0.02 }, chest: [4, 0, 0],
@@ -511,6 +654,69 @@
       },
       {
         /*
+         * SUPER SAIYAN GOD (Movie 2 · Super Broly — the owner's beat text): the gold condenses into a crimson
+         * flame, the hair snaps ruby red, the frame goes leaner and lighter. Placed after Super Saiyan 2 so Free
+         * Battle's chain reaches it; the story-only Majin and Super Vegeta stay behind it. The FILM hands it over
+         * (formGivenBy 'bb_clash': locked in the whole canon story and every What-If); Free Battle once that is
+         * cleared. kiCost 60 like the Majin form that used to follow Super Saiyan 2, so nothing a CPU Vegeta
+         * weighs in any older mission changes.
+         */
+        id: 'god', name: 'Super Saiyan God', short: 'SUPER SAIYAN GOD', kiCost: 60, style: 'full',
+        freeUnlock: 'bb_clash',
+        mult: { damage: 2.25, speed: 1.44, defense: 1.6, kiRegen: 2.7, chargeRate: 1.6, guardStamina: 0.7, accel: 1.38 },
+        aura: { color: 0xff2a48, core: 0xfff0e0, particles: 0xff6a3a, idle: 0.5, speed: 1.4, sharp: 0.16, sparks: 0xffc8a0, flame: [0xff4a1a, 0xff1a4a, 0xffb040, 0xff7a2a, 0xd8183a] },
+        look: { hair: { style: 'vegeta_god', color: 0xc8143a }, pupil: 0xb81030, brow: 0xa8102a, bulk: 0.92, muscle: 0.9, scale: 0.985 },
+        ai: { personality: 'martial', aggression: 0.86, defense: 0.7, ranged: 0.35, beam: 0.5, preferredRange: 2.2 },
+        intro: { pose: 'v_tfPride', expression: 'cocky' },
+        ghost: 0xff7a6a,
+        line: 'vegeta_god',
+        reactLine: 'react_ssj',
+        music: 5,
+        // no scream: the flame rises off him, quietly, and he is simply something else
+        sequence: {
+          length: 200,
+          applyAt: 140,
+          steps: [
+            { at: 0, pose: 'v_tfClench', speed: 4, expression: 'closed', aura: 0.3, auraColor: 0xff5a3a, mood: [0.45, 0x2a0610, 1.1], shot: 'orbit', music: 0, sfx: 'heartbeat' },
+            { at: 44, sfx: 'kiCharge', quake: 0.08 },
+            { at: 84, aura: 0.75, sfx: 'ssjRise', mood: [0.6, 0x3a0814, 0.8] },
+            { at: 116, quake: 0.18, sfx: 'rumble' },
+            { at: 140, burst: true, pose: 'v_tfPride', speed: 6, expression: 'cold', sfx: 'transformBurst', mood: [0.2, 0x3a1010, 0.4], flash: 0.3, crater: 3 },
+            { at: 164, shot: 'face', mood: [0, 0x000000, 1.8] },
+          ],
+        },
+      },
+      {
+        // SUPER SAIYAN BLUE (Movie 2): the god's power under a Super Saiyan's control — the Super Saiyan shape
+        // in cyan, lit from inside, a blue flame. Handed over in the main story by 'rof_finale' and in Movie 2 by
+        // 'bb_wrath'; Free Battle once either is cleared.
+        id: 'blue', name: 'Super Saiyan Blue', short: 'SUPER SAIYAN BLUE', kiCost: 80, style: 'full',
+        freeUnlock: ['rof_finale', 'bb_wrath'],
+        mult: { damage: 2.6, speed: 1.5, defense: 1.75, kiRegen: 2.4, chargeRate: 1.5, guardStamina: 0.66, accel: 1.45 },
+        aura: { color: 0x2a9aff, core: 0xd8f6ff, particles: 0x6ad0ff, idle: 0.5, speed: 1.7, sharp: 0.55, sparks: 0xbfe8ff, flame: [0x2a8aff, 0x3ad0ff, 0x1a5ae8, 0x8ae8ff], inner: { color: 0xa8e8ff, core: 0xffffff, scale: 0.66, alpha: 0.5, sharp: 0.6 } },
+        look: { hair: { style: 'vegeta_blue', color: 0x34c4ff }, pupil: 0x1a74e0, brow: 0x2aa0e8, bulk: 1.0 },
+        ai: { personality: 'martial', aggression: 0.9, defense: 0.7, ranged: 0.35, beam: 0.55, preferredRange: 2.2 },
+        intro: { pose: 'v_tfPride', expression: 'cocky' },
+        ghost: 0x8ad8ff,
+        line: 'vegeta_blue',
+        reactLine: 'react_ssj',
+        music: 5,
+        sequence: {
+          length: 196,
+          applyAt: 132,
+          steps: [
+            { at: 0, pose: 'v_tfClench', speed: 6, expression: 'grit', aura: 0.3, auraColor: 0x8ad0ff, mood: [0.35, 0x061024, 0.9], shot: 'orbit', music: 0, sfx: 'kiUp' },
+            { at: 30, rocks: true, quake: 0.14, sfx: 'rumble' },
+            { at: 60, aura: 0.6, auraColor: 0x4ab8ff, expression: 'angry', sfx: 'ssjRise', quake: 0.22 },
+            { at: 98, pose: 'v_tfRoar', speed: 8, expression: 'shout', quake: 0.36 },
+            { at: 132, burst: true, pose: 'v_tfRoar', speed: 14, expression: 'shout', sfx: 'transformBurst', mood: [0.2, 0x0a1a30, 0.3], flash: 0.3, crater: 5, rocks: false },
+            { at: 148, shot: 'pull' },
+            { at: 164, pose: 'v_tfPride', speed: 4, expression: 'cocky', mood: [0.05, 0x101020, 1.4] },
+          ],
+        },
+      },
+      {
+        /*
          * MAJIN: seven years later, and the thing he lets Babidi do to him is not a power-up he
          * earned: it is a decision. A distinct state, not Super Saiyan 2 with a mark on it:
          *   - look: Super Saiyan 2 hair, Babidi's "M" on the forehead (it belongs to this state,
@@ -520,9 +726,10 @@
          *   - fighting: reckless — heavies that do not stop for your blows (armor), a string that
          *     trades, and a CPU that barely guards and never breathes for long;
          *   - voice: his barks are not the prince's (form.barks).
-         * Story-locked, so the wheel never offers it; "The Mark" is the only way in.
+         * Story-locked, so the wheel never offers it; "The Mark" is the only way in. Outside the story it is a starting
+         * form once that mission is cleared (freeStart), never a transformation (it sits after Blue in this list).
          */
-        id: 'majin', name: 'Majin', short: 'MAJIN', kiCost: 60, style: 'full', storyLocked: true,
+        id: 'majin', name: 'Majin', short: 'MAJIN', kiCost: 60, style: 'full', storyLocked: true, freeStart: 'buu_majin',
         mult: { damage: 1.78, speed: 1.24, defense: 1.2, kiRegen: 2.3, chargeRate: 1.45, guardStamina: 0.8 },
         aura: { color: 0xffc83a, core: 0xfff0d0, particles: 0xff5a7a, idle: 0.7, speed: 1.7, sharp: 0.7, sparks: 0xff3a5a, lightning: true },
         // a body for the state (2026-09-25): heavier arms, legs and neck (muscle), a bigger chest
@@ -568,7 +775,8 @@
          * body forced past Super Saiyan into something denser. Chest, shoulders and arms swollen against the
          * suit (bulk, muscle), veins at the temples, the hair stiffer and longer with a near-white core, a
          * burning gold aura with blue static snapping round the boots and knuckles. Story-only (the Final
-         * Flash puts him in it); its numbers are Super Saiyan's — the story sets what the fight needs.
+         * Flash puts him in it); its numbers are Super Saiyan's — the story sets what the fight needs. Not in Free
+         * Battle or Training at all, not even as a starting form (owner, 2026-10-17).
          */
         id: 'super_vegeta', name: 'Super Vegeta', short: 'SUPER VEGETA', kiCost: 60, style: 'full', storyLocked: true,
         mult: { damage: 1.32, speed: 1.12, defense: 1.15, kiRegen: 2, chargeRate: 1.3 },
@@ -585,8 +793,233 @@
         ghost: 0xffe680,
         music: 4,
       },
+      {
+        // SUPER SAIYAN BLUE EVOLUTION (the Tournament of Power, against Toppo): his own road, not Goku's — the blue goes
+        // deep and dark, the hair stands sharper, the body heavier, the aura a darker cobalt with lightning running
+        // through it. Story-given by top_toppo; Free Battle once that is cleared.
+        id: 'blueEvo', name: 'Super Saiyan Blue Evolution', short: 'BLUE EVOLUTION', kiCost: 90, style: 'full',
+        freeUnlock: ['top_toppo'],
+        mult: { damage: 3.1, speed: 1.6, defense: 1.95, kiRegen: 2.4, chargeRate: 1.5, guardStamina: 0.6, accel: 1.5 },
+        // not a free state: it burns ki every second, and an empty tank ends it
+        drain: { kiPerSec: 2.6 },
+        aura: { color: 0x1a4ae8, core: 0xb8e0ff, particles: 0x3a7aff, idle: 0.65, speed: 1.8, sharp: 0.6, sparks: 0x9ad8ff, lightning: true, flame: [0x0a2ab8, 0x1a4ae8, 0x2a6aff, 0x6aa8ff], inner: { color: 0x0a2ab8, core: 0x6aa8ff, scale: 0.74, alpha: 0.9, sharp: 0.6 }, trail: 0x2a6aff },
+        look: { hair: { style: 'vegeta_blue', color: 0x1a62e0 }, pupil: 0x0a3aa8, brow: 0x1a50c0, bulk: 1.12, muscle: 1.14 },
+        // high pressure, and the breath he has to take after it
+        ai: { personality: 'aggressive', aggression: 0.95, defense: 0.6, ranged: 0.4, beam: 0.6, preferredRange: 2, rhythm: { burst: 5, rest: 36 } },
+        intro: { pose: 'v_tfPride', expression: 'cocky' },
+        ghost: 0x4a8aff,
+        line: 'vegeta_blue',
+        reactLine: 'react_ssj',
+        music: 5,
+      },
     ],
     poses,
+    // on the skill wheel
+    extras: [
+      // PRINCE'S ONSLAUGHT — a Namek-era rush (the owner's roadmap keeps it there; the name is from the games, the blows
+      // a blend of the PDF's two versions): a low sweep through the legs, an uppercut that carries him into the air,
+      // Vegeta vanishing behind him for a double axe-handle, then a knee driven down into his back. Base and Super
+      // Saiyan; earned for Free Battle by clearing "A Prince on Namek" (namek_vegeta)
+      {
+        id: 'princesOnslaught', name: "Prince's Onslaught", type: 'rush', kiCost: 45, icon: 'rush',
+        forms: ['base', 'ssj'], freeUnlock: 'namek_vegeta', freeOnly: true,
+        startup: 12, dashFrames: 30, speed: 48, recovery: 30,
+        poses: { wind: 'v_gutW', dash: 'v_dash' },
+        hits: [
+          { pose: 'v_poSweep', damage: 400, frames: 12, sfx: 'punchLight', hitPose: 'hitSideL' },
+          { pose: 'uppercut', damage: 600, frames: 16, sfx: 'punchHeavy', hitPose: 'hitHeavy', lift: 3.5 },
+          { pose: 'hammer', damage: 700, frames: 14, sfx: 'punchHeavy', hitPose: 'hitBack', to: 'behind' },
+          { pose: 'v_poKnee', damage: 1300, frames: 26, sfx: 'punchHeavy', knock: 'smash', knockSpeed: 36, impact: 4, hitPose: 'hitHeavy', to: 'above' },
+        ],
+        cine: {
+          steps: [
+            { on: 'release', shot: 'track', dur: 0.45 },
+            { on: 'connect', shot: 'wide', dur: 1.1 },
+            { on: 'finish', shot: 'impact', dur: 0.8, quake: 0.35 },
+          ],
+        },
+      },
+      // DIRTY FIREWORKS — Namek-era (a named Vegeta technique; the choreography is the PDF's): a body blow, the uppercut
+      // that throws him into the sky, then two fingers pointed up with a smirk and the ki he left in him goes off
+      // wherever he is. Cut Vegeta off before the fingers go up and nothing goes off. Base and Super Saiyan; earned by
+      // clearing "A Prince on Namek"
+      {
+        id: 'dirtyFireworks', name: 'Dirty Fireworks', type: 'rush', kiCost: 40, icon: 'ball',
+        forms: ['base', 'ssj'], freeUnlock: 'namek_vegeta', freeOnly: true,
+        startup: 10, dashFrames: 28, speed: 50, recovery: 62,
+        poses: { wind: 'v_gutW', dash: 'v_dash' },
+        hits: [
+          { pose: 'v_gut', damage: 350, frames: 10, sfx: 'punchHeavy', hitPose: 'hitBody' },
+          { pose: 'uppercut', damage: 500, frames: 14, sfx: 'punchHeavy', knock: 'launch', knockSpeed: 34, impact: 3, hitPose: 'hitHeavy' },
+        ],
+        detonate: { at: 42, damage: 1500, radius: 1.6, color: 0xffb040, pose: 'v_dirtyFireworks' },
+        cine: {
+          steps: [
+            { on: 'release', shot: 'track', dur: 0.4 },
+            { on: 'finish', shot: 'wide', dur: 0.75 },
+            { on: 'finish', at: 42, shot: 'impact', dur: 0.8, quake: 0.3 },
+          ],
+        },
+      },
+      // GODLY EXECUTION — Super Saiyan God Vegeta (the PDF's name and blows, inspired by the Broly film; a game rush):
+      // calm, one arm behind his back, three palm strikes, a flip over his head, and a red ki blast point blank into
+      // his back. God only; earned for Free Battle by clearing "The First Clash" (bb_clash, where the form is his)
+      {
+        id: 'godlyExecution', name: 'Godly Execution', type: 'rush', kiCost: 50, icon: 'rush',
+        forms: ['god'], freeUnlock: 'bb_clash', freeOnly: true,
+        startup: 10, dashFrames: 30, speed: 54, recovery: 28,
+        poses: { wind: 'v_godPalm', dash: 'v_dash' },
+        hits: [
+          { pose: 'v_godPalm', damage: 350, frames: 9, sfx: 'punchLight', hitPose: 'hitBody' },
+          { pose: 'v_godPalmHigh', damage: 350, frames: 9, sfx: 'punchLight', hitPose: 'hitLight' },
+          { pose: 'v_godPalm', damage: 400, frames: 12, sfx: 'punchHeavy', hitPose: 'hitBody' },
+          { pose: 'v_godShot', damage: 1900, frames: 26, sfx: 'kiBlastBig', to: 'behind', ki: { color: 0xff4a5a, hand: 'R', pierce: 4 }, explode: 0.9, knock: 'heavy', knockSpeed: 44, impact: 4, hitPose: 'hitBack' },
+        ],
+        cine: {
+          steps: [
+            { on: 'release', shot: 'track', dur: 0.4 },
+            { on: 'connect', shot: 'wide', dur: 0.6 },
+            { on: 'finish', shot: 'impact', dur: 0.8, quake: 0.3 },
+          ],
+        },
+      },
+      // THE SAIYAN CHARGE — "We Saiyans have no limits!" (Roadmap Three, the Goku Black arc research CS-CHG-01 / CHG-S01 and
+      // its section 5's Blue Dual Charge): the same charge as on Goku's wheel, led by Vegeta — only with Super Saiyan Blue
+      // Goku fighting on your side. Side by side in the same low stance, both auras up, the ground cracking; off together and
+      // across side by side, Goku on the right; Vegeta's left hook, Goku's right hook, then both at once. Blue only; earned
+      // with Vegito Blue ("Vegito", ft_vegito, or "The Final Battle"). Provisional numbers (70 ki; 650 + 650 + 1,900 + 900)
+      {
+        id: 'saiyanCharge', name: 'Saiyan Charge', type: 'rush', kiCost: 70, icon: 'rush',
+        forms: ['blue'], freeUnlock: ['ft_vegito', 'top_finale'], freeOnly: true,
+        partner: { ids: ['goku'], forms: ['blue'], name: 'Super Saiyan Blue Goku', range: 45, pose: 'g_crossW', alongside: 'right', windPose: 'powerCrouch', dashPose: 'dash', ignite: 0x4ad8ff },
+        startup: 30, dashFrames: 34, speed: 64, recovery: 30,
+        poses: { wind: 'powerCrouch', dash: 'v_dash' },
+        hits: [
+          { pose: 'v_hook', damage: 650, frames: 4, sfx: 'punchHeavy', hitPose: 'hitSideR', ring: { color: 0x4ad8ff, size: 1.2 } },
+          { by: 'partner', pose: 'g_cross', damage: 650, frames: 16, sfx: 'punchHeavy', hitPose: 'hitBody', ring: { color: 0x4ad8ff, size: 1.2 } },
+          { pose: 'v_hook', damage: 1900, frames: 30, sfx: 'punchHeavy', partnerKi: { pose: 'g_cross', color: 0x4ad8ff, damage: 900, hand: 'R' }, explode: 1.2, knock: 'heavy', knockSpeed: 46, impact: 5, hitPose: 'hitHeavy', ring: { color: 0xffffff, size: 2.4 } },
+        ],
+        cine: { steps: [{ on: 'start', shot: 'partnerLow', at: 2, dur: 0.5 }, { on: 'release', shot: 'track', dur: 0.5 }, { on: 'connect', shot: 'reverse', dur: 0.9 }, { on: 'finish', shot: 'impact', dur: 1, quake: 0.45 }] },
+      },
+      // BLUE GALICK RUSH — a game-original Super Saiyan Blue rush (the roadmap's #47), drawn from the way he beat Goku
+      // Black (the beatdown itself is a Future Trunks Saga story moment, not this move): gut punches and an elbow,
+      // the spinning back-kick that throws him up, and a Galick Gun fired after him point blank. Blue only; earned
+      // for Free Battle like the form ("Three Minutes", rof_finale, or the Broly film's "Wrath")
+      {
+        id: 'blueGalickRush', name: 'Blue Galick Rush', type: 'rush', kiCost: 55, icon: 'beam',
+        forms: ['blue'], freeUnlock: ['rof_finale', 'bb_wrath'], freeOnly: true,
+        startup: 12, dashFrames: 30, speed: 54, recovery: 34,
+        poses: { wind: 'v_gutW', dash: 'v_dash' },
+        hits: [
+          { pose: 'v_gut', damage: 450, frames: 9, sfx: 'punchHeavy', hitPose: 'hitBody' },
+          { pose: 'v_elbow', damage: 450, frames: 10, sfx: 'punchHeavy', hitPose: 'hitSideR' },
+          { pose: 'v_spinBack', damage: 500, frames: 18, sfx: 'punchHeavy', hitPose: 'hitHeavy', lift: 3 },
+          { pose: 'v_galickFire', damage: 1800, frames: 30, sfx: 'kiBlastBig', ki: { color: 0xb44dff, hand: 'both' }, beam: { length: 16, radius: 0.75, frames: 34 }, explode: 1.1, knock: 'launch', knockSpeed: 40, impact: 4, hitPose: 'hitHeavy' },
+        ],
+        cine: {
+          steps: [
+            { on: 'release', shot: 'track', dur: 0.4 },
+            { on: 'connect', shot: 'wide', dur: 0.9 },
+            { on: 'finish', shot: 'wide', dur: 1, quake: 0.4 },
+          ],
+        },
+      },
+      // FINAL GOD STRIKE — Blue Evolution (the PDF's name and blows, against Toppo and Jiren; a game rush): a heavy
+      // hook, the spinning back-kick that launches him high, Vegeta above him, and a royal-blue Final Flash fired
+      // straight down. Blue Evolution only; earned for Free Battle like the form ("Pride and Destruction", top_toppo)
+      {
+        id: 'finalGodStrike', name: 'Final God Strike', type: 'rush', kiCost: 60, icon: 'ultimate',
+        forms: ['blueEvo'], freeUnlock: 'top_toppo', freeOnly: true,
+        startup: 12, dashFrames: 30, speed: 58, recovery: 36,
+        poses: { wind: 'v_hookW', dash: 'v_dash' },
+        hits: [
+          { pose: 'v_hook', damage: 600, frames: 12, sfx: 'punchHeavy', hitPose: 'hitSideR' },
+          { pose: 'v_spinBack', damage: 700, frames: 20, sfx: 'punchHeavy', hitPose: 'hitHeavy', lift: 4.5 },
+          { pose: 'beamFire', damage: 2200, frames: 34, sfx: 'kiBlastBig', to: 'above', ki: { color: 0x3a8cff, hand: 'both' }, beam: { length: 14, radius: 1, frames: 40, core: 0xeaf4ff }, explode: 1.3, knock: 'smash', knockSpeed: 44, impact: 4, hitPose: 'hitHeavy' },
+        ],
+        cine: {
+          steps: [
+            { on: 'release', shot: 'track', dur: 0.4 },
+            { on: 'connect', shot: 'wide', dur: 0.9 },
+            { on: 'finish', shot: 'impact', dur: 1, quake: 0.45 },
+          ],
+        },
+      },
+      // FINAL IMPACT — a game-original name (not a named technique) for the Majin Vegeta of the Buu Saga up close:
+      // Majin form only, earned for Free Battle by clearing "The Mark" (the mission that gives the form); the story's
+      // fights keep their kit. Not the Final Flash and not the Final Explosion: he charges in, drives a knee into the
+      // stomach, holds him there with the hand raised at his chest while the ki gathers — and shoots him point blank
+      {
+        id: 'finalImpact', name: 'Final Impact', type: 'rush', kiCost: 50, icon: 'rush',
+        forms: ['majin'], freeUnlock: 'buu_majin', freeOnly: true,
+        startup: 12, dashFrames: 28, speed: 50, recovery: 30,
+        poses: { wind: 'v_majinHeavyW', dash: 'v_majinFly' },
+        hits: [
+          { pose: 'v_majinKnee', damage: 800, frames: 22, sfx: 'punchHeavy', hitPose: 'hitBody' },
+          { pose: 'v_finalImpactAim', frames: 28, aim: { color: 0xffd84a, hand: 'R' } },
+          { pose: 'v_finalImpact', damage: 1900, frames: 26, sfx: 'kiBlastBig', ki: { color: 0xffd84a, hand: 'R', pierce: 6 }, explode: 1, knock: 'heavy', knockSpeed: 46, impact: 4, hitPose: 'hitHeavy' },
+        ],
+        // alongside him on the way in, both of them on the knee, on the side of the raised hand (his face and the
+        // gathering ki), the blast wide. No slow motion on the blast: it would hold its brightest frames on screen
+        cine: {
+          steps: [
+            { on: 'release', shot: 'track', dur: 0.45 },
+            { on: 'connect', shot: 'wide', dur: 0.55 },
+            { on: 'aim', shot: 'aim', dur: 0.5 },
+            { on: 'finish', shot: 'impact', dur: 0.8, quake: 0.35 },
+          ],
+        },
+      },
+      // ATOMIC RUSH — the name is the owner's PDF's (a heading with no description); the blows are a game adaptation
+      // of Majin Vegeta's fight with Goku (Buu Saga): the roundhouse that swept him through the rocks, the rings of ki
+      // that pinned his wrists and ankles, the close blows and a headbutt. Majin only, earned for Free Battle by
+      // clearing that fight ("Prince of Saiyans", buu_pride); the mission keeps its own staging
+      {
+        id: 'atomicRush', name: 'Atomic Rush', type: 'rush', kiCost: 45, icon: 'rush',
+        forms: ['majin'], freeUnlock: 'buu_pride', freeOnly: true,
+        startup: 12, dashFrames: 30, speed: 52, recovery: 30,
+        poses: { wind: 'v_majinStance', dash: 'v_majinFly' },
+        hits: [
+          { pose: 'v_atomicKick', damage: 700, frames: 16, sfx: 'punchHeavy', hitPose: 'hitSideL' },
+          { pose: 'v_atomicLoom', frames: 34, bind: { color: 0xffd23a }, hitPose: 'hitBody' },
+          { pose: 'v_jab', damage: 300, frames: 8, sfx: 'punchLight', hitPose: 'hitLight' },
+          { pose: 'v_hook', damage: 320, frames: 8, sfx: 'punchLight', hitPose: 'hitSideR' },
+          { pose: 'v_gut', damage: 380, frames: 10, sfx: 'punchHeavy', hitPose: 'hitBody' },
+          { pose: 'v_headbutt', damage: 1200, frames: 24, sfx: 'punchHeavy', knock: 'heavy', knockSpeed: 38, impact: 4, hitPose: 'hitHeavy' },
+        ],
+        // alongside on the way in, both on the kick, over the pinned one's shoulder at him as he walks up, impact
+        cine: {
+          steps: [
+            { on: 'release', shot: 'track', dur: 0.45 },
+            { on: 'connect', shot: 'wide', dur: 0.4 },
+            { on: 'bind', shot: 'reverse', dur: 0.6 },
+            { on: 'finish', shot: 'impact', dur: 0.7, quake: 0.3 },
+          ],
+        },
+      },
+      // FINAL EXPLOSION — the sacrifice against Majin Buu (Buu Saga) made a playable ultimate, for Free Battle only
+      // (earned by clearing "The Prince's Pride", buu_sacrifice; the story keeps its own scene and outcome). Majin only. A long,
+      // committed charge — the aura swelling, lightning crackling, the ground shaking — then a sphere of ki bursting
+      // out of him in every direction: whoever is still near is caught, whoever got away is not. It costs all his ki
+      // and half of his own health (never below 1 HP), and leaves him spent: the punish window
+      {
+        id: 'finalExplosion', name: 'Final Explosion', type: 'bomberWave', kiCost: 100, icon: 'ultimate', ultimate: true,
+        forms: ['majin'], freeUnlock: 'buu_sacrifice', freeOnly: true,
+        charge: 150, radius: 18, damage: 7000, knockSpeed: 42, impact: 5, recovery: 90, selfCost: 0.5,
+        poses: { charge: 'v_feGather', release: 'v_finalExplosion', winded: 'v_feSpent' },
+        look: { telegraph: false, color: 0xffd23a, ringColor: 0xfff0b0, aura: 1, grow: true, bolts: 0xfff2a0, blast: 0.6, blastFlash: 0.35, ring: 2.4, light: 3, ground: 0.9, flash: 0.2 },
+        // his face as he decides, circling him as it swells and the world darkens, square in front as it peaks, then
+        // far off and above as it bursts out of him, drawing back as the sphere swells (never inside it)
+        cine: {
+          steps: [
+            { on: 'start', shot: 'face', dur: 0.9, mood: [0.45, 0x1a0808, 1] },
+            { on: 'start', at: 55, shot: 'orbit', dur: 1.3, quake: 0.15 },
+            { on: 'start', at: 132, shot: 'front', dur: 0.35, quake: 0.3 },
+            { on: 'release', shot: 'nova', dur: 2.2, quake: 0.6 },
+          ],
+        },
+      },
+    ],
     moves: {
       light: [
         { id: 'jab', startup: 4, active: 3, recovery: 10, cancel: 6, damage: 260, reach: 1.1, radius: 0.7, lunge: 10, hitstun: 19, knock: 'flinch', impact: 1, pose: { wind: 'v_jabW', strike: 'v_jab' }, sfx: 'punchLight', hitPose: 'hitLight' },
@@ -631,11 +1064,32 @@
         id: 'bigBang', name: 'Big Bang Attack', type: 'projectile', kiCost: 35, icon: 'ball',
         startup: 14, recovery: 22, pose: { wind: 'v_bigBangW', release: 'v_bigBang' },
         projectile: { kind: 'ball', speed: 58, radius: 1.1, damage: 2100, homing: 1.1, color: 0x7fc6ff, core: 0xffffff, explode: 7, knock: 'heavy', knockSpeed: 26, impact: 3, life: 3 },
+        // outside the story: low in front, up at the one-handed pose and in on the sphere; thrown, a cut behind his
+        // shoulder along its path to the burst
+        cine: { steps: [{ on: 'start', shot: 'hand', dur: 0.3 }, { on: 'release', shot: 'path', dur: 0.9 }] },
       },
       ultimate: {
         id: 'finalFlash', name: 'Final Flash', type: 'beam', kiCost: 100, icon: 'ultimate', ultimate: true,
-        chargeMin: 70, chargeMax: 70, damage: [5000, 5000], radius: [1.9, 1.9], speed: 120, range: 180, sustain: 55,
+        // charge decides its strength (the records PDF): ready at 70 frames as before (same 5000 / 1.9 m there), held
+        // on to 110 a fully charged tier — 6000, wider, its own shots (cine 'full', minTier 2)
+        chargeMin: 70, chargeMax: 110, tiers: [70, 108], damage: [3250, 6000], radius: [1.03, 2.4], speed: 120, range: 180, sustain: 55,
         color: 0xffe14a, core: 0xffffff, poses: { charge: 'v_finalFlashCharge', fire: 'beamFire' }, recovery: 36, armor: false, cinematic: true,
+        // outside the story (2026-10-17): the ground under its path torn open to the impact (projectiles.js spec.trench)
+        trench: true,
+        // outside the story: circling him as his arms spread and it gathers, square in front as the hands meet, then
+        // wide from the side as the beam crosses to the target
+        cine: {
+          steps: [
+            { on: 'start', shot: 'orbit', dur: 0.8 },
+            { on: 'start', at: 46, shot: 'front', dur: 0.5 },
+            // held to the full tier: square on him again as the gold surges and the ground shakes (the tier-up's own
+            // flash only: one more stacked on it and the release washed the frame white)
+            { on: 'full', shot: 'front', dur: 0.6, quake: 0.3 },
+            { on: 'release', maxTier: 1, shot: 'wide', dur: 1.3, quake: 0.3 },
+            // (side-on only once it fires: the charge / front shots stand in the beam's path and the frame went white)
+            { on: 'release', minTier: 2, shot: 'wide', dur: 1.7, quake: 0.5, slow: [0.45, 0.3] },
+          ],
+        },
       },
     },
     mechanic: { type: 'pride', name: 'Pride', desc: 'Pressing the opponent up close, counters and landed hits build Pride, boosting damage. Taking hits wounds it and retreating loses it. At max he shrugs off one light hit.' },
@@ -645,7 +1099,7 @@
     barks: { combo: 'vegeta_combo', hurt: 'vegeta_hurt', lowHp: 'vegeta_lowHp', reactTransform: 'vegeta_reactTransform', counter: 'vegeta_counter', taunt: 'vegeta_taunt' },
     sequences: {
       intro: [
-        { pose: 'v_scouterTap', dur: 0.75, speed: 9, expression: 'calm' },
+        { pose: 'v_scouterTap', dur: 0.75, speed: 9, expression: 'calm', needs: 'scouter' },
         { pose: 'v_intro', dur: 0.6, speed: 8, expression: 'angry' },
         { pose: 'v_chinUp', dur: 1.2, speed: 6, expression: 'smirk' },
       ],
@@ -662,4 +1116,26 @@
     victory: { poses: ['v_victory', 'v_victoryPoint'], expression: 'smirk' },
     defeat: { pose: 'defeatKneel', expression: 'angry' },
   };
+  // SUPER SAIYAN BLUE and BLUE EVOLUTION fight differently from each other, not only harder (ToP refinement brief §12–13):
+  // Blue is fast, direct and efficient — the same blows, recovered from sooner and cancelled earlier; Evolution is the
+  // high-pressure state — the blows come out sooner and hit the guard harder, the heavies faster to land
+  {
+    const V = SL.data.characters.vegeta;
+    const form = (id) => V.forms.find((f) => f.id === id);
+    const heavy = (fn) => Object.fromEntries(Object.entries(V.moves.heavy).map(([k, m]) => [k, fn(m)]));
+    const blue = form('blue'), evo = form('blueEvo');
+    if (blue) {
+      blue.moves = {
+        light: V.moves.light.map((m) => Object.assign({}, m, { recovery: Math.max(6, m.recovery - 2), cancel: Math.max(3, (m.cancel || m.recovery) - 1) })),
+        heavy: heavy((m) => Object.assign({}, m, { recovery: Math.max(10, m.recovery - 3) })),
+      };
+    }
+    if (evo) {
+      evo.moves = {
+        // (a longer lunge and a harder knock were tried: the pressure carried him off the platform and into Toppo's spheres)
+        light: V.moves.light.map((m) => Object.assign({}, m, { startup: Math.max(3, m.startup - 1), recovery: Math.max(6, m.recovery - 2) })),
+        heavy: heavy((m) => Object.assign({}, m, { startup: Math.max(5, m.startup - 2), guardDamage: m.guardDamage && Math.round(m.guardDamage * 1.3) })),
+      };
+    }
+  }
 })();

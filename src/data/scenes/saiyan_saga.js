@@ -179,6 +179,9 @@
       // down with him: the last words, close, quiet
       {
         pose: [{ who: 'gohan', pose: 'kg_kneelBy', face: 'hurt' }],
+        // out of the silence, low: crying strings under a piano (soundtrack PDF p.96, the tragic death theme — an
+        // original stand-in; the fall itself stays silent)
+        music: { song: 'tragic_sacrifice', level: 2 },
         // in front of his face (he lies face-up), a little toward his chest so the face reads upright
         cam: { from: { at: 'piccolo:face', local: [0.15, -0.4, 1.05] }, to: { at: 'piccolo:face', local: [0.1, -0.35, 0.85] }, look: { at: 'piccolo:face' }, fov: 40, fov2: 36 },
         say: { who: 'piccolo', line: 'Gohan... you were the only one... who ever talked to me like that.', duration: 4, style: 'quiet' },

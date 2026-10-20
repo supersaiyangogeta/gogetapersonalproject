@@ -231,6 +231,112 @@
     },
   };
 
+  /*
+   * pride_rings (2026-10-17, the owner's PDF p.11): straight after Babidi is thrown out, Majin Vegeta pins Kakarot with
+   * four rings of golden ki — wrists and ankles — walks up to him and lets seven years out: close blows and a headbutt.
+   * Then Goku tears the rings apart. Staged only (no damage); the fight picks up where it was.
+   */
+  S.pride_rings = {
+    id: 'pride_rings',
+    cast,
+    events: [
+      {
+        pose: [
+          { who: 'vegeta', pose: 'v_finalImpactAim', face: 'grin' },
+          { who: 'goku', pose: 'hitBody', face: 'shock' },
+        ],
+        cam: { from: { at: 'goku', local: [1.4, 0.3, 3] }, look: { at: 'goku', off: [0, 0.4, 0] }, fov: 42 },
+        sfx: { name: 'kiBlast', who: 'vegeta', pitch: 1.3 },
+        tick: (ctx, s) => {
+          const g = ctx.cast.goku;
+          if (!g || Math.round(s * 60) % 5) return;
+          const side = new V3(-g.forward.z, 0, g.forward.x).multiplyScalar(0.18 * g.scale), low = g.pos.y + 0.12 * g.scale;
+          for (const p of [g.handPos('L'), g.handPos('R'), g.pos.clone().add(side).setY(low), g.pos.clone().sub(side).setY(low)]) {
+            ctx.b.vfx.ring(p, 0.3 * g.scale, 0xffd23a, 0.3);
+            ctx.b.vfx.flash(p, 0.5 * g.scale, 0xffd23a, 0.1, SL.Toon.tex.glow);
+          }
+        },
+        say: { who: 'vegeta', line: 'Stay right there, Kakarot. Seven years I waited for this.', duration: 2.8 },
+        hold: 2.4,
+      },
+      {
+        pose: [
+          { who: 'vegeta', pose: 'v_atomicLoom', face: 'grin' },
+          { who: 'goku', pose: 'hitBody', face: 'grit' },
+        ],
+        cam: { from: { at: 'goku', local: [-0.6, 0.5, -2.4] }, look: { at: 'vegeta', off: [0, 0.4, 0] }, fov: 44 },
+        tick: (ctx, s) => {
+          const g = ctx.cast.goku, v = ctx.cast.vegeta;
+          if (!g || !v) return;
+          const to = g.pos.clone().sub(v.pos);
+          if (to.length() > 1.3 * v.scale) v.setPosition(v.pos.clone().addScaledVector(to.normalize(), 0.06));
+          const n = Math.round(s * 60);
+          if (n % 5 === 0) {
+            const side = new V3(-g.forward.z, 0, g.forward.x).multiplyScalar(0.18 * g.scale), low = g.pos.y + 0.12 * g.scale;
+            for (const p of [g.handPos('L'), g.handPos('R'), g.pos.clone().add(side).setY(low), g.pos.clone().sub(side).setY(low)]) ctx.b.vfx.ring(p, 0.3 * g.scale, 0xffd23a, 0.3);
+          }
+        },
+        hold: 1.2,
+      },
+      {
+        pose: [
+          { who: 'vegeta', pose: 'v_hook', face: 'grin', speed: 14 },
+          { who: 'goku', pose: 'hitSideR', face: 'hurt', speed: 14 },
+        ],
+        cam: { from: { at: 'goku', local: [1.8, 0.35, 2.2] }, look: { at: 'goku', off: [0, 0.5, 0] }, fov: 40 },
+        tick: (ctx, s) => {
+          const g = ctx.cast.goku, v = ctx.cast.vegeta, n = Math.round(s * 60);
+          if (!g || !v || n % 9 !== 2) return;
+          const p = v.chest().lerp(g.chest(), 0.65);
+          ctx.b.vfx.impact(p, 1.6, 0xfff0b0);
+          ctx.b.sfx(n % 18 === 2 ? 'punchHeavy' : 'punchLight', g, { vol: 0.9 });
+          g.anim.play(n % 18 === 2 ? 'hitSideL' : 'hitSideR', 30, { restart: true });
+          v.anim.play(n % 18 === 2 ? 'v_jab' : 'v_hook', 30, { restart: true });
+        },
+        hold: 1.3,
+      },
+      {
+        pose: [
+          { who: 'vegeta', pose: 'v_headbutt', face: 'shout', speed: 16 },
+          { who: 'goku', pose: 'hitHeavy', face: 'hurt', speed: 16 },
+        ],
+        cam: { from: { at: 'goku', local: [1.2, 0.5, 1.6] }, look: { at: 'goku:head' }, fov: 36 },
+        call: (ctx) => {
+          const g = ctx.cast.goku, v = ctx.cast.vegeta;
+          if (!g || !v) return;
+          const p = v.chest().lerp(g.chest(), 0.6).add(new V3(0, 0.4 * g.scale, 0));
+          ctx.b.vfx.impact(p, 3, 0xfff0b0);
+          ctx.b.sfx('punchHeavy', g, { vol: 1.1 });
+          ctx.b.cameraTraumaAt(p, 0.4);
+        },
+        hold: 0.9,
+      },
+      {
+        pose: [
+          { who: 'goku', pose: 'g2_stance', face: 'shout', speed: 10 },
+          { who: 'vegeta', pose: 'v_majinStance', face: 'grin' },
+        ],
+        cam: { from: { at: 'goku', local: [0.9, 0.3, 2.6] }, look: { at: 'goku', off: [0, 0.4, 0] }, fov: 40 },
+        call: (ctx) => {
+          const g = ctx.cast.goku;
+          if (!g) return;
+          const side = new V3(-g.forward.z, 0, g.forward.x).multiplyScalar(0.18 * g.scale), low = g.pos.y + 0.12 * g.scale;
+          for (const p of [g.handPos('L'), g.handPos('R'), g.pos.clone().add(side).setY(low), g.pos.clone().sub(side).setY(low)]) {
+            ctx.b.vfx.sparks(p, 0xffd23a, 10, 9, 0.12);
+            ctx.b.vfx.flash(p, 0.9 * g.scale, 0xfff2a0, 0.14, SL.Toon.tex.glow);
+          }
+          ctx.b.vfx.ring(g.chest(), 3, 0xffe07a, 0.5);
+          ctx.b.sfx('kaiokenBoom', g, { pitch: 1.2, vol: 0.8 });
+        },
+        say: { who: 'goku', line: 'Is that... all you\'ve got?!', duration: 1.8, style: 'shout' },
+        hold: 1.6,
+      },
+    ],
+    end(ctx) {
+      for (const f of [ctx.cast.goku, ctx.cast.vegeta]) if (f && f.alive) f.setState('free');
+    },
+  };
+
   S.pride_fists = {
     id: 'pride_fists',
     cast,

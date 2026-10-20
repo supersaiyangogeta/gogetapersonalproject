@@ -156,17 +156,33 @@
     ai: { personality: 'elite', aggression: 0.7, defense: 0.55, ranged: 0.35, beam: 0, transformHp: 0, preferredRange: 2.5 },
   };
 
+  // the shapes with no armour left on them (the visual pass: they wore the first form's armour and trousers)
+  const FINAL_SHAPES = ['final', 'full', 'golden'];
+
+  // a form change once it is his to call on (Free Battle): brace, the burst, the new shape — about a second and a
+  // half instead of the story's three or four (the story's own changes are boss transformations and keep `sequence`)
+  const FZ_PRACTICED = {
+    length: 92,
+    applyAt: 48,
+    steps: [
+      { at: 0, pose: 'fz_brace', speed: 9, expression: 'angry', aura: 0.3, shot: 'face', sfx: 'kiUp' },
+      { at: 20, aura: 0.6, quake: 0.12, dust: 2.5 },
+      { at: 48, burst: true, small: true, pose: 'fz_roar', speed: 12, expression: 'shout', flash: 0.25, crater: 2.5 },
+      { at: 56, shot: 'pull' },
+      { at: 76, pose: 'idle', expression: 'smirk' },
+    ],
+  };
+
   // Frieza, First Form — cinematic character (seated in hover pod)
   SL.data.characters.frieza = {
     id: 'frieza',
     assetLevel: 1, // functional prototype (see SL.ASSET_LEVELS)
     name: 'Frieza',
-    playable: false,
+    playable: true, // Free Battle once Namek is over (unlocks.js); the story still owns his boss phases
     era: 'Namek Saga',
     style: 'Emperor',
     blurb: 'The first form, and he is bored. Nothing he does here is his best — which is the problem.',
     ratings: { power: 5, speed: 4, ki: 5, defense: 4 },
-    // first form only so far; the later forms are planned, not built (see STATUS.md)
     stats: { hp: 30000, ki: 140, stamina: 160, speed: 1.2, power: 1.3, defense: 1.2, weight: 1.1, kiRegen: 4, chargeRate: 34, canonPower: 6 },
     poise: { max: 90, regen: 12, regenDelay: 120, armor: 2, cost: { 1: 6, 2: 10, 3: 16, 4: 26 }, beamMul: 1.1, breakFrames: 150, vulnerable: 1.2 },
     vfx: { ghost: 0xffb0c8 },
@@ -174,16 +190,27 @@
       height: 0.72,
       skin: 0xf2ece6,
       build: { chestW: 0.17, shoulderX: 0.18, waistW: 0.12, upperArmR: 0.045, foreArmR: 0.042, thighR: 0.07, shinR: 0.055, headR: 0.13 },
-      hair: { style: 'frieza_dome', color: 0x8a3fb8 },
+      hair: { style: 'frieza_shell', color: 0x8a3fb8 },
       headExtras: [
         { a: [0.9, 0.35, 0], d: [0.9, 0.9, -0.1], l: 0.12, r: 0.034, color: 0x2b2b35, depth: 0.95 },
         { a: [-0.9, 0.35, 0], d: [-0.9, 0.9, -0.1], l: 0.12, r: 0.034, color: 0x2b2b35, depth: 0.95 },
       ],
-      face: { pupil: 0x6a0a1a, sclera: 0xffffff, brow: 0xf2ece6, noEars: true, eyeW: 1.1 },
+      // his own face, not Goku's (the visual pass): narrow eyes ringed in black and slanted, thin dark brow ridges
+      // (white ones on white skin poked out of the dome), dark lips, a narrower chin; the mouth set forward enough to
+      // show (at the default depth it sat inside his larger skull)
+      face: { pupil: 0x6a0a1a, sclera: 0xffffff, brow: 0x4a3a52, browThick: 0.6, noEars: true, eyeW: 1.1, eyeH: 0.85, eyeRim: 0x141014, eyeTilt: 0.14, mouthColor: 0x3a1636, mouthZ: 0.93, jaw: 1.06, jawW: 0.88, cheeks: 0.8 },
+      // the final shape's plates where the armour no longer is: real bands of shell round the forearms and the shins
+      // (props of those forms; 2026-10-15 visual pass — they were flat decals)
+      props: ['L', 'R'].flatMap((s) => [
+        { id: 'forearmShell' + s, joint: 'elbow' + s, shape: 'cuff', pos: [0, -0.1, 0], radius: 0.055, radiusBottom: 0.05, length: 0.1, color: 0x8a3fb8, forms: FINAL_SHAPES },
+        { id: 'shinShell' + s, joint: 'knee' + s, shape: 'cuff', pos: [0, -0.11, 0], radius: 0.069, radiusBottom: 0.063, length: 0.16, color: 0x8a3fb8, forms: FINAL_SHAPES },
+      ]),
       outfit: {
-        topStyle: 'armor', top: 0xf2ece6, arms: 0xf2ece6, pants: 0x8a3fb8, pantsStyle: 'tight', legs: 0xf2ece6,
+        // the trousers are one shade off the dome's purple (0x8a3fb7) so the final forms can turn them white (look.swap)
+        topStyle: 'armor', top: 0xf2ece6, arms: 0xf2ece6, pants: 0x8a3fb7, pantsStyle: 'tight', legs: 0xf2ece6,
         boots: 0xf2ece6, bootStyle: 'gi',
-        armor: { plate: 0x8a3fb8, belly: 0xf2ece6, pads: 0x8a3fb8, padStyle: 'down' },
+        // pecs: the chest dome is a shelf over the pecs, not a breastplate down to the belly (2026-10-15 visual pass)
+        armor: { plate: 0x8a3fb8, belly: 0xf2ece6, pads: 0x8a3fb8, padStyle: 'down', pecs: true },
         // his tail: jointed and alive, and something the Spirit Bomb can take half of (model.cutTail)
         longTail: { color: 0xf2ece6, segments: 8, length: 0.95, radius: 0.045, lift: 0.95, curl: 0.18 },
       },
@@ -203,7 +230,11 @@
       {
         id: 'second',
         name: 'Second Form',
-        noCost: true, // he enters it himself, through his boss phases
+        // the story's boss phases enter it for free (bossTransform); a Free Battle fighter buys it (storyBoss: never
+        // bought in the story, by the player or by his own AI)
+        kiCost: 30,
+        storyBoss: true,
+        practiced: FZ_PRACTICED,
         style: 'full',
         line: 'frieza_transform2',
         aura: { color: 0xc23a6a, core: 0xffd0e0, particles: 0xff8ab0, speed: 1.2 },
@@ -255,7 +286,9 @@
       {
         id: 'third',
         name: 'Third Form',
-        noCost: true,
+        kiCost: 30,
+        storyBoss: true,
+        practiced: FZ_PRACTICED,
         style: 'full',
         line: 'frieza_transform3',
         aura: { color: 0xb46aff, core: 0xf0dcff, particles: 0xd8a0ff, speed: 1.5 },
@@ -314,7 +347,9 @@
       {
         id: 'final',
         name: 'Final Form',
-        noCost: true,
+        kiCost: 35,
+        storyBoss: true,
+        practiced: FZ_PRACTICED,
         style: 'full',
         line: 'frieza_transform4',
         aura: { color: 0xff2a4a, core: 0xffffff, particles: 0xffc0c8, speed: 1.8 },
@@ -326,6 +361,9 @@
           tint: 0xffffff,
           tintAmount: 0.12,
           headExtras: [],
+          // the armour is gone: white legs (the trousers' colour swapped for his skin); the plates on his forearms and
+          // shins are decals of this form (appearance.decals). 100% and Golden copy this look
+          swap: { [0x8a3fb7]: 0xf2ece6 },
         },
         sequence: { length: 240, applyAt: 150, steps: [{ at: 0, pose: 'fz_brace', shake: 0.4 }, { at: 46, pose: 'fz_brace', shake: 0.7 }, { at: 92, pose: 'fz_roar', shake: 1 }, { at: 140, pose: 'fz_roar', shake: 1, burst: true }, { at: 196, pose: 'fz_ballW', shake: 0.3 }, { at: 222, pose: 'idle' }] },
         moves: {
@@ -359,6 +397,16 @@
             id: 'deathBall', name: 'Death Ball', type: 'projectile', kiCost: 100, icon: 'ultimate', ultimate: true,
             startup: 62, recovery: 48, pose: { wind: 'fz_ballW', release: 'fz_ball' },
             projectile: { kind: 'ball', speed: 30, radius: 2.6, damage: 6200, homing: 0.5, color: 0xff8a3a, core: 0xfff0d0, explode: 14, knock: 'smash', knockSpeed: 44, impact: 5, life: 4.5 },
+            // outside the story (the records PDF): low, looking up at the raised finger and the sphere, the
+            // opponent's side as it swells, then along its slow path, held wide on the impact
+            cine: {
+              steps: [
+                { on: 'start', shot: 'hand', dur: 0.6, mood: [0.35, 0x2a0a10, 0.6] },
+                { on: 'start', at: 34, shot: 'reverse', dur: 0.5 },
+                { on: 'release', shot: 'path', dur: 1.1 },
+                { on: 'release', at: 60, shot: 'impact', dur: 1.3, quake: 0.4 },
+              ],
+            },
           },
         },
       },
@@ -450,6 +498,28 @@
         color: 0xff3a6a, poses: { wind: 'fz_aim', throw: 'fz_aim' },
       },
     },
+    // on the skill wheel (2026-10-17): UNLIKELY ALLIANCE led by Frieza — the Tournament of Power team rush with Goku in
+    // Blue fighting at his side (Free Battle / Training → Partner): his cage of light, Goku's low kick, his tail and finger
+    // lasers, Goku kicks him back, and the Death Beam with the Kamehameha. Golden only; earned by "The Final Battle"
+    extras: [
+      {
+        id: 'unlikelyAlliance', name: 'Unlikely Alliance', type: 'rush', kiCost: 60, icon: 'rush',
+        forms: ['golden'], freeUnlock: 'top_finale', freeOnly: true,
+        partner: { ids: ['goku'], forms: ['blue'], name: 'Super Saiyan Blue Goku', range: 45, pose: 'idle' },
+        startup: 10, dashFrames: 30, speed: 56, recovery: 32,
+        poses: { wind: 'fz_aim', dash: 'fz_lunge' },
+        hits: [
+          { pose: 'fz_aim', damage: 300, frames: 16, sfx: 'kiBlast', ki: { color: 0xffd060, hand: 'R' }, slashes: 8, slashColor: 0xffd060, hitPose: 'hitBody' },
+          { by: 'partner', pose: 'g_sweep', damage: 450, frames: 10, sfx: 'punchHeavy', hitPose: 'hitSideL' },
+          { pose: 'fz_tail', damage: 450, frames: 10, sfx: 'punchHeavy', hitPose: 'hitSideR' },
+          { pose: 'fz_aim', damage: 250, frames: 7, sfx: 'kiBlast', ki: { color: 0xff3a6a, hand: 'R' }, hitPose: 'hitLight' },
+          { pose: 'fz_aim', damage: 250, frames: 9, sfx: 'kiBlast', ki: { color: 0xff3a6a, hand: 'R' }, hitPose: 'hitLight' },
+          { by: 'partner', pose: 'g_kick', damage: 500, frames: 12, sfx: 'punchHeavy', hitPose: 'hitBack' },
+          { pose: 'fz_aim', damage: 1800, frames: 32, sfx: 'kiBlastBig', ki: { color: 0xff3a6a, hand: 'R', pierce: 6 }, partnerKi: { pose: 'g_kameFire', color: 0x40d8ff, damage: 700, hand: 'R' }, explode: 1.2, knock: 'heavy', knockSpeed: 48, impact: 4, hitPose: 'hitHeavy' },
+        ],
+        cine: { steps: [{ on: 'release', shot: 'track', dur: 0.4 }, { on: 'connect', shot: 'wide', dur: 1.6 }, { on: 'finish', shot: 'impact', dur: 1, quake: 0.4 }] },
+      },
+    ],
     blast: { color: 0xff3a6a, core: 0xffe0ea, damage: 380, speed: 82, radius: 0.26, sfxPitch: 1.1 },
     mechanic: { type: 'frieza', name: 'Cruelty', desc: 'He fights at whatever pace amuses him, and hits hardest at whoever is already hurt. The Death Beam goes through a guard, so blocking is not an answer to it — moving is.' },
     // he hits the wounded harder (Mechanics.frieza)
@@ -524,6 +594,9 @@
         name: 'Full Power',
         short: '100%',
         storyLocked: true,
+        // Free Battle: once the story has shown it (fighter.js lockedForms)
+        freeUnlock: 'namek_super_saiyan',
+        kiCost: 50,
         line: 'frieza_final',
         aura: { color: 0xff1a3a, core: 0xffe6ea, particles: 0xff8a9a, speed: 2.3, idle: 0.62, sharp: 0.4 },
         mult: Object.assign({}, fin.mult, { damage: 2.05, speed: 1.55, defense: 1.8 }),
@@ -540,6 +613,39 @@
             { at: 210, burst: true, sfx: 'transformBurst', flash: 0.7, crater: 6, mood: [0.3, 0x4a1010, 0.4], lightning: false, rocks: false },
             { at: 250, pose: 'fz_ballW', speed: 4, expression: 'smirk', shot: 'face' },
             { at: 290, pose: 'idle' },
+          ],
+        },
+      })
+    );
+    /*
+     * GOLDEN (Movie 2 · Super Broly): the final form after years of training, gold from head to tail — the body
+     * keeps its shape, everything white goes gold and the aura with it. Story-only: the film hands it over
+     * ("The Birth of Gogeta", formGivenBy) and the wheel never offers it. The gold is a whole-body cast over the
+     * final form's colours (Level 1 prototype: the purple domes take some of it too).
+     */
+    fz.forms.push(
+      Object.assign({}, fin, {
+        id: 'golden',
+        name: 'Golden Frieza',
+        short: 'GOLDEN',
+        storyLocked: true,
+        freeUnlock: ['rof_goku', 'bb_fusion'],
+        kiCost: 60,
+        line: 'frieza_golden',
+        aura: { color: 0xffc81e, core: 0xfff4c0, particles: 0xffe060, speed: 2, idle: 0.6, sharp: 0.35, sparks: 0xfff0a0, inner: { color: 0xfff0b0, core: 0xffffff, scale: 0.7, alpha: 0.45 }, trail: 0xffd040 },
+        // gold: fast and precise, pressure from range, a theatrical pause between the bursts (never Goku's stance)
+        ai: { personality: 'elite', aggression: 0.74, defense: 0.6, ranged: 0.65, beam: 0.5, preferredRange: 4.5, rhythm: { burst: 3, rest: 46 } },
+        mult: Object.assign({}, fin.mult, { damage: 2.6, speed: 1.62, defense: 2.0 }),
+        look: Object.assign({}, fin.look, { tint: 0xffc020, tintAmount: 0.12, paint: { color: 0xc8901a, amount: 0.9 } }),
+        sequence: {
+          length: 200,
+          applyAt: 130,
+          steps: [
+            { at: 0, pose: 'fz_brace', speed: 6, expression: 'angry', aura: 0.4, auraColor: 0xffd23a, mood: [0.35, 0x2a2008, 0.9], shot: 'orbit', sfx: 'kiUp' },
+            { at: 60, quake: 0.3, sfx: 'rumble' },
+            { at: 96, pose: 'fz_roar', speed: 8, expression: 'shout', aura: 0.9, quake: 0.45 },
+            { at: 130, burst: true, sfx: 'transformBurst', flash: 0.3, crater: 4, mood: [0.15, 0x302408, 0.4] },
+            { at: 160, pose: 'fz_aim', speed: 4, expression: 'smirk', shot: 'face', mood: [0, 0x000000, 1.2] },
           ],
         },
       })

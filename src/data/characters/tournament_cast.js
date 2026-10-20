@@ -179,10 +179,11 @@
       skin: 0xd8a47a,
       build: { chestW: 0.26, chestD: 0.19, shoulderX: 0.26, waistW: 0.2, upperArmR: 0.07, foreArmR: 0.06, fist: 0.064, thighR: 0.104, shinR: 0.08, headR: 0.15, neckLen: 0.05 },
       hair: { style: 'satan', color: 0x141418 },
-      // the moustache and the sideburns
+      // the moustache and the sideburns (2026-10-16, the owner's collage: the moustache is a thick bar under the nose,
+      // each half running out and down — Gokule's construction; its halves stood on end as two black ovals over the eyes)
       headExtras: [
-        { shape: 'ball', a: [0.2, -0.28, 0.94], d: [0.6, -0.2, 0.2], l: 0.02, r: 0.045, flat: 0.5, depth: 1.01, color: 0x141418, outline: 0.3 },
-        { shape: 'ball', a: [-0.2, -0.28, 0.94], d: [-0.6, -0.2, 0.2], l: 0.02, r: 0.045, flat: 0.5, depth: 1.01, color: 0x141418, outline: 0.3 },
+        { shape: 'ball', a: [0.2, -0.34, 0.93], d: [1, -0.28, 0.1], l: 0.05, r: 0.022, flat: 0.75, depth: 1.02, color: 0x141418, outline: 0.4 },
+        { shape: 'ball', a: [-0.2, -0.34, 0.93], d: [-1, -0.28, 0.1], l: 0.05, r: 0.022, flat: 0.75, depth: 1.02, color: 0x141418, outline: 0.4 },
         { shape: 'ball', a: [0.92, -0.2, 0.3], d: [0, -1, 0], l: 0.05, r: 0.03, flat: 0.5, depth: 1.0, color: 0x141418, outline: 0.3 },
         { shape: 'ball', a: [-0.92, -0.2, 0.3], d: [0, -1, 0], l: 0.05, r: 0.03, flat: 0.5, depth: 1.0, color: 0x141418, outline: 0.3 },
       ],

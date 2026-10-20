@@ -321,7 +321,7 @@ module.exports = function playtest3Tests({ test, eq, ok }) {
     const death = SL.data.missions.namek_vegeta_end;
     eq(death.phases.map((p) => p.id).join(','), 'arrival,confront,beam,words,burial,after', "the death mission carries the landing and everything after it");
     const fight = SL.data.missions.namek_goku;
-    eq(fight.phases.map((p) => p.id).join(','), 'open,base,kaioken,rising,after', 'and the Kaioken mission is the fight');
+    eq(fight.phases.map((p) => p.id).join(','), 'open,base,lake,kaioken,rising,after', 'and the Kaioken mission is the fight (the lake: moveset roadmap #24)');
   });
 
   test('the Kaioken climbs the way the story climbs: x2 on Earth, x4 against the Ginyu Force and the first Frieza fight, x10 and x20 once Frieza shows fifty percent', () => {

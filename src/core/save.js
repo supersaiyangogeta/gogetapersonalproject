@@ -25,6 +25,8 @@
       playTime: 0,
       story: { started: false, missions: {}, lastMission: null },
       whatIf: { missions: {}, seen: false },
+      // Movies & Specials: the films' own progress, never the canon story's
+      movies: { missions: {}, seen: false },
       // outfits / accessories: wardrobe pieces earned through the story (src/data/wardrobe.js);
       // pieces with no unlock condition are never listed, they are simply available
       unlocks: { characters: ['goku', 'vegeta'], stages: ['wasteland'], menuScenes: ['default'], modes: [], outfits: [], accessories: [] },
@@ -117,6 +119,8 @@
       if (!raw && this.devSlot) {
         this.data = fresh();
         this.loadStatus = 'fresh';
+        // starting characters given by a rule with no condition (Caulifla, Kefla) are open on a new save too
+        this.evaluateUnlocks();
         return this.data;
       }
       if (!raw) {
@@ -137,6 +141,8 @@
         }
         this.data = fresh();
         this.loadStatus = 'fresh';
+        // starting characters given by a rule with no condition (Caulifla, Kefla) are open on a new save too
+        this.evaluateUnlocks();
         return this.data;
       }
       try {
@@ -226,7 +232,17 @@
       return !!(def && def.side);
     },
 
+    /** Movie missions (src/data/story.js `movies`): their own track — never canon progress. */
+    isMovie(id) {
+      const def = SL.data.missions && SL.data.missions[id];
+      return !!(def && def.movie);
+    },
+
     track(id) {
+      if (this.isMovie(id)) {
+        if (!this.data.movies) this.data.movies = { missions: {}, seen: false };
+        return this.data.movies.missions;
+      }
       if (this.isSide(id)) {
         if (!this.data.side) this.data.side = { missions: {} };
         return this.data.side.missions;
@@ -250,6 +266,7 @@
       }
       track[id] = m;
       if (this.isWhatIf(id)) this.data.whatIf.seen = true;
+      else if (this.isMovie(id)) this.data.movies.seen = true;
       else if (this.isSide(id)) {
         /* side content: no story progress */
       } else {
@@ -326,7 +343,7 @@
     if (cond.any) return cond.any.some((c) => conditionMet(data, c));
     if (cond.missionComplete) {
       const id = cond.missionComplete;
-      const m = data.story.missions[id] || (data.whatIf && data.whatIf.missions[id]) || (data.side && data.side.missions[id]);
+      const m = data.story.missions[id] || (data.whatIf && data.whatIf.missions[id]) || (data.side && data.side.missions[id]) || (data.movies && data.movies.missions[id]);
       if (!m || !m.completed) return false;
     }
     if (cond.wins != null && data.stats.wins < cond.wins) return false;

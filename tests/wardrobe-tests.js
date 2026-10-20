@@ -189,9 +189,9 @@ module.exports = function ({ test, eq, ok }) {
     ok(got.some((u) => u.target === 'vegeta_capsule' && u.type === 'outfits' && /CAPSULE CORP ARMOR/.test(u.title)), 'the clear hands it over with a notice');
     ok(got.some((u) => u.target === 'goku_cell'), "and Goku's Cell-era gi with it");
     ok(SL.Wardrobe.select('vegeta', { outfit: 'vegeta_capsule' }).ok, 'now it can be worn');
-    // planned outfits are never wearable
-    const p = SL.Wardrobe.select('goku', { outfit: 'goku_early' });
-    ok(!p.ok && /planned/.test(p.problems.join()), 'a planned outfit (no body for it yet) is refused');
+    // planned outfits are never wearable (Goku's young outfits were the example until Kid Goku's body came, 2026-10-16)
+    const p = SL.Wardrobe.select('vegeta', { outfit: 'vegeta_gt' });
+    ok(!p.ok && /planned/.test(p.problems.join()), 'a planned outfit is refused');
   });
 
   test('invalid and incompatible pieces are rejected, and a broken selection never reaches the renderer', () => {
@@ -405,12 +405,14 @@ module.exports = function ({ test, eq, ok }) {
       eq(s.preview.f.wardrobe.outfit, s.state.sel.outfit, 'the figure changed with it');
     }
     ok(offered.includes('goku_cell'), 'the unlocked Cell gi is offered');
-    ok(!offered.includes('goku_namek') && !offered.includes('goku_early'), 'locked and planned outfits are not: ' + [...new Set(offered)].join(','));
+    ok(!offered.includes('goku_namek') && offered.every((id) => SL.data.wardrobe.pieces[id].status !== 'planned'), 'locked and planned outfits are not: ' + [...new Set(offered)].join(','));
     while (s.state.sel.outfit !== 'goku_cell') s.handleNav({ right: true });
     eq(SL.Wardrobe.saved('goku').outfit, 'goku_cell', 'saved at once');
     eq(worn(s.preview.f).emblems.length, 0, 'the figure wears the symbol-less gi');
     const strip = s.el.querySelectorAll('.wd-thumb');
-    ok(strip.length >= 10 && s.el.querySelectorAll('.wd-thumb.locked').length > 0 && s.el.querySelectorAll('.wd-thumb.planned').length > 0, 'the strip shows every outfit, locked and planned ones greyed');
+    // (Goku has no planned outfit left since Kid Goku's body, 2026-10-16: the count follows the data)
+    const plannedGoku = Object.values(SL.data.wardrobe.pieces).filter((pc) => pc.slot === 'outfit' && pc.chars.includes('goku') && pc.status === 'planned').length;
+    ok(strip.length >= 12 && s.el.querySelectorAll('.wd-thumb.locked').length > 0 && s.el.querySelectorAll('.wd-thumb.planned').length === plannedGoku, 'the strip shows every outfit, locked and planned ones greyed');
     // the scouter on and off
     s.focus(s.items.findIndex((it) => it.key === 'scouter'), true);
     s.handleNav({ right: true });
@@ -663,7 +665,7 @@ module.exports = function ({ test, eq, ok }) {
     m.dispose();
   });
 
-  test('construction, not colour: Yardrat has its collar, vest and sash; the "59" jacket is an open layer over a shirt with the patch on the sleeve; Badman has a shirt collar; young outfits wait for a young body', () => {
+  test('construction, not colour: Yardrat has its collar, vest and sash; the "59" jacket is an open layer over a shirt with the patch on the sleeve; Badman has a shirt collar; the young outfits bring the body of Kid Goku', () => {
     const gg = H.create({ quiet: true, seed: 3 });
     const { SL } = gg;
     clearAll(SL, ['android_warning', 'cell_games', 'android_trunks']);
@@ -690,9 +692,191 @@ module.exports = function ({ test, eq, ok }) {
     b = freeBattle(gg, 'vegeta', 'goku');
     ok(b.player.model.collarParts && b.player.model.collarParts.length === 3, 'a shirt collar: the band and two points');
     b.dispose();
-    const r = SL.Wardrobe.select('goku', { outfit: 'goku_early' });
-    ok(!r.ok, 'young Goku\'s clothes cannot go on the adult body');
+    // Kid Goku (2026-10-16): the young outfits bring the young body (profile goku, bodies.young) — a boy's proportions on
+    // a smaller figure, the Power Pole on his back, the loose tail — while the fighter keeps Goku's size in play
     eq(SL.data.wardrobe.pieces.goku_early.body, 'young', 'they are marked for a young body');
+    SL.Wardrobe.select('goku', { outfit: 'goku_saiyan', emblem: 'emblem_kame' });
+    b = freeBattle(gg);
+    const man = { headR: b.player.model.b.headR, thighLen: b.player.model.b.thighLen, scale: b.player.scale, figure: b.player.model.root.scale.x };
+    ok(!b.player.model.props.powerPole && b.player.model.app.hair.style === 'goku', 'the man: no Power Pole, his own hair');
+    b.dispose();
+    for (const id of ['goku_early', 'goku_turtle_young']) {
+      ok(SL.Wardrobe.select('goku', { outfit: id }).ok, id + ' can be worn');
+      b = freeBattle(gg);
+      m = b.player.model;
+      eq(b.player.wardrobe.outfit, id);
+      ok(m.b.headR > man.headR && m.b.thighLen < man.thighLen, "a boy's proportions: " + m.b.headR + ' / ' + m.b.thighLen);
+      ok(m.root.scale.x < man.figure * 0.9, 'a smaller figure: ' + m.root.scale.x.toFixed(3));
+      eq(b.player.scale, man.scale, "the fighter keeps Goku's size in play");
+      ok(m.props.powerPole && m.props.powerPole.parent === m.joints.chest, 'the Power Pole on his back');
+      eq(m.app.hair.style, 'goku_kid');
+      eq(m.tailStyle, 'free', 'the loose tail');
+      b.dispose();
+    }
+    SL.Wardrobe.select('goku', { outfit: 'goku_saiyan', emblem: 'emblem_kame' });
+    b = freeBattle(gg);
+    ok(!b.player.model.props.powerPole && b.player.model.b.headR === man.headR, 'and back to the man');
+    b.dispose();
+    eq(gg.errors.length, 0);
+  });
+
+  test('young Chi-Chi has two bodies: the helmet armour is the child (helmet and blade, a child\'s build), the 23rd World Tournament dress the grown body (long hair, no helmet); the story dresses each era in its own', () => {
+    const gg = H.create({ quiet: true, seed: 3 });
+    const { SL } = gg;
+    let b = freeBattle(gg, 'young_chichi', 'goku');
+    let f = fighter(b, 'young_chichi');
+    eq(f.wardrobe.outfit, 'cc_kid', 'the child by default');
+    ok(f.model.props.helmet && f.model.props.blade, 'the helmet and its blade');
+    eq(f.model.app.hair.style, 'chichi_kid');
+    const kid = { headR: f.model.b.headR, thighLen: f.model.b.thighLen };
+    b.dispose();
+    ok(SL.Wardrobe.select('young_chichi', { outfit: 'cc_tournament23' }).ok, 'the tournament dress can be chosen');
+    b = freeBattle(gg, 'young_chichi', 'goku');
+    f = fighter(b, 'young_chichi');
+    eq(f.wardrobe.outfit, 'cc_tournament23');
+    ok(!f.model.props.helmet && !f.model.props.blade, 'no helmet on the grown body');
+    eq(f.model.app.hair.style, 'chichi_long', 'her long hair comes with it');
+    ok(f.model.b.headR < kid.headR && f.model.b.thighLen > kid.thighLen, 'grown proportions: ' + f.model.b.headR + ' / ' + f.model.b.thighLen);
+    ok(f.model.hem && f.model.hem.length === 2, 'the dress has its skirt');
+    eq(f.scale, SL.data.characters.young_chichi.appearance.height, 'the fighter keeps her size in play');
+    b.dispose();
+    const P = SL.data.wardrobe.profiles.young_chichi;
+    eq(P.canonByEra.early.outfit, 'cc_kid');
+    eq(P.canonByEra.tenkaichi23.outfit, 'cc_tournament23');
+    eq(gg.errors.length, 0);
+  });
+
+  test('Kid Gohan has two outfits: Piccolo\'s gi without the hat by default, the Raditz-arc tunic and hat on choice; only the Raditz missions dress him in it; kit and size unchanged', () => {
+    const gg = H.create({ quiet: true, seed: 3 });
+    const { SL } = gg;
+    const W = SL.Wardrobe;
+    SL.Save.completeMission('saiyan_survival', { score: 1, rank: 'C' });
+    let b = freeBattle(gg, 'kid_gohan', 'goku');
+    let f = fighter(b, 'kid_gohan');
+    eq(f.wardrobe.outfit, 'kg_training', "Piccolo's gi by default");
+    ok(!f.model.capMeshes, 'no hat with it');
+    eq(f.appearance.outfit.top, SL.data.characters.kid_gohan.appearance.outfit.top, 'the authored purple gi');
+    ok(f.model.tailStyle === 'free', 'his loose tail kept');
+    const kit = { scale: f.scale, hp: f.hpMax, specials: Object.keys(f.def.specials).join() };
+    b.dispose();
+    ok(W.select('kid_gohan', { outfit: 'kg_raditz' }).ok, 'the Raditz-arc outfit can be chosen');
+    b = freeBattle(gg, 'kid_gohan', 'goku');
+    f = fighter(b, 'kid_gohan');
+    eq(f.wardrobe.outfit, 'kg_raditz');
+    ok(f.model.capMeshes && f.model.capMeshes.length === 1, 'the hat');
+    eq(f.appearance.outfit.sleeveColor, 0x3a9a4a, 'green sleeves');
+    ok(f.model.hem && f.model.hem.length === 2, 'the tunic\'s skirt');
+    ok(f.model.tailStyle === 'free', 'and the tail');
+    eq(JSON.stringify({ scale: f.scale, hp: f.hpMax, specials: Object.keys(f.def.specials).join() }), JSON.stringify(kit), 'same size, health and techniques');
+    b.dispose();
+    eq(W.canonFor('kid_gohan', 'saiyan_brothers').outfit, 'kg_raditz', 'the Raditz mission dresses him in the tunic');
+    eq(W.canonFor('kid_gohan', 'whatif_raditz').outfit, 'kg_raditz', 'and its What-If branch');
+    for (const m of ['saiyan_training', 'saiyan_nappa', 'namek_goku']) eq(W.canonFor('kid_gohan', m).outfit, 'kg_training', m + ': the gi');
+    ok(W.characters().includes('kid_gohan'), 'he is on the Customization screen');
+    eq(gg.errors.length, 0);
+  });
+
+  test('Android 18 by era: the Android Saga look by default, the Buu Saga look (vest, pearls, capris, her tucked bob) unlocked by "bog_party" and worn by the Buu and Super eras\' story, the tracksuit only in the Tournament of Power; her fuller build in every look', () => {
+    const gg = H.create({ quiet: true, seed: 3 });
+    const { SL } = gg;
+    const W = SL.Wardrobe;
+    eq(W.validate().join(' | '), '', 'the wardrobe data validates');
+    clearAll(SL, ['android_road']);
+    ok(!W.available('a18_buu') && !W.select('android_18', { outfit: 'a18_buu' }).ok, 'the Buu Saga look is locked before its mission');
+    let b = freeBattle(gg, 'android_18', 'goku');
+    let f = fighter(b, 'android_18');
+    eq(f.wardrobe.outfit, 'a18_classic', 'the Android Saga look by default');
+    ok(f.appearance.outfit.stripes && f.model.hem && f.model.hem.length === 2, 'its striped shirt and denim skirt');
+    eq(f.model.app.hair.style, 'trunks', 'and her Android Saga bob');
+    ok(!Object.keys(f.model.props).some((k) => k.startsWith('pearl')), 'no pearls with it');
+    eq(f.model.b.seat, 1, 'her fuller build');
+    ok(f.model.b.thighShape && f.model.b.thighShape.ham > 0, 'shaped thighs, hamstrings raised');
+    let seats = 0;
+    f.model.root.traverse((n) => n.name === 'seat' && seats++);
+    eq(seats, 2, 'the fuller seat');
+    const kit = { scale: f.scale, hp: f.hpMax, specials: Object.keys(f.def.specials).join() };
+    b.dispose();
+    clearAll(SL, ['bog_party']);
+    ok(W.select('android_18', { outfit: 'a18_buu' }).ok, 'cleared: the Buu Saga look can be chosen');
+    b = freeBattle(gg, 'android_18', 'goku');
+    f = fighter(b, 'android_18');
+    eq(f.wardrobe.outfit, 'a18_buu');
+    const o = f.appearance.outfit;
+    ok(!('stripes' in o) && !f.model.hem, 'the authored stripes and skirt are gone (a null in an own outfit removes the field)');
+    eq(o.sleeves, 'short', 'a short-sleeved T-shirt');
+    ok(f.model.jacket && f.model.jacket.length === 1, 'the vest stops at the chest, no collar');
+    eq(o.crop, 0.5, 'capri jeans');
+    ok(o.socks !== undefined && o.bootStyle === 'shoe', 'slouch socks and flat shoes');
+    eq(f.model.app.hair.style, 'a18_buu', 'her Buu Saga bob comes with the outfit');
+    const props = Object.keys(f.model.props);
+    eq(props.filter((k) => k.startsWith('pearl')).length, 44, 'the pearl necklace');
+    for (const id of ['earringL', 'earringR', 'badge', 'bangle', 'chain']) ok(props.includes(id), id);
+    eq(JSON.stringify({ scale: f.scale, hp: f.hpMax, specials: Object.keys(f.def.specials).join() }), JSON.stringify(kit), 'same size, health and techniques');
+    b.dispose();
+    for (const m of ['android_road', 'android_lab', 'cell_perfect']) eq(W.canonFor('android_18', m).outfit, 'a18_classic', m + ': the Android Saga look');
+    for (const m of ['bog_party', 'bog_wrath']) eq(W.canonFor('android_18', m).outfit, 'a18_buu', m + ': the Buu Saga look');
+    for (const m of ['top_jiren', 'top_finale']) eq(W.canonFor('android_18', m).outfit, 'a18_top', m + ': the tracksuit');
+    W.restoreDefault('android_18');
+    eq(W.current('android_18').outfit, 'a18_classic', 'Restore Canon Default');
+    eq(gg.errors.length, 0);
+  });
+
+  test('Free Battle opponent outfit: Auto keeps their saved look, a mirror match dresses the opponent in the next owned outfit (or colours), a chosen outfit is worn for that battle only, a locked one is refused', () => {
+    const gg = H.create({ quiet: true, seed: 3 });
+    const { SL, V3 } = gg;
+    const W = SL.Wardrobe;
+    clearAll(SL, ['namek_vegeta']);
+    eq(W.opponentLook('vegeta', 'auto', 'goku'), null, 'Auto against another character: nothing to change (their saved look)');
+    eq(W.opponentLook('vegeta', undefined, 'goku'), null, 'no choice made: the same');
+    eq(W.opponentLook('piccolo', 'auto', 'piccolo'), null, 'no wardrobe: nothing');
+    const mirror = W.opponentLook('goku', 'auto', 'goku');
+    ok(mirror && mirror.outfit !== W.current('goku').outfit, 'a mirror match: another outfit than the player\'s (' + (mirror && mirror.outfit) + ')');
+    ok(W.available(mirror.outfit), 'and one the player owns');
+    eq(W.opponentLook('kefla', 'auto', 'kefla').palette, 'crimson', 'one outfit only: the next colours');
+    eq(W.opponentLook('vegeta', 'vegeta_namek_early', 'goku').outfit, 'vegeta_namek_early', 'a chosen outfit');
+    eq(W.opponentLook('vegeta', 'vegeta_whis', 'goku').outfit, 'vegeta_saiyan', 'a locked one falls back to the default');
+    // a Free Battle as the app builds it (SL.App.startFreeBattle passes the opponent's look as the fighter's wardrobe)
+    const b = new SL.Battle({
+      mode: 'free', stageId: 'wasteland', skipIntro: true, rules: { timeLimit: 0, allowTransform: true, allowUltimates: true, startKi: 100 },
+      fighters: [{ charId: 'goku', player: true, team: 0, pos: new V3(-4, 0, 0) }, { charId: 'goku', team: 1, pos: new V3(4, 0, 0), dummy: 'idle', wardrobe: mirror }],
+      onEnd: () => {},
+    });
+    eq(worn(b.fighters[0]).outfit, W.current('goku').outfit, 'the player wears the saved look');
+    eq(worn(b.fighters[1]).outfit, mirror.outfit, 'the opponent wears the other one');
+    b.dispose();
+    eq(W.saved('goku'), null, 'nothing was saved for Goku');
+    eq(W.saved('vegeta'), null, 'or for Vegeta');
+    eq(gg.errors.length, 0);
+  });
+
+  test('a presentation step that needs a scouter or a sword is skipped without it: Vegeta taps the scouter only when he wears one, Trunks reaches for the sword only when he carries it', () => {
+    const gg = H.create({ quiet: true, seed: 3 });
+    const { SL, V3 } = gg;
+    eq((SL.dataProblems || []).join(' | '), '', 'the data (and the step conditions) validate');
+    const pair = (veg, ft) => new SL.Battle({
+      mode: 'free', stageId: 'wasteland', skipIntro: true, rules: { timeLimit: 0 },
+      fighters: [{ charId: 'vegeta', player: true, team: 0, pos: new V3(-4, 0, 0), wardrobe: veg }, { charId: 'future_trunks', team: 1, pos: new V3(4, 0, 0), dummy: 'idle', wardrobe: ft }],
+      onEnd: () => {},
+    });
+    const play = (f, seq) => {
+      f.anim.playSequence(seq);
+      return f.anim.seq ? f.anim.seq.steps.map((s) => s.pose).join(',') : '';
+    };
+    let b = pair({ outfit: 'vegeta_saiyan' }, { outfit: 'ft_capsule' });
+    let v = fighter(b, 'vegeta'), t = fighter(b, 'future_trunks');
+    ok(v.model.wears('scouter') && t.model.wears('sword'), 'the scouter and the sword are worn');
+    eq(play(v, v.def.sequences.intro), 'v_scouterTap,v_intro,v_chinUp', 'with the scouter: the tap first');
+    eq(play(t, t.def.sequences.intro), 'ft_handNear,ft_drawOut,idle', 'with the sword: the hand to the hilt, the draw');
+    eq(play(t, t.def.sequences.victory[0]), 'ft_finish,ft_sheathe,ft_calm', 'and the sheathe after the win');
+    b.dispose();
+    b = pair({ outfit: 'vegeta_saiyan', scouter: 'none' }, { outfit: 'ft_capsule_unarmed' });
+    v = fighter(b, 'vegeta');
+    t = fighter(b, 'future_trunks');
+    ok(!v.model.wears('scouter') && !t.model.wears('sword'), 'neither is worn');
+    eq(play(v, v.def.sequences.intro), 'v_intro,v_chinUp', 'no scouter: no tap at an empty ear');
+    eq(play(t, t.def.sequences.intro), 'ft_calm,idle', 'no sword: no reach for a hilt that is not there');
+    eq(play(t, t.def.sequences.victory[0]), 'ft_finish,ft_calm', 'and nothing to sheathe');
+    b.dispose();
     eq(gg.errors.length, 0);
   });
 };

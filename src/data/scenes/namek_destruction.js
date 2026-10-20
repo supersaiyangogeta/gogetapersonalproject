@@ -165,7 +165,8 @@
         call: (ctx) => {
           const fz = ctx.cast.frieza;
           const i = fz.def.forms.findIndex((f) => f.id === 'full');
-          if (i > 0) fz.setState('transform', { form: fz.def.forms[i], index: i, boss: true });
+          // noShots: this event's own camera (the circle) is the shot, not the engine's transformation shots
+          if (i > 0) fz.setState('transform', { form: fz.def.forms[i], index: i, boss: true, noShots: true });
         },
         tick: (ctx) => {
           const b = ctx.b, fz = ctx.cast.frieza;
@@ -176,18 +177,25 @@
             b.vfx.explosion(at, 5, 0xff8a4a, { smoke: true });
           }
         },
+        // the whole of him while it happens: the silhouette broadening before the aura comes up — one full circle round
+        // him as he swells (Roadmap Three, the owner's Gemini research CS-S06, a research draft: a 360° orbit; he faces
+        // +z here, P.hundred, so the circle starts and ends at his front three-quarter)
+        cam: { orbit: { at: { at: 'frieza', off: [0, 0.7, 0] }, from: 0.5, to: 0.5 + Math.PI * 2, radius: 5, radius2: 3.8, y: 0.5, y2: 0.2 }, from: { at: 'frieza', off: [0, 0.7, 5] }, look: { at: 'frieza', off: [0, 0.5, 0] }, subject: 'frieza', fov: 46 },
         hold: 5.2,
       },
+      // from low as it finishes: fists clenched, the shoulders twice what they were
       {
-        pose: [{ who: 'goku', pose: 'guard', face: 'grit' }],
+        pose: [{ who: 'frieza', pose: 'idle', face: 'cold', aura: 0.6 }],
+        cam: { from: { at: 'frieza', local: [0.9, -0.95, 2.6] }, to: { at: 'frieza', local: [0.75, -0.95, 2.3] }, look: { at: 'frieza', off: [0, 0.45, 0] }, fov: 44, fov2: 40 },
+        say: { who: 'frieza', line: 'One hundred percent. You wanted to see everything I could become — look carefully.', duration: 4 },
+        hold: 4.2,
+      },
+      // Goku, composed: the eyes on Frieza, the guard coming up
+      {
+        pose: [{ who: 'goku', pose: 'guard', face: 'cold', speed: 4 }],
         cam: { from: { at: 'goku:head', local: [0.42, -0.08, 1.15] }, look: { at: 'goku:head' }, fov: 36 },
         say: { who: 'goku', line: 'His body... he is forcing it past what it can hold.', duration: 3, style: 'quiet' },
         hold: 3.2,
-      },
-      {
-        cam: { from: { at: 'frieza', local: [0.9, 0.2, 2.8] }, to: { at: 'frieza', local: [0.7, 0.1, 2.2] }, look: { at: 'frieza', off: [0, 0.3, 0] }, fov: 38, fov2: 34 },
-        say: { who: 'frieza', line: 'One hundred percent. Savor it — it\'s the last thing you\'ll ever see.', duration: 3.8 },
-        hold: 4,
       },
     ],
     end(ctx) {

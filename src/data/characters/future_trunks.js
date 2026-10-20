@@ -549,6 +549,44 @@
       };
     },
     // in the memory: on his knees in the rain, and then the scream that turned him gold
+    // THE MAFUBA (2026-10-19: "The Divine Scythe" and the Free Battle technique)
+    // CS-MAF-01's stance: feet planted wide, both arms straight out in front, palms open and forward; trembling with it
+    ft_mafuba: ((t) => {
+      const s = Math.sin(t * 38) * 1.4;
+      return {
+        hands: ['open', 'open'],
+        root: { y: -0.14, rx: 6 }, spine: [6, 0, 0], chest: [6 + s * 0.4, 0, 0], head: [-6, 0, 0],
+        shoulderL: [-86 + s, 0, 12], elbowL: [-8, 0, 0], handL: [-62, 0, 0],
+        shoulderR: [-86 - s, 0, -12], elbowR: [-8, 0, 0], handR: [-62, 0, 0],
+        thighL: [-30, 0, 24], kneeL: [44, 0, 0], footL: [-10, 0, -14], thighR: [-30, 0, -24], kneeR: [44, 0, 0], footR: [-10, 0, 14],
+      };
+    }),
+    // the funnel guided down into the jar's neck: the same stance, the arms brought down at it
+    ft_mafubaDown: ((t) => {
+      const s = Math.sin(t * 40) * 1.2;
+      return {
+        hands: ['open', 'open'],
+        root: { y: -0.2, rx: 14 }, spine: [12, 0, 0], chest: [10, 0, 0], head: [8, 0, 0],
+        shoulderL: [-46 + s, 0, 10], elbowL: [-6, 0, 0], handL: [-50, 0, 0],
+        shoulderR: [-46 - s, 0, -10], elbowR: [-6, 0, 0], handR: [-50, 0, 0],
+        thighL: [-34, 0, 24], kneeL: [52, 0, 0], footL: [-12, 0, -14], thighR: [-34, 0, -24], kneeR: [52, 0, 0], footR: [-12, 0, 14],
+      };
+    }),
+    // down on one knee at the jar: the left hand on the lid
+    ft_lid: {
+      hands: ['open', 'fist'],
+      root: { y: -0.46, rx: 10 }, spine: [16, 0, 0], chest: [10, 0, 0], head: [16, 0, 0],
+      shoulderL: [-58, 0, 6], elbowL: [-10, 0, 0], handL: [-40, 0, 0], shoulderR: [-10, 0, -16], elbowR: [-30, 0, 0],
+      thighL: [-80, 0, 8], kneeL: [86, 0, 0], thighR: [10, 0, -8], kneeR: [100, 0, 0],
+    },
+    // the right hand at the jacket's inside pocket, the head bowed to it: looking for the talisman
+    ft_search: {
+      hands: ['open', 'open'],
+      root: { y: -0.46, rx: 6 }, spine: [10, 0, 0], chest: [8, -10, 0], head: [24, 8, 0],
+      shoulderL: [-50, 0, 6], elbowL: [-14, 0, 0], handL: [-40, 0, 0],
+      shoulderR: [-30, 0, 34], elbowR: [-118, 0, 0], handR: [0, 0, 20],
+      thighL: [-80, 0, 8], kneeL: [86, 0, 0], thighR: [10, 0, -8], kneeR: [100, 0, 0],
+    },
     ft_kneel: (t) => {
       const b = Math.sin(t * 5) * 1.2;
       return {
@@ -667,6 +705,71 @@
           ],
         },
       },
+      {
+        // SUPER SAIYAN RAGE (Dragon Ball Super, the Goku Black arc; roster continuation 2026-10-15): the Super Saiyan
+        // shape pulled higher and paler, gold run through with blue, blue lightning in the aura. No button buys it inside
+        // the story (storyBoss): Chapter 19's "The Sword of Hope" (ft_hope) stages it. Free Battle opens it after that
+        // mission (or after "The Contract", for saves from before the chapter). The ultimate becomes the Sword of Hope.
+        id: 'rage', name: 'Super Saiyan Rage', short: 'SSJ RAGE', kiCost: 70, style: 'full', storyBoss: true, freeUnlock: ['ft_hope', 'hit_contract'],
+        mult: { damage: 2.5, speed: 1.35, defense: 1.7, kiRegen: 2.2, chargeRate: 1.45, guardStamina: 1 },
+        // the aura in two layers (Roadmap Three, the Goku Black arc research: "an inner blazing golden Super Saiyan aura
+        // wrapped inside an outer blue god-ki outline"): the blue shell outside, the gold flame inside it (the engine's
+        // inner shell, as Blue under Kaioken). One pale-blue shell with a cream core read as all blue in the browser
+        aura: {
+          color: 0x3a9cff, core: 0xbfe6ff, particles: 0x9ad0ff, idle: 0.5, speed: 1.6, sharp: 0.35, sparks: 0xd8f0ff, lightning: true, boltColor: 0x6ac0ff,
+          inner: { color: 0xffc21e, core: 0xfff0a8, scale: 0.74, alpha: 0.85, sharp: 0.45, speed: 1.9 },
+        },
+        look: { hair: { style: 'trunks_ssj', color: 0xf0f0d0 }, pupil: 0x1a8ab8, brow: 0xd8d8b0, bulk: 1.08, muscle: 1.1 },
+        ghost: 0xc8e8ff,
+        sequence: {
+          length: 176,
+          applyAt: 116,
+          steps: [
+            { at: 0, pose: 'ft_tfStill', speed: 8, expression: 'grit', aura: 0.2, auraColor: 0xffffff, mood: [0.3, 0x0a1020, 0.8], shot: 'orbit', sfx: 'kiUp' },
+            { at: 30, pose: 'ft_tfClench', speed: 8, expression: 'grit', aura: 0.5, rocks: true, sfx: 'rumble', quake: 0.3 },
+            { at: 64, pose: 'ft_tfPress', speed: 10, expression: 'shout', aura: 0.8, sfx: 'ssjRise', mood: [0.6, 0x060a14, 0.5], hairFlicker: true, lightning: true },
+            { at: 104, pose: 'ft_tfBrace', speed: 16, expression: 'shout', aura: 1, skyBolt: true },
+            { at: 116, burst: true, pose: 'ft_tfBurst', speed: 30, expression: 'shout', sfx: 'transformBurst', mood: [0.2, 0x10202a, 0.3], flash: 0.8, crater: 5, hairFlicker: false, rocks: false },
+            { at: 146, pose: 'ft_tfFinal', speed: 5, expression: 'angry', shot: 'face', mood: [0, 0x000000, 1.2] },
+          ],
+        },
+        practiced: {
+          length: 92,
+          applyAt: 50,
+          steps: [
+            { at: 0, pose: 'ft_tfClench', speed: 10, expression: 'grit', aura: 0.5, quake: 0.2, sfx: 'kiUp', lightning: true },
+            { at: 50, burst: true, pose: 'ft_tfBurst', speed: 14, expression: 'shout', flash: 0.4, crater: 3.5 },
+            { at: 76, pose: 'ft_tfFinal', expression: 'angry' },
+          ],
+        },
+        specials: {
+          // SWORD OF HOPE: everyone's energy in the blade, and the blade through the enemy, again and again
+          ultimate: {
+            id: 'swordOfHope', name: 'Sword of Hope', type: 'rush', kiCost: 100, icon: 'ultimate', ultimate: true,
+            startup: 12, dashFrames: 22, speed: 64, armor: true, recovery: 32,
+            poses: { wind: 'ft_riseW', dash: 'dash' },
+            hits: [
+              { pose: 'ft_cut', damage: 1200, frames: 9, sfx: 'swordSlash' },
+              { pose: 'ft_return', damage: 1200, frames: 9, sfx: 'swordSlash' },
+              { pose: 'ft_spin', damage: 1400, frames: 11, sfx: 'swordSlash' },
+              { pose: 'ft_rise', damage: 1600, frames: 12, sfx: 'swordSlash', knock: 'launch', knockSpeed: 16, impact: 3, lift: 3 },
+              // (2026-10-17, the owner's roadmap) he leaps over him and the sword comes down as a towering blade of
+              // blue-and-gold light — an effect laid along the cut, not a modelled blade
+              { pose: 'ft_drop', damage: 3600, frames: 22, sfx: 'swordSlash', knock: 'smash', knockSpeed: 44, impact: 5, to: 'above', giantCut: { length: 14, color: 0x7ac8ff } },
+            ],
+            // outside the story: his face as everyone's energy comes into the blade (gold pulses), alongside on the way in,
+            // wide through the cuts, then the impact as the great blade comes down
+            cine: {
+              steps: [
+                { on: 'start', shot: 'face', dur: 0.4, flash: 1.2, flashColor: 0xffe08a },
+                { on: 'release', shot: 'track', dur: 0.35 },
+                { on: 'connect', shot: 'wide', dur: 0.8 },
+                { on: 'finish', shot: 'impact', dur: 1.2, slow: [0.45, 0.2], quake: 0.5 },
+              ],
+            },
+          },
+        },
+      },
     ],
     poses,
     moves: {
@@ -694,6 +797,9 @@
         id: 'burningAttack', name: 'Burning Attack', type: 'projectile', kiCost: 28, icon: 'ball',
         startup: 30, recovery: 20, pose: { wind: 'ft_burnW', release: 'ft_burn' },
         projectile: { kind: 'ball', speed: 76, radius: 1.2, damage: 2400, homing: 1.6, color: 0xffd45a, core: 0xfff6d0, explode: 6, knock: 'heavy', knockSpeed: 28, impact: 3, life: 3.4 },
+        // outside the story (2026-10-17): low in front and up at the hands as the signs are made, then behind his
+        // shoulder along the shot to the burst
+        cine: { steps: [{ on: 'start', shot: 'hand', dur: 0.5 }, { on: 'release', shot: 'path', dur: 0.9 }] },
       },
       // the sword answer to a boss standing still: four cuts, and the last one lands
       special2: {
@@ -727,17 +833,32 @@
         color: 0xffd45a, core: 0xfff8e0, poses: { charge: 'ft_domeCharge', fire: 'ft_domeFire' }, recovery: 34, cinematic: true,
         callout: ['HEAT', 'DOME!'],
       },
+      // THE MAFUBA (Roadmap Three, the Goku Black arc research CS-MAF-01 and its section 6; the owner's overnight brief
+      // 2026-10-19): Free Battle only, after "The Divine Scythe" (the mission that shows it). The jar, the stance and the
+      // green wind; the lasso out to the target in reach (no guard stops it; a dodge or vanish does); the quick-time part —
+      // mash Light to drag him through the tornado into the jar faster; sealed — and with no talisman it bursts: he comes
+      // out hurt, his ki and most of his stamina gone. src/game/techniques.js 'mafuba'. Provisional numbers: 80 ki, 3,600
+      // on the burst, all his ki and 70 % of his stamina, 15 s cooldown; the player's move only
+      {
+        id: 'mafuba', name: 'Mafuba', type: 'mafuba', kiCost: 80, icon: 'ultimate', cooldown: 900,
+        freeUnlock: ['ft_scythe'], freeOnly: true,
+        range: 14, setFrames: 24, stanceFrames: 30, pullFrames: 150, pullPress: 0.035, sealFrames: 90,
+        catchDamage: 300, damage: 3600, knockSpeed: 30, kiDrain: 1, staminaDrain: 0.7, recovery: 40, missRecovery: 40,
+        cine: { steps: [{ on: 'start', shot: 'wideCut', dur: 0.8 }, { on: 'connect', shot: 'impact', dur: 1.2 }, { on: 'finish', shot: 'impact', dur: 0.9, quake: 0.4 }] },
+      },
     ],
     mechanic: { type: 'swordsman', name: 'Sword Guard', desc: 'A guard timed on a ki blast knocks it back with the flat of the blade.' },
     ai: { personality: 'aggressive', aggression: 0.72, defense: 0.55, ranged: 0.35, beam: 0.3, transformHp: 0.55, preferredRange: 2.4 },
     barks: { combo: 'trunks_combo', hurt: 'trunks_hurt', lowHp: 'trunks_lowHp' },
     sequences: {
       intro: [
-        { pose: 'ft_handNear', dur: 1, speed: 6, expression: 'calm' },
-        { pose: 'ft_drawOut', dur: 0.6, speed: 12, expression: 'grit' },
+        // (the jacket without the sword: no reach for a hilt that is not there — steps `needs: 'sword'`)
+        { pose: 'ft_calm', dur: 1, speed: 6, expression: 'calm', needs: '!sword' },
+        { pose: 'ft_handNear', dur: 1, speed: 6, expression: 'calm', needs: 'sword' },
+        { pose: 'ft_drawOut', dur: 0.6, speed: 12, expression: 'grit', needs: 'sword' },
         { pose: 'idle', dur: 1, speed: 8, expression: 'grit' },
       ],
-      victory: [[{ pose: 'ft_finish', dur: 1, speed: 9, expression: 'angry' }, { pose: 'ft_sheathe', dur: 0.8, speed: 8, expression: 'calm' }, { pose: 'ft_calm', dur: 9, speed: 5, expression: 'calm' }]],
+      victory: [[{ pose: 'ft_finish', dur: 1, speed: 9, expression: 'angry' }, { pose: 'ft_sheathe', dur: 0.8, speed: 8, expression: 'calm', needs: 'sword' }, { pose: 'ft_calm', dur: 9, speed: 5, expression: 'calm' }]],
       defeat: [{ pose: 'defeatKneel', dur: 9, speed: 6, expression: 'hurt' }],
     },
     intro: { pose: 'idle', expression: 'grit' },

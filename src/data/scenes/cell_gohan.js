@@ -3,13 +3,16 @@
  *
  *   gh_enter         down from the ridge into the ring
  *   gh_ssj           the boy's own hair in gold, and a refusal
- *   gh_crush         the bear hug; 16's grip and the bomb that is not there; 16 blown apart on camera,
- *                    the head landing at Mr. Satan's feet
+ *   gh_crush         the bear hug; 16's grip and the bomb that is not there; Cell's blast — one short
+ *                    flash, the faces watching — and 16's head landing at Mr. Satan's feet
  *   gh_born          seven eggs from the tail; the Juniors hatch; "Play with them."
- *   gh_sixteen       the throw, the last words, the boot, the crunch — and the red line: black screen,
- *                    a crimson line through his head that snaps like glass, gold tears hanging in the
- *                    air, the roar, the pillar, Super Saiyan 2
- *   gh_ssj2_reveal   the canopy of gold, the one bang, the lightning; everybody who saw it
+ *   gh_sixteen       the throw, the last words, the boot — the camera on Gohan's face as it lands (a short
+ *                    flash, no detail) — and the red line: black screen, a crimson line through his head
+ *                    that snaps like glass, gold tears hanging in the air; the head going down, the fists,
+ *                    the face, the dust and the gold rising; the roar, the pillar, Super Saiyan 2, held
+ *   gh_ssj2_reveal   everybody who saw it: Cell (surprise, then interest, then caution), Goku, Vegeta,
+ *                    Piccolo, Trunks, the World Champion's crowd
+ *   gh_juniors_go    (the start of the JUNIORS fight) one Junior after each of them; Gohan watching
  *
  * Dialogue is paraphrased English written for this project, following the owner's brief.
  */
@@ -191,7 +194,7 @@
         cam: { from: { at: 'cell', local: [1.6, 0.4, 1.6] }, look: { at: 'gohan', off: [0, 0.1, 0] }, fov: 38 },
         tick: (ctx) => {
           if (ctx.b.frame % 20 === 0) {
-            ctx.b.sfx('boneCrack', story(ctx).gohan, { vol: 0.4, pitch: 1.3 });
+            ctx.b.sfx('rumble', story(ctx).gohan, { vol: 0.35, pitch: 1.3 });
             ctx.b.cameraTraumaAt(story(ctx).gohan.pos, 0.2);
           }
         },
@@ -282,40 +285,59 @@
         say: { who: 'cell', line: 'A useless machine, to the very end.', duration: 2.4 },
         hold: 2.4,
       },
-      // the blast: his body comes apart, and the head goes spinning away across the ring
+      // the blast: one short, controlled flash that swallows him — wide, from across the ring; what is left of
+      // 16 is his head, thrown clear toward the van (non-graphic, owner 2026-10-14: nothing comes apart on screen)
       {
         call: (ctx) => {
           const st = story(ctx), b = ctx.b, a = st.a16;
           const c = a.chest();
-          const cut = headOff(ctx);
-          // the body: gone in sparks, oil and pieces
-          cut.hide(cut.b);
-          CK().burst(b, c, 'android', 0.8);
-          ctx.parts = SL.data.trunksKit.dice(b, c, [0x3a6a3a, 0x2a2a2e, 0xc8c0a8, 0x8a2a1c], { count: 30, height: 1.6, width: 0.8, seed: 16 });
-          for (const p of ctx.parts.pieces) p.v.set((p.mesh.position.x) * 14, 4 + p.mesh.position.y * 5, p.mesh.position.z * 14);
-          b.vfx.explosion(c, 1.6, 0xffd8a0, { smoke: true });
+          b.vfx.flash(c, 4.5, 0xfff0d0, 0.4, SL.Toon.tex.glow);
+          b.vfx.explosion(c, 2.2, 0xffd8a0, { smoke: true });
+          b.vfx.sparks(c, 0xffe0a0, 30, 12, 0.1);
+          b.vfx.ring(c, 5, 0xfff0d0, 0.4);
           b.sfx('explosionBig', a, { vol: 1.3 });
-          b.cameraTraumaAt(c, 0.9);
-          // the head flies off in an arc toward the van
+          b.cameraTraumaAt(c, 0.8);
+          const cut = headOff(ctx);
+          cut.hide(cut.b);
+          // the head arcs away toward the van, inside the smoke
           const landing = ground(ctx, CK().CREW.satan.clone().add(new V3(-1.4, 0, -1.2)));
           cut.a.vel.copy(landing.clone().sub(cut.a.pivot.position).setY(0).multiplyScalar(1 / 1.95)).add(new V3(0, 13, 0));
-          cut.a.spin.set(6, 3, 2);
+          cut.a.spin.set(2, 1, 0.5);
           pt(ctx, 'blast', c);
         },
-        screen: { flash: 0.2, color: '#fff0d0' },
+        screen: { flash: 0.5, color: '#fff0d0' },
         slow: { scale: 0.35, seconds: 0.8 },
         cam: { from: { at: 'blast', off: [11, 3.4, 13] }, look: { at: 'blast', off: [2, 1, 0] }, fov: 50 },
         tick: (ctx) => {
           const st = story(ctx);
           if (st.head16) CK().animatePieces(ctx.b, st.head16, { gravity: 16 });
-          if (ctx.parts) {
-            for (const p of ctx.parts.pieces) p.v.y -= 16 / 60;
-            ctx.parts.tick(1 / 60);
-          }
+          if (ctx.b.frame % 6 === 0) ctx.b.vfx.dust(ctx.cast.blast.pos, 2, 3, 0x8a8478);
         },
-        hold: 2.2,
+        hold: 1.6,
       },
-      // the head rolls to a stop at the World Champion's feet
+      // the faces: Gohan on the stone, the others up on the ridge
+      {
+        pose: [{ who: 'gohan', pose: 'tg_scared', face: 'shock', speed: 6 }],
+        cam: { from: { at: 'gohan:face', local: [0.15, 0.14, 0.85] }, look: { at: 'gohan:head', off: [0, 0.15, 0] }, fov: 34 },
+        tick: (ctx) => {
+          const st = story(ctx);
+          if (st.head16) CK().animatePieces(ctx.b, st.head16, { gravity: 16 });
+        },
+        hold: 1.3,
+      },
+      {
+        pose: [
+          { who: 'piccolo', pose: 'armsCrossed', face: 'shock', speed: 4 },
+          { who: 'krillin', pose: 'sp_shock', face: 'shock', speed: 4 },
+        ],
+        cam: { subject: 'piccolo', with: 'krillin', focus: 'full', angle: 'three' },
+        tick: (ctx) => {
+          const st = story(ctx);
+          if (st.head16) CK().animatePieces(ctx.b, st.head16, { gravity: 16 });
+        },
+        hold: 1.2,
+      },
+      // the head comes to rest at the World Champion's feet
       {
         call: (ctx) => pt(ctx, 'headAt', story(ctx).head16.a.pivot.position),
         pose: [{ who: 'satan', pose: 'ms_hide', face: 'shock', speed: 8 }],
@@ -323,10 +345,6 @@
         tick: (ctx) => {
           const st = story(ctx);
           if (st.head16) CK().animatePieces(ctx.b, st.head16, { gravity: 16 });
-          if (ctx.parts) {
-            for (const p of ctx.parts.pieces) p.v.y -= 16 / 60;
-            ctx.parts.tick(1 / 60);
-          }
         },
         say: { who: 'mr_satan', line: 'EEEEK!', duration: 1.4, style: 'shout' },
         hold: 2.2,
@@ -471,6 +489,113 @@
     },
   };
 
+  /* ============================================================================ THE JUNIORS GO */
+  // which Junior goes after whom (the brief: one on Krillin, one on Piccolo, Vegeta and Trunks pressed, Goku too)
+  const PREY = ['krillin', 'piccolo', 'vegeta', 'trunks', 'goku', 'tien', 'yamcha'];
+  /** A Junior's blow landing on somebody: the flash, the sound, and them driven back on their feet. */
+  function junior(ctx, j, who, guard) {
+    const b = ctx.b, J = ctx.cast[j], F = ctx.cast[who];
+    if (!J || !F || J.hidden || F.hidden) return;
+    const p = J.chest().lerp(F.chest(), 0.6);
+    b.vfx.impact(p, guard ? 1.1 : 1.6, guard ? 0xcfe6ff : 0x9ab4ff);
+    b.sfx(guard ? 'block' : 'punchHeavy', F, { vol: 0.9 });
+  }
+  S.gh_juniors_go = {
+    id: 'gh_juniors_go',
+    cast,
+    auraCap: 0.2,
+    music: { song: 'battle', level: 6 },
+    events: [
+      // they split up: one for each of them, never all at one spot
+      {
+        space: PREY.map((who, i) => ({ who: 'j' + i, mode: 'flight', to: { at: who, local: [0.3 * ((i % 2) * 2 - 1), 0, 1.5] }, height: 0.4, seconds: 0.5, pose: 'flyForward', face: who })),
+        cam: { from: { at: 'gohan', off: [8, 6, 12] }, look: { at: 'gohan', off: [-3, 0, 3] }, fov: 56 },
+        sfx: { name: 'saibaScreech', pitch: 1.5, vol: 0.8 },
+        hold: 0.2,
+      },
+      // Krillin: backing away, and it keeps coming
+      {
+        call: (ctx) => junior(ctx, 'j0', 'krillin', true),
+        pose: [
+          { who: 'j0', pose: 'cj_slash', face: 'grin', speed: 20 },
+          { who: 'krillin', pose: 'guardHit', face: 'shock', speed: 20 },
+        ],
+        space: { who: 'krillin', mode: 'slide', distance: 2, seconds: 0.4, endPose: 'guard', expr: 'shock' },
+        cam: { subject: 'krillin', with: 'j0', focus: 'full', angle: 'three' },
+        say: { who: 'krillin', line: 'Get away from me!', duration: 1.6, style: 'shout' },
+        hold: 1.4,
+      },
+      // Piccolo: blocks it on his forearm and is still pushed back a step
+      {
+        call: (ctx) => junior(ctx, 'j1', 'piccolo', true),
+        pose: [
+          { who: 'j1', pose: 'cj_slash', face: 'grin', speed: 20 },
+          { who: 'piccolo', pose: 'guardHit', face: 'angry', speed: 20 },
+        ],
+        space: { who: 'piccolo', mode: 'slide', distance: 1.2, seconds: 0.3, endPose: 'p_stance', expr: 'angry' },
+        cam: { subject: 'piccolo', with: 'j1', focus: 'full', angle: 'three', side: -1 },
+        hold: 1.3,
+      },
+      // Vegeta and Trunks, both pressed at once
+      {
+        call: (ctx) => {
+          junior(ctx, 'j2', 'vegeta', true);
+          junior(ctx, 'j3', 'trunks', false);
+        },
+        pose: [
+          { who: 'j2', pose: 'cj_slash', face: 'grin', speed: 20 },
+          { who: 'j3', pose: 'cj_slash', face: 'grin', speed: 20 },
+          { who: 'vegeta', pose: 'guardHit', face: 'angry', speed: 20 },
+          { who: 'trunks', pose: 'hitBody', face: 'hurt', speed: 20 },
+        ],
+        space: { who: 'trunks', mode: 'slide', distance: 1.8, seconds: 0.35, endPose: 'guard', expr: 'grit' },
+        cam: { subject: 'vegeta', with: 'trunks', focus: 'full', angle: 'three' },
+        say: { who: 'vegeta', line: 'Tch — they\'re fast!', duration: 1.6, style: 'shout' },
+        hold: 1.5,
+      },
+      // Goku, still worn out from his own fight, slow to answer it
+      {
+        call: (ctx) => junior(ctx, 'j4', 'goku', false),
+        pose: [
+          { who: 'j4', pose: 'cj_slash', face: 'grin', speed: 20 },
+          { who: 'goku', pose: 'hitBody', face: 'hurt', speed: 20 },
+        ],
+        space: { who: 'goku', mode: 'slide', distance: 1.6, seconds: 0.35, endPose: 'exhausted', expr: 'hurt' },
+        cam: { subject: 'goku', with: 'j4', focus: 'full', angle: 'three' },
+        hold: 1.4,
+      },
+      // Gohan watches. The eyes go from one friend to the next; the fists close; he still does not move
+      {
+        pose: [{ who: 'gohan', pose: 'tg_ssjClench', face: 'grit', speed: 3, aura: 0.3 }],
+        cam: { from: { at: 'gohan:face', local: [0.14, 0.14, 0.8] }, look: { at: 'gohan:head', off: [0, 0.15, 0] }, fov: 32 },
+        tick: (ctx, t) => {
+          // the head turning between them: a look at Krillin, at Piccolo, at his father
+          const g = story(ctx).gohan, who = ['krillin', 'piccolo', 'goku'][Math.min(2, Math.floor(t / 0.7))];
+          const f = ctx.cast[who];
+          if (f) g.yaw = g.prevYaw = U.lerp(g.yaw, Math.atan2(f.pos.x - g.pos.x, f.pos.z - g.pos.z), 0.15);
+        },
+        hold: 2.2,
+      },
+      // Cell, watching the boy and not the fight
+      {
+        pose: [{ who: 'cell', pose: 'cl_calm', face: 'smirk', speed: 3 }],
+        cam: { from: { at: 'cell', local: [0.4, 0.3, 1.8] }, look: { at: 'cell:head' }, fov: 34 },
+        say: { who: 'cell', line: 'Well, Gohan? Are you just going to stand there and watch?', duration: 2.8 },
+        hold: 3,
+      },
+    ],
+    end(ctx) {
+      for (const k of Object.keys(ctx.cast)) {
+        const f = ctx.cast[k];
+        if (f && f.storyMode) {
+          f.storyMode = null;
+          f.storySpace = null;
+        }
+      }
+      ctx.m.flags.juniorsGo = true;
+    },
+  };
+
   /* ============================================================================ 16, AND THE RED LINE */
   S.gh_sixteen = {
     id: 'gh_sixteen',
@@ -589,27 +714,33 @@
         cam: { from: { at: 'head', off: [0.4, 0.05, 0.6] }, look: { at: 'cell', off: [0, 0.2, 0] }, fov: 50 },
         hold: 1.1,
       },
-      // CRUNCH
+      // the boot comes down — and the camera is on Gohan's face when it lands: a short flash at the edge of
+      // the frame, one dull sound, the dust (non-graphic, owner 2026-10-14)
       {
         call: (ctx) => {
           const st = story(ctx), b = ctx.b, h = st.head16.a;
           const p = h.pivot.position.clone();
-          h.pivot.scale.set(1.5, 0.22, 1.5);
-          h.pivot.position.y = b.stage.heightAt(p.x, p.z) + 0.05;
-          st.head16.update();
-          b.vfx.sparks(p, 0xffe0a0, 30, 9, 0.08);
-          b.vfx.debrisBurst(p, 16, 0x3a3a40, 7, 0.1);
-          b.vfx.debrisBurst(p, 8, 0x8a2a1c, 5, 0.08);
-          b.vfx.dust(p, 1, 8);
-          b.sfx('boneCrack', null, { at: p, vol: 1.3, pitch: 0.6 });
-          b.sfx('explosionSmall', null, { at: p, vol: 0.8, pitch: 1.6 });
-          b.sfx('rockBreak', null, { at: p, vol: 0.9, pitch: 1.2 });
-          b.cameraTraumaAt(p, 0.6);
+          h.pivot.visible = false;
+          if (h.holder) h.holder.visible = false;
+          if (st.head16.hide) st.head16.hide(h);
+          b.vfx.flash(p.clone().add(new V3(0, 0.3, 0)), 2.4, 0xfff0d0, 0.25, SL.Toon.tex.glow);
+          b.vfx.dust(p, 1.4, 12);
+          b.sfx('groundImpact', null, { at: p, vol: 1.2, pitch: 0.7 });
+          b.cameraTraumaAt(p, 0.5);
         },
-        pose: [{ who: 'cell', pose: 'cl_stompDown', face: 'wicked', speed: 30 }],
+        pose: [
+          { who: 'cell', pose: 'cl_stompDown', face: 'wicked', speed: 30 },
+          { who: 'gohan', pose: 'tg_scared', face: 'shock', speed: 20 },
+        ],
+        screen: { flash: 0.3, color: '#fff8e8' },
         slow: { scale: 0.3, seconds: 0.7 },
-        cam: { from: { at: 'head', off: [0.5, 0.06, 0.6] }, look: { at: 'head', off: [0, 0.2, 0] }, fov: 50 },
-        hold: 1.6,
+        cam: { from: { at: 'gohan:face', local: [0.12, 0.14, 0.75] }, look: { at: 'gohan:head', off: [0, 0.15, 0] }, fov: 34 },
+        hold: 1.4,
+      },
+      // the dust settling over the spot, the boot still on it
+      {
+        cam: { from: { at: 'cell', local: [1.6, 0.2, 2.2] }, look: { at: 'cell', off: [0, -0.4, 0] }, fov: 44 },
+        hold: 1,
       },
       // the pupils go to points
       {
@@ -619,6 +750,9 @@
         },
         pose: [{ who: 'gohan', pose: 'tg_cold', face: 'shock', speed: 1 }],
         sfx: { name: 'heartbeat', who: 'gohan', vol: 0.9 },
+        // "Gohan's Anger" (soundtrack PDF p.93, an original stand-in): the lonely flute over low strings comes in under
+        // the silence, and builds (below) to the snap
+        music: { song: 'gohan_anger', level: 2 },
         cam: { from: { at: 'gohan:face', local: [0.0, 0.16, 0.62] }, look: { at: 'gohan:head', off: [0, 0.15, 0] }, fov: 30 },
         hold: 2,
       },
@@ -664,6 +798,46 @@
         },
         hold: 1.8,
       },
+      // the head goes down; close on the hands as they close into fists
+      {
+        call: (ctx) => {
+          const st = story(ctx), g = st.gohan, j = g.model.joints;
+          // Cell has stepped back from the spot to watch what he has started (and out of the lens's way)
+          CK().place(st.cell, ground(ctx, g.pos.clone().addScaledVector(g.forward.clone().setY(0).normalize(), 6.5)));
+          faceTo(st.cell, g.pos);
+          st.cell.setState('scripted', { pose: 'cl_calm', expression: 'smirk' });
+          g.model.root.updateMatrixWorld(true);
+          const hand = j && j.handR ? j.handR.getWorldPosition(new V3()).sub(g.object.position).add(g.pos) : g.chest().add(new V3(0, -0.4, 0));
+          pt(ctx, 'fist', hand);
+        },
+        pose: [{ who: 'gohan', pose: 'tg_ssjClench', face: 'hurt', speed: 1.5, aura: 0.1 }],
+        sfx: { name: 'heartbeat', who: 'gohan', vol: 0.8 },
+        cam: { from: { at: 'gohan', local: [0.75, -0.3, 0.95] }, look: { at: 'fist' }, fov: 32, raw: true },
+        tick: (ctx) => {
+          const g = story(ctx).gohan, j = g.model.joints;
+          if (j && j.handR) ctx.cast.fist.pos.copy(j.handR.getWorldPosition(new V3()).sub(g.object.position).add(g.pos));
+        },
+        hold: 1.8,
+      },
+      // the face: grief turning into something hard
+      {
+        pose: [{ who: 'gohan', pose: 'tg_ssjClench', face: 'grit', speed: 2, aura: 0.25 }],
+        cam: { from: { at: 'gohan:face', local: [0.1, 0.1, 0.75] }, to: { at: 'gohan:face', local: [0.08, 0.1, 0.62] }, look: { at: 'gohan:head', off: [0, 0.12, 0] }, fov: 32, fov2: 30 },
+        hold: 1.6,
+      },
+      // the dust lifting off the stone round his feet; the gold coming up, uneven; the camera backing off
+      {
+        pose: [{ who: 'gohan', pose: 'tg_ssjClench', face: 'grit', aura: 0.55 }],
+        vfx: { kind: 'rocks', at: 'gohan:feet', count: 10, radius: 2.4, lift: 2.4 },
+        sfx: { name: 'rumble', who: 'gohan', vol: 0.9 },
+        cam: { from: { at: 'gohan', local: [0.9, -0.7, 2] }, to: { at: 'gohan', local: [1.4, -0.5, 3.6] }, look: { at: 'gohan', off: [0, 0.3, 0] }, fov: 44, fov2: 50 },
+        tick: (ctx) => {
+          const b = ctx.b, g = story(ctx).gohan;
+          if (b.frame % 5 === 0) b.vfx.dust(g.pos.clone().add(new V3(Math.sin(b.frame) * 1.6, 0, Math.cos(b.frame * 1.3) * 1.6)), 1, 3);
+          if (b.frame % 14 === 0) b.vfx.bolt(g.chest().add(new V3(Math.sin(b.frame) * 0.6, 0.3, 0.2)), 0.9, 0xbfe4ff);
+        },
+        hold: 2,
+      },
       // the roar
       {
         call: (ctx) => {
@@ -673,6 +847,8 @@
         },
         pose: [{ who: 'gohan', pose: 'tg_ascend', face: 'shout', speed: 8, aura: 0.9 }],
         mood: { amount: 0.75, color: 0x07070f, seconds: 0.5 },
+        // the climax of the build: timpani and the horns
+        music: { song: 'gohan_anger', level: 3 },
         sfx: { name: 'roar', who: 'gohan', vol: 1.2, pitch: 1.3 },
         shake: { at: 'gohan', amount: 0.9 },
         cam: { from: { at: 'gohan', local: [1.4, -0.4, 2.8] }, to: { at: 'gohan', local: [2.4, 0.2, 5] }, look: { at: 'gohan', off: [0, 0.5, 0] }, fov: 40, fov2: 50 },
@@ -697,7 +873,9 @@
           pt(ctx, 'col', g.pos);
         },
         screen: { flash: 0.6, color: '#fff8d0' },
-        cam: { from: { at: 'col', off: [16, 6, 22] }, look: { at: 'col', off: [0, 20, 0] }, fov: 58 },
+        // GS-S03 (Roadmap Three, the owner's Gemini research — a research draft, not checked against the footage): low
+        // on the stone, pulling hard back as the column tears up through the sky, the shake at full
+        cam: { from: { at: 'col', off: [7, 0.4, 10] }, to: { at: 'col', off: [16, 1.2, 23] }, look: { at: 'col', off: [0, 6, 0] }, look2: { at: 'col', off: [0, 18, 0] }, fov: 50, fov2: 62, ease: 'out' },
         shake: { at: 'gohan', amount: 1 },
         hold: 2,
       },
@@ -715,16 +893,40 @@
         cam: { from: { at: 'gohan', local: [0.8, 0.1, 2.4] }, look: { at: 'gohan', off: [0, 0.4, 0] }, fov: 40 },
         hold: 1.4,
       },
-      // the eyes come up: a cold, murderous stare, straight at Cell
+      // the eyes come up: a cold, murderous stare, straight at Cell. B-TR-04 phase D (research draft): the pupils held
+      // low for a moment, then snapped up onto him in three frames
       {
-        call: (ctx) => faceTo(story(ctx).gohan, story(ctx).cell.pos),
+        call: (ctx) => {
+          const g = story(ctx).gohan;
+          faceTo(g, story(ctx).cell.pos);
+          if (g.model.setGaze) g.model.setGaze(0, -1);
+        },
         pose: [{ who: 'gohan', pose: 'tg2_stance', face: 'angry', speed: 3 }],
         mood: { amount: 0.12, color: 0x101020, seconds: 1.4 },
-        music: { song: 'finale', level: 6 },
-        cam: { from: { at: 'gohan:face', local: [0.12, 0.16, 0.66] }, to: { at: 'gohan:face', local: [0.08, 0.16, 0.55] }, look: { at: 'gohan:head', off: [0, 0.15, 0] }, fov: 32 },
-        tick: (ctx) => {
+        // Super Saiyan 2's own cue (soundtrack PDF p.94, "Unmei no Hi": an original stand-in) — the reveal and the fight
+        // after it keep it
+        music: { song: 'fateful_day', level: 6 },
+        // in front of his face, level with the eyes, in his body's frame (frame: false — the framing pass would stand it
+        // back to fit the hair). It was in the head's own frame, 0.16 up: as the stance came in, the push-in ended
+        // inside the hair
+        cam: { from: { at: 'gohan:head', local: [0.1, 0.1, 0.7] }, to: { at: 'gohan:head', local: [0.07, 0.1, 0.58] }, look: { at: 'gohan:face' }, fov: 32, frame: false },
+        tick: (ctx, t) => {
           const b = ctx.b, g = story(ctx).gohan;
           if (b.frame % 9 === 0) b.vfx.bolt(g.chest().add(new V3(0.3, 0.6, 0.1)), 1, 0xbfe4ff);
+          if (!g.model.setGaze) return;
+          const k = Math.min(1, Math.max(0, (t - 0.4) / 0.05));
+          g.model.setGaze(0, k - 1);
+          if (k >= 1) ctx.m.flags.gohanEyesSnap = true;
+        },
+        hold: 2.6,
+      },
+      // held: the whole of him, taller, the shoulders squared, gold with blue lightning running through it
+      {
+        pose: [{ who: 'gohan', pose: 'tg2_stance', face: 'angry', aura: 0.7 }],
+        cam: { from: { at: 'gohan', local: [1.4, -0.85, 4.4] }, to: { at: 'gohan', local: [1.2, -0.85, 4.8] }, look: { at: 'gohan', off: [0, 0.35, 0] }, fov: 44 },
+        tick: (ctx) => {
+          const b = ctx.b, g = story(ctx).gohan;
+          if (b.frame % 7 === 0) b.vfx.bolt(g.chest().add(new V3(Math.sin(b.frame) * 0.5, Math.cos(b.frame * 1.7) * 0.7, 0.15)), 1.2, 0xbfe4ff);
         },
         hold: 2.6,
       },
@@ -734,10 +936,12 @@
       SL.ScreenFX.redLine(null);
       const g = st.gohan;
       if (g.model.setPupilScale) g.model.setPupilScale(1);
+      if (g.model.setGaze) g.model.setGaze(0, 0);
       if (st.head16) {
+        // gone under the boot: not shown, not left lying there
         const h = st.head16.a;
-        h.pivot.scale.set(1.5, 0.22, 1.5);
-        st.head16.update();
+        h.pivot.visible = false;
+        if (st.head16.hide) st.head16.hide(h);
       }
       g.lockedForms = {};
       CK().toForm(g, 'ssj2');
@@ -754,8 +958,14 @@
     id: 'gh_ssj2_reveal',
     cast,
     auraCap: 0.15,
-    music: { song: 'gohan_theme', level: 6 },
+    music: { song: 'fateful_day', level: 6 },
     events: [
+      // Cell first: surprise — the smile gone for a moment
+      {
+        pose: [{ who: 'cell', pose: 'cl_calm', face: 'shock', speed: 4 }],
+        cam: { from: { at: 'cell', local: [0.4, 0.3, 1.8] }, look: { at: 'cell:head' }, fov: 34 },
+        hold: 1.6,
+      },
       {
         pose: [{ who: 'goku', pose: 'idle', face: 'grin', speed: 3 }],
         call: (ctx) => {
@@ -775,10 +985,46 @@
         hold: 3.2,
       },
       {
+        pose: [{ who: 'piccolo', pose: 'p_kneelLook', face: 'shock', speed: 2 }],
+        cam: { subject: 'piccolo', focus: 'upper', angle: 'three' },
+        say: { who: 'piccolo', line: 'Gohan...', duration: 1.6, style: 'quiet' },
+        hold: 1.8,
+      },
+      {
+        pose: [{ who: 'trunks', pose: 'g_riseSlow', face: 'shock', speed: 1 }],
+        cam: { subject: 'trunks', focus: 'upper', angle: 'front' },
+        say: { who: 'future_trunks', line: 'His power... it\'s still climbing.', duration: 2.2, style: 'quiet' },
+        hold: 2.4,
+      },
+      // and the crowd by the van, who do not understand any of it
+      {
+        pose: [{ who: 'satan', pose: 'ms_hide', face: 'shock', speed: 6 }],
+        cam: { subject: 'satan', with: 'jimmy', focus: 'full', angle: 'three' },
+        say: { who: 'mr_satan', line: 'It\'s a trick! Light tricks! ...Right?', duration: 2.2, style: 'quiet' },
+        hold: 2.4,
+      },
+      // interest
+      {
         pose: [{ who: 'cell', pose: 'cl_calm', face: 'grin', speed: 3 }],
         cam: { from: { at: 'cell', local: [0.4, 0.3, 1.8] }, look: { at: 'cell:head' }, fov: 34 },
         say: { who: 'cell', line: 'Yes... YES! This is what I wanted to see!', duration: 2.8, style: 'shout' },
         hold: 3,
+      },
+      // and, under it, caution: a half step back, the guard up
+      {
+        call: (ctx) => {
+          const c = story(ctx).cell;
+          ctx.cs0 = c.pos.clone();
+          ctx.cs1 = ground(ctx, c.pos.clone().addScaledVector(c.forward.clone().setY(0).normalize(), -0.6));
+        },
+        pose: [{ who: 'cell', pose: 'guard', face: 'serious', speed: 4 }],
+        cam: { from: { at: 'cell', local: [0.9, 0.35, 2.4] }, look: { at: 'cell', off: [0, 0.4, 0] }, fov: 38 },
+        tick: (ctx, t) => {
+          const c = story(ctx).cell, k = Math.min(1, t / 0.6);
+          c.setPosition(ctx.cs0.clone().lerp(ctx.cs1, k));
+          c.prevPos.copy(c.pos);
+        },
+        hold: 1.6,
       },
       {
         pose: [{ who: 'gohan', pose: 'tg2_stance', face: 'angry', speed: 3 }],

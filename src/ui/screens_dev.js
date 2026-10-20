@@ -14,10 +14,10 @@
 
   /** Missions in story order, then the What-Ifs, as [id, label] choice options. */
   function missionOptions() {
-    const ids = SL.data.storyOrder().concat(Object.keys(SL.data.missions).filter((id) => SL.data.missions[id].whatIf));
+    const ids = SL.data.storyOrder().concat(Object.keys(SL.data.missions).filter((id) => SL.data.missions[id].whatIf), SL.data.movieOrder ? SL.data.movieOrder() : []);
     return ids.filter((id) => SL.data.missions[id]).map((id) => {
       const m = SL.data.missions[id];
-      return [id, (m.whatIf ? 'WHAT IF · ' : '') + m.title + '  (' + (m.chapter || '').replace(/ ·.*/, '') + ')'];
+      return [id, (m.whatIf ? 'WHAT IF · ' : m.movie ? 'MOVIE · ' : '') + m.title + '  (' + (m.chapter || '').replace(/ ·.*/, '') + ')'];
     });
   }
 

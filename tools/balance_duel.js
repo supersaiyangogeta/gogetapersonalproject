@@ -21,6 +21,8 @@ const TWEAKS = {
   noBBA: (b) => b.fighters.forEach((f) => f.def.id === 'vegeta' && (f.lockedSlots = Object.assign({}, f.lockedSlots, { special2: true }))),
   // no transformations for anyone
   noForms: (b) => (b.rules.allowTransform = false),
+  // Vegito starts as Super Vegito (the records PDF's matchup: Super Vegito vs SSJ4 Gogeta; a fresh save has not earned the form)
+  superVegito: (b) => b.fighters.forEach((f) => f.def.id === 'vegito' && f.applyForm(f.def.forms.findIndex((x) => x.id === 'ssj'))),
   // swap AI personalities (aggression, defense, ranged use...) but keep each character's hooks
   aiSwap: (b) => swapDef(b, (d, o) => ({ ai: Object.assign({}, o.ai, { hooks: d.ai.hooks }) })),
   // swap base stats

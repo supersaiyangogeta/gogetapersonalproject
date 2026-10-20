@@ -238,9 +238,9 @@
       pinTo(r, g, 1.6);
       faceTo(pc, r.pos);
       m.music('finale', 5);
-      m.shot((t, out) => {
+      m.shot((t, out, el) => {
         const h = pc.chest().add(new V3(0, 0.35, 0));
-        camAt(out, h.clone().addScaledVector(pc.forward, U.lerp(2.6, 2, t)).add(new V3(0.7, 0.2, 0)), h, 38);
+        camAt(out, h.clone().addScaledVector(pc.forward, U.lerp(2.6, 2, Math.min(1, el / 2.6))).add(new V3(0.7, 0.2, 0)), h, 38);
       }, 999, { hold: true, cut: true, blendIn: 0 });
       m.say('piccolo', 'Hold him still. This only works once.', 2.6);
       yield* m.cine(2.6);

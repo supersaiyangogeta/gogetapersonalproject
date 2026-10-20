@@ -41,7 +41,7 @@ module.exports = function playtest4Tests({ test, eq, ok }) {
     const M = SL.data.missions;
     const shape = {
       namek_vegeta_end: ['arrival,confront,beam,words,burial,after', 'beam,burial'],
-      namek_goku: ['open,base,kaioken,rising,after', 'base,rising'],
+      namek_goku: ['open,base,lake,kaioken,rising,after', 'base,rising'], // lake: the underwater trick (moveset roadmap #24)
       namek_kaioken20: ['ten,reveal,twenty,desperate,kamehameha,spent', 'ten,desperate,kamehameha'],
       namek_spirit_bomb: ['call,hold,impact,quiet,return,sacrifice,after', 'hold,return,sacrifice'],
       namek_super_saiyan: ['krillin,awaken,reversal,legend,desperation,core', 'krillin,awaken,reversal,desperation'],
@@ -318,6 +318,39 @@ module.exports = function playtest4Tests({ test, eq, ok }) {
     eq(gg.errors.length, 0, 'no engine errors');
   });
 
+  test('Roadmap Three, the Namek block (research draft): the Spirit Bomb is a sphere he throws; Frieza catches its underside, is pushed back over the plain and down into it before it goes off — watched or skipped, the sphere is gone afterwards', () => {
+    for (const watch of [true, false]) {
+      const gg = H.create({ quiet: true, seed: 8 });
+      const { SL } = gg;
+      const spheres = new Set();
+      const r0 = SL.SpiritBomb.prototype._render;
+      SL.SpiritBomb.prototype._render = function () {
+        if (this.radius === 6) spheres.add(this);
+        return r0.call(this);
+      };
+      const b = gg.mission('namek_spirit_bomb', { startPhase: phaseAt(SL, 'namek_spirit_bomb', 'impact') });
+      const fz = b.story.frieza, from = fz.pos.clone();
+      let pushed = 0, closest = Infinity;
+      gg.until(b, () => !!b.mission.flags.bombThrown, 60 * 40, () => {
+        if (!watch && b.inputLocked) b.skipRequested = true;
+        if (fz.hidden) return;
+        pushed = Math.max(pushed, Math.hypot(fz.pos.x - from.x, fz.pos.z - from.z));
+        for (const s of spheres) if (!s.done) closest = Math.min(closest, s.pos.distanceTo(fz.chest()) - s.radius);
+      });
+      const w = watch ? 'watched' : 'skipped';
+      ok(b.mission.flags.bombThrown, w + ': the scene is over');
+      eq(spheres.size, 1, w + ': one sphere drawn');
+      ok([...spheres].every((s) => s.done), w + ': and disposed');
+      if (watch) {
+        ok(b.mission.flags.bombCaught, 'caught and ground in');
+        ok(pushed > 2.5, 'pushed back over the plain (' + pushed.toFixed(1) + ' m)');
+        ok(closest > -0.1 && closest < 1, 'on his hands, not through him (' + closest.toFixed(2) + ' m)');
+      }
+      b.dispose();
+      eq(gg.errors.length, 0, w + ': no engine errors');
+    }
+  });
+
   test('the Death Beam is for Goku; Piccolo shoves him clear, takes it through the chest, and lives', () => {
     const gg = H.create({ quiet: true, seed: 8 });
     const { SL } = gg;
@@ -503,7 +536,9 @@ module.exports = function playtest4Tests({ test, eq, ok }) {
 
   /* ------------------------------------------------------------ round 5: the end of Frieza */
 
-  test('Goku tells Gohan to leave with Bulma BEFORE the transformation, not after it', () => {
+  // the owner's Namek restoration brief (2026-10-14) moved this line after the change, "as in the story" (STATUS →
+  // *Goku versus Frieza on Namek — cinematic restoration pass*); this test pinned the round-4 order (2026-09-23)
+  test('Goku sends Gohan away (to Bulma) AFTER the transformation, as the 2026-10-14 restoration ordered', () => {
     const gg = H.create({ quiet: true, seed: 4 });
     const { SL } = gg;
     const sc = SL.data.scenes.goku_super_saiyan;
@@ -511,8 +546,8 @@ module.exports = function playtest4Tests({ test, eq, ok }) {
     const evac = lines.findIndex((l) => /Bulma/.test(l));
     ok(evac >= 0, 'the evacuation line names Bulma: ' + (lines[evac] || ''));
     const change = sc.events.findIndex((e) => e.call && String(e.call).includes("'transform'"));
-    ok(change > 0 && evac < change, 'and it is said before the change (' + evac + ' < ' + change + ')');
-    // at runtime it is said while he is still himself, and the two of them are gone before the gold
+    ok(change > 0 && evac > change, 'and it is said after the change (' + change + ' < ' + evac + ')');
+    // at runtime it is said once he is golden, with Gohan still there to hear it
     const b = gg.mission('namek_super_saiyan', { startPhase: phaseAt(SL, 'namek_super_saiyan', 'awaken') });
     const S = b.story;
     let at = null, ssjAt = null;
@@ -524,8 +559,8 @@ module.exports = function playtest4Tests({ test, eq, ok }) {
     });
     gg.until(b, () => at && ssjAt, 60 * 120);
     ok(at && at.gohan, 'Gohan is on the field to hear it');
-    eq(at && at.form, 'base', 'and Goku is still himself when he says it');
-    ok(ssjAt > at.frame, 'the transformation comes after: ' + at.frame + ' → ' + ssjAt);
+    eq(at && at.form, 'ssj', 'and Goku is already a Super Saiyan when he says it');
+    ok(ssjAt < at.frame, 'the transformation comes first: ' + ssjAt + ' → ' + at.frame);
     b.dispose();
     eq(gg.errors.length, 0, 'no engine errors');
   });
@@ -535,7 +570,8 @@ module.exports = function playtest4Tests({ test, eq, ok }) {
     const { SL } = gg;
     // the quiet beat in the Super Saiyan mission names nobody (the owner, 2026-10-01: Krillin was named twice)
     const quiet = ['goku_super_saiyan', 'goku_legend'].map((id) => SL.data.scenes[id].events.map((e) => (e.say ? e.say.line : '')).join(' | ')).join(' | ');
-    ok(/He was not a soldier/.test(quiet), 'the realization is in the Super Saiyan mission, quiet: ' + quiet.slice(0, 70));
+    // the realization is the whisper the 2026-10-14 restoration wrote for the face shot (it replaced "He was not a soldier")
+    ok(/I tried to end this/.test(quiet), 'the realization is in the Super Saiyan mission, quiet: ' + quiet.slice(0, 70));
     ok(!/DARE TALK ABOUT KRILLIN/.test(quiet), 'and the angry line is not');
     let friezaKrillin = 0;
     for (const sc of Object.values(SL.data.scenes)) for (const e of sc.events || []) if (e && e.say && e.say.who === 'frieza' && /krillin/i.test(e.say.line)) friezaKrillin++;
@@ -544,7 +580,7 @@ module.exports = function playtest4Tests({ test, eq, ok }) {
     ok(/DON'T YOU DARE TALK ABOUT KRILLIN!/.test(late), 'the angry line belongs to the dying planet');
     ok(!/You're talking about Krillin/.test(late), 'and the quiet one is not repeated there');
     // the quiet beat is quiet, and the late one is shouted
-    const q = SL.data.scenes.goku_super_saiyan.events.find((e) => e && e.say && /He was not a soldier/.test(e.say.line));
+    const q = SL.data.scenes.goku_super_saiyan.events.find((e) => e && e.say && /I tried to end this/.test(e.say.line));
     eq(q.say.style, 'quiet', 'the realization is delivered quietly');
     const l = SL.data.scenes.frieza_krillin_line.events.find((e) => e.say && /DARE TALK/.test(e.say.line));
     eq(l.say.style, 'shout', 'and the answer on the dying planet is shouted');
@@ -652,6 +688,103 @@ module.exports = function playtest4Tests({ test, eq, ok }) {
     ok(b.mission.flags.friezaSurvivedNamek, 'the story records that he survived Namek');
     b.dispose();
     eq(gg.errors.length, 0, 'no engine errors');
+  });
+
+  test('Roadmap Three, Block 4 (research draft): Krillin held in a glowing sphere, the push-in from behind Goku (CS-S01); the fists to the face in profile (CS-S03); the white-gold pillar from low (CS-S04); the eyes snapping open (CS-S05); Frieza\'s first rush panned side-on (CS-S07) — watched or skipped, Super Saiyan and the exchange still arrive', () => {
+    for (const watch of [true, false]) {
+      const gg = H.create({ quiet: true, seed: 9 });
+      const { SL } = gg;
+      let orbs = 0, pillars = 0, help = null, push = null, eyesShut = false, burstMin = Infinity, eyeD = null;
+      const b = gg.mission('namek_super_saiyan', { startPhase: phaseAt(SL, 'namek_super_saiyan', 'krillin'), onCreate: (bb) => {
+        const ball = bb.vfx.ball.bind(bb.vfx);
+        bb.vfx.ball = (p, r, col, ...x) => (col === 0x4a1470 && orbs++, ball(p, r, col, ...x));
+        bb.on('say', (e) => {
+          if (/HELP ME/.test(e.line || '') && !help) help = bb.frame;
+        });
+      } });
+      const VK = SL.data.vegitoKit, pil = VK.pillar;
+      VK.pillar = (...a) => (pillars++, pil.apply(VK, a));
+      const S = b.story, w = watch ? 'watched' : 'skipped';
+      gg.until(b, () => b.mission.flags.ssjFirstExchange || b.mission.state !== 'running', 60 * 200, () => {
+        if (!watch && b.inputLocked) b.skipRequested = true;
+        const cam = b.camera.camera.position;
+        if (help && b.frame === help + 2) push = { d0: cam.distanceTo(S.goku.pos) };
+        if (help && b.frame === help + 110 && push) push.d1 = cam.distanceTo(S.goku.pos);
+        if (b.mission.flags.ssjPillar && !b.mission.flags.eyesSnap && S.goku.sd && S.goku.sd.expression === 'closed') {
+          eyesShut = true;
+          eyeD = cam.distanceTo(SL.Cinema.body(S.goku).head);
+        }
+        // the rest of the change after the burst: the engine's own face close-up used to cut in here (noShots)
+        if (watch && b.mission.flags.ssjPillar && S.goku.state === 'transform') burstMin = Math.min(burstMin, cam.distanceTo(S.goku.pos));
+      });
+      VK.pillar = pil;
+      eq(S.goku.form.id, 'ssj', w + ': Super Saiyan');
+      ok(b.mission.flags.ssjFirstExchange, w + ': on into the first exchange');
+      if (watch) {
+        const F = b.mission.flags;
+        ok(F.krillinOrb && orbs > 12, 'B-KR-03: the sphere round Krillin, kept up while he is held (' + orbs + ')');
+        ok(push && push.d1 < push.d0 - 0.6, 'CS-S01: the lens pushes in from behind Goku (' + (push ? push.d0.toFixed(1) + ' → ' + (push.d1 || 0).toFixed(1) : 'none') + ')');
+        ok(F.fistTilt, 'CS-S03: the fists, then the tilt to his face');
+        ok(F.ssjPillar && pillars === 1, 'CS-S04: one pillar of light');
+        ok(burstMin > 5, 'CS-S04: the lens stays pulled back through the burst, no close-up cutting in (nearest ' + burstMin.toFixed(1) + ' m)');
+        ok(eyesShut && F.eyesSnap, 'CS-S05: the eyes shut, then open');
+        ok(eyeD !== null && eyeD < 0.65, 'CS-S05: an extreme close-up, not stood back to fit the hair (' + (eyeD === null ? 'none' : eyeD.toFixed(2)) + ' m from the head)');
+        ok(F.rushPan, 'CS-S07: the rush panned side-on');
+      }
+      b.dispose();
+      eq(gg.errors.length, 0, w + ': no engine errors');
+    }
+  });
+
+  test('Roadmap Three, the "You fool" block (CS-P3-01, research draft): as Goku walks away the lens is low on the ground behind Frieza, looking past him at Goku\'s back; skipping still lands on the betrayal', () => {
+    for (const watch of [true, false]) {
+      const gg = H.create({ quiet: true, seed: 9 });
+      const { SL } = gg;
+      let sampling = false, samples = 0, low = 0, behind = 0;
+      const b = gg.mission('namek_end', { startPhase: phaseAt(SL, 'namek_end', 'mercy'), onCreate: (bb) => bb.on('say', (e) => {
+        if (/leave me here/.test(e.line || '')) sampling = true;
+      }) });
+      const S = b.story, w = watch ? 'watched' : 'skipped';
+      gg.until(b, () => b.mission.def.phases[b.mission.phaseIndex].id !== 'mercy', 60 * 60, () => {
+        if (!watch && b.inputLocked) b.skipRequested = true;
+        if (!sampling || samples >= 90) return;
+        samples++;
+        const c = b.camera.camera.position;
+        if (c.y - b.stage.heightAt(c.x, c.z) < 1.4) low++;
+        const toG = (p) => Math.hypot(p.x - S.goku.pos.x, p.z - S.goku.pos.z);
+        if (toG(c) > toG(S.frieza.pos)) behind++;
+      });
+      if (watch) {
+        ok(b.mission.flags.csP3Low, 'the walk-away shot is set up');
+        ok(samples > 30 && low / samples > 0.9, 'the lens stays low on the ground (' + low + '/' + samples + ')');
+        ok(behind / samples > 0.9, 'behind Frieza, looking past him at Goku (' + behind + '/' + samples + ')');
+      }
+      eq(b.mission.def.phases[b.mission.phaseIndex].id, 'betrayal', w + ': on to the betrayal');
+      b.dispose();
+      eq(gg.errors.length, 0, w + ': no engine errors');
+    }
+  });
+
+  test('Roadmap Three, the "You fool" block (B-PH3-05 / CS-P3-05, research draft): before the run off the planet Goku shuts his eyes, looks up and goes straight up; the run starts in the air, watched or skipped', () => {
+    for (const watch of [true, false]) {
+      const gg = H.create({ quiet: true, seed: 9 });
+      const { SL } = gg;
+      const scenes = [];
+      const b = gg.mission('namek_end', { startPhase: phaseAt(SL, 'namek_end', 'escape'), onCreate: (bb) => bb.on('sceneStart', (e) => scenes.push(e.id)) });
+      const g = b.story.goku;
+      let rose = 0;
+      gg.until(b, () => b.mission.flags.departed && !b.inputLocked, 60 * 30, () => {
+        if (!watch && b.inputLocked) b.skipRequested = true;
+        rose = Math.max(rose, g.pos.y - b.stage.heightAt(g.pos.x, g.pos.z));
+      });
+      const w = watch ? 'watched' : 'skipped';
+      ok(scenes.includes('goku_departs'), w + ': the departure is staged');
+      const h = g.pos.y - b.stage.heightAt(g.pos.x, g.pos.z);
+      ok(h > 25 && !g.grounded && g.state === 'free', w + ': control comes back in the air (' + h.toFixed(1) + ' m)');
+      if (watch) ok(rose > 30, 'he went straight up (' + rose.toFixed(1) + ' m)');
+      b.dispose();
+      eq(gg.errors.length, 0, w + ': no engine errors');
+    }
   });
 
 

@@ -155,6 +155,154 @@
       shoulderL: [30, 0, 22], elbowL: [-40, 0, 0], shoulderR: [30, 0, -22], elbowR: [-40, 0, 0],
       thighR: [-112, 0, -4], kneeR: [140, 0, 0], thighL: [22, 0, 6], kneeL: [60, 0, 0],
     },
+    // DRAGON FIST: sunk low, the right fist chambered at the hip, the left palm held out ahead to sight along
+    g_dragonFistW: {
+      hands: ['open', 'fist'],
+      root: { y: -0.16 }, hips: [0, -34, 0], spine: [6, -14, 0], chest: [10, -30, 0], head: [-6, 40, 0],
+      shoulderL: [-84, 0, 8], elbowL: [-14, 0, 0], handL: [-60, 0, 0], shoulderR: [-10, 0, -34], elbowR: [-136, 0, 0],
+      thighL: [-48, 22, 16], kneeL: [62, 0, 0], footL: [-10, 0, 0], thighR: [26, 20, -18], kneeR: [44, 0, 0], footR: [-14, 0, 0],
+    },
+    // flying in behind the fist: body laid out flat, the right arm straight ahead, the left drawn back along his side
+    g_dragonFistDash: {
+      root: { rx: 78 }, spine: [-6, 0, 0], neck: [-30, 0, 0], head: [-44, 0, 0],
+      shoulderR: [-174, 0, -2], elbowR: [0, 0, 0], shoulderL: [36, 0, 14], elbowL: [-60, 0, 0],
+      thighL: [6, 0, 4], kneeL: [16, 0, 0], footL: [60, 0, 0], thighR: [-6, 0, -4], kneeR: [34, 0, 0], footR: [60, 0, 0],
+    },
+    // through him: the whole body behind the right fist, the left pulled back to the hip, the front knee deep
+    g_dragonFist: {
+      root: { y: -0.12, rx: 14 }, hips: [0, 22, 0], spine: [8, 18, 0], chest: [10, 38, 0], head: [-12, -34, 0],
+      shoulderR: [-92, 0, 2], elbowR: [0, 0, 0], shoulderL: [-14, 0, 34], elbowL: [-124, 0, 0],
+      thighL: [-58, 10, 12], kneeL: [64, 0, 0], footL: [-8, 0, 0], thighR: [34, -6, -10], kneeR: [8, 0, 0], footR: [-20, 0, 0],
+    },
+    // RADITZ RUSH (game-original, after the fight with Raditz): driving forward off the front foot, the lead fist
+    // high, the rear one cocked back by the ear
+    g_raditzW: {
+      root: { y: -0.12, rx: 14 }, hips: [0, -16, 0], spine: [10, -8, 0], chest: [12, -14, 0], head: [-14, 12, 0],
+      shoulderL: [-64, 0, 14], elbowL: [-104, 0, 0], shoulderR: [-40, 0, -16], elbowR: [-118, 0, 0],
+      thighL: [-46, 14, 10], kneeL: [58, 0, 0], footL: [-10, 0, 0], thighR: [30, -8, -10], kneeR: [26, 0, 0], footR: [-20, 0, 0],
+    },
+    // closing in shoulder-first, low, forearms up across the face
+    g_raditzDash: {
+      root: { rx: 42 }, spine: [8, -10, 0], chest: [10, -20, 0], head: [-30, 16, 0],
+      shoulderL: [-50, 0, -20], elbowL: [-110, 0, 0], shoulderR: [-20, 0, -26], elbowR: [-120, 0, 0],
+      thighL: [-60, 0, 8], kneeL: [70, 0, 0], footL: [20, 0, 0], thighR: [40, 0, -6], kneeR: [40, 0, 0], footR: [40, 0, 0],
+    },
+    // the opener: both hands pull him down onto a rising knee
+    g_raditzKnee: {
+      hands: ['open', 'open'],
+      root: { y: 0.02, rx: 4 }, spine: [6, 0, 0], chest: [8, 0, 0], head: [-4, 0, 0],
+      shoulderL: [-70, 0, 20], elbowL: [-80, 0, 0], shoulderR: [-70, 0, -20], elbowR: [-80, 0, 0],
+      thighR: [-110, 0, -6], kneeR: [120, 0, 0], footR: [30, 0, 0], thighL: [8, 0, 6], kneeL: [16, 0, 0],
+    },
+    // the finish: off the ground into a side kick through his chest, the other leg tucked
+    g_raditzKick: {
+      root: { y: 0.12, rx: -14, rz: 10 }, hips: [0, 40, 0], spine: [-6, -10, 0], chest: [-10, -20, 0], head: [10, -24, 0],
+      shoulderL: [-20, 0, 50], elbowL: [-60, 0, 0], shoulderR: [-30, 0, -40], elbowR: [-90, 0, 0],
+      thighR: [-96, 0, -30], kneeR: [4, 0, 0], footR: [30, 0, 0], thighL: [-30, 0, 10], kneeL: [90, 0, 0],
+    },
+    // NAPPA RUSH (game-original, after the fight with Nappa): sunk low and wide, weight back, open hands low —
+    // waiting for the big swing to slip
+    g_nappaW: {
+      hands: ['open', 'open'],
+      root: { y: -0.22, rx: 10 }, hips: [0, -20, 0], spine: [10, -6, 0], chest: [8, -12, 0], head: [-14, 14, 0],
+      shoulderL: [-58, 0, 20], elbowL: [-40, 0, 0], shoulderR: [-30, 0, -22], elbowR: [-100, 0, 0],
+      thighL: [-56, 18, 20], kneeL: [78, 0, 0], footL: [-14, 0, 0], thighR: [26, -12, -20], kneeR: [56, 0, 0], footR: [-24, 0, 0],
+    },
+    // slipping in under it: ducked low, leaning off to the side, eyes on him
+    g_nappaPass: {
+      root: { rx: 30, rz: -20 }, spine: [10, 14, 0], chest: [10, 20, 0], head: [-24, -26, 0],
+      shoulderL: [-30, 0, 40], elbowL: [-70, 0, 0], shoulderR: [30, 0, -30], elbowR: [-30, 0, 0],
+      thighL: [-70, 0, 14], kneeL: [90, 0, 0], footL: [20, 0, 0], thighR: [30, 0, -14], kneeR: [60, 0, 0], footR: [40, 0, 0],
+    },
+    // standing on his head, feet together on the crown, arms folded, looking down at him
+    g_nappaPerch: {
+      ...C.armsCrossed, chest: [4, 0, 0], head: [26, 0, 0],
+      thighL: [-6, 0, 3], kneeL: [12, 0, 0], thighR: [-4, 0, -3], kneeR: [12, 0, 0],
+    },
+    // the finish: up off the crown and the heel driven straight down into it, the other knee tucked, arms thrown up
+    g_nappaStomp: {
+      root: { y: 0.15, rx: 10 }, spine: [8, 0, 0], chest: [6, 0, 0], head: [24, 0, 0],
+      shoulderL: [-150, 0, 24], elbowL: [-30, 0, 0], shoulderR: [-150, 0, -24], elbowR: [-30, 0, 0],
+      thighR: [8, 0, -4], kneeR: [0, 0, 0], thighL: [-100, 0, 10], kneeL: [120, 0, 0],
+    },
+    // METEOR COMBINATION (the wheel, SSJ2): from under him, both palms thrust straight up for the Kamehameha
+    g_meteorKame: {
+      hands: ['open', 'open'],
+      root: { y: -0.1, rx: -18 }, spine: [-14, 0, 0], chest: [-16, 0, 0], neck: [-14, 0, 0], head: [-30, 0, 0],
+      shoulderL: [-160, 0, -6], elbowL: [-4, 0, 0], handL: [-70, 0, -10], shoulderR: [-160, 0, 6], elbowR: [-4, 0, 0], handR: [-70, 0, 10],
+      thighL: [-30, 0, 14], kneeL: [44, 0, 0], thighR: [-10, 0, -14], kneeR: [30, 0, 0],
+    },
+    // SUPER DRAGON TWIN FIST (the wheel, SSJ3): the knee driven up into the stomach, both hands dragging his head down onto it
+    g_twinKnee: {
+      hands: ['open', 'open'],
+      root: { y: 0.06, rx: 10 }, spine: [14, 0, 0], chest: [16, 0, 0], neck: [6, 0, 0], head: [-10, 0, 0],
+      shoulderL: [-110, 0, -10], elbowL: [-60, 0, 0], shoulderR: [-110, 0, 10], elbowR: [-60, 0, 0],
+      thighR: [-118, 0, -4], kneeR: [124, 0, 0], footR: [30, 0, 0], thighL: [10, 0, 6], kneeL: [14, 0, 0],
+    },
+    // ...dropped low, the leg swept round at shin height
+    g_sweep: {
+      hands: ['open', 'fist'],
+      root: { y: -0.44, rx: 12 }, hips: [0, -46, 0], spine: [16, -20, 0], chest: [10, -20, 0], head: [-14, 44, 0],
+      shoulderL: [20, 0, 40], elbowL: [-10, 0, 0], shoulderR: [-30, 0, -40], elbowR: [-60, 0, 0],
+      thighL: [-84, 10, 18], kneeL: [124, 0, 0], footL: [-20, 0, 0], thighR: [-16, 0, -88], kneeR: [4, 0, 0], footR: [20, 0, 0],
+    },
+    // ...both palms driven into his chest together, the guard broken
+    g_twinPalms: {
+      hands: ['open', 'open'],
+      root: { y: -0.12, rx: 10 }, spine: [8, 0, 0], chest: [8, 0, 0], head: [-8, 0, 0],
+      shoulderL: [-90, 0, -12], elbowL: [-4, 0, 0], handL: [-80, 0, 0], shoulderR: [-90, 0, 12], elbowR: [-4, 0, 0], handR: [-80, 0, 0],
+      thighL: [-50, 8, 12], kneeL: [56, 0, 0], thighR: [24, -6, -12], kneeR: [10, 0, 0],
+    },
+    // ...and the dragon uppercut: up off the ground behind the fist, the arm straight at the sky
+    g_dragonUpper: {
+      hands: ['fist', 'fist'],
+      root: { y: 0.2, rx: -14 }, hips: [0, 20, 0], spine: [-10, 16, 0], chest: [-14, 24, 0], neck: [-10, 0, 0], head: [-26, -20, 0],
+      shoulderR: [-176, 0, -6], elbowR: [-4, 0, 0], shoulderL: [-10, 0, 40], elbowL: [-80, 0, 0],
+      thighR: [-30, 0, -6], kneeR: [40, 0, 0], footR: [30, 0, 0], thighL: [10, 0, 6], kneeL: [20, 0, 0], footL: [40, 0, 0],
+    },
+    // DIVINE RUSH (the wheel, God): gliding in behind an open palm, the other hand loose at the hip
+    g_godPalm: {
+      hands: ['open', 'open'],
+      root: { y: -0.04, rx: 6 }, hips: [0, 18, 0], spine: [4, 14, 0], chest: [2, 22, 0], head: [-4, -30, 0],
+      shoulderR: [-88, 0, 4], elbowR: [-4, 0, 0], handR: [-74, 0, 0], shoulderL: [-16, 0, 22], elbowL: [-30, 0, 0],
+      thighL: [-28, 8, 12], kneeL: [34, 0, 0], thighR: [18, -6, -12], kneeR: [16, 0, 0],
+    },
+    // ...the "God Shot": index finger out like a gun, a flick of ki point blank
+    g_godShot: {
+      hands: ['open', 'point'],
+      root: { y: -0.02 }, hips: [0, 24, 0], spine: [0, 18, 0], chest: [-2, 28, 0], head: [-6, -36, 0],
+      shoulderR: [-92, 0, 2], elbowR: [-2, 0, 0], handR: [0, 0, 0], shoulderL: [-14, 0, 24], elbowL: [-40, 0, 0],
+      thighL: [-20, 8, 12], kneeL: [24, 0, 0], thighR: [14, -6, -12], kneeR: [12, 0, 0],
+    },
+    // ...the blazing shoulder tackle through him, head down behind it
+    g_shoulder: {
+      hands: ['fist', 'fist'],
+      root: { y: -0.1, rx: 30 }, hips: [0, -40, 0], spine: [16, -30, 0], chest: [14, -40, 0], neck: [10, 0, 0], head: [10, 40, 0],
+      shoulderL: [-40, 0, 20], elbowL: [-110, 0, 0], shoulderR: [-20, 0, -30], elbowR: [-90, 0, 0],
+      thighL: [-70, 6, 10], kneeL: [70, 0, 0], thighR: [40, -6, -10], kneeR: [10, 0, 0], footR: [-20, 0, 0],
+    },
+    // GOD FIST RUSH (the wheel, Blue): the gut punch, shoulder and hip turned all the way into it
+    g_godFistGut: {
+      hands: ['open', 'fist'],
+      root: { y: -0.2, rx: 18 }, hips: [0, 30, 0], spine: [16, 20, 0], chest: [18, 36, 0], head: [-20, -30, 0],
+      shoulderR: [-76, 0, 6], elbowR: [-6, 0, 0], shoulderL: [-20, 0, 36], elbowL: [-100, 0, 0],
+      thighL: [-60, 8, 12], kneeL: [80, 0, 0], thighR: [30, -6, -12], kneeR: [30, 0, 0],
+    },
+    // STORY (the Namek finale, the owner's PDF "brush-off"): a ball of ki swatted aside with the back of the hand without
+    // looking at it, the rest of him hardly moving
+    g_brushOff: {
+      hands: ['fist', 'open'],
+      root: { y: -0.02 }, hips: [0, -10, 0], spine: [2, -16, 0], chest: [0, -24, 0], neck: [0, 0, 0], head: [-6, 22, 0],
+      shoulderR: [-60, 0, -86], elbowR: [-20, 0, 0], handR: [0, 0, -30], shoulderL: [-14, 0, 18], elbowL: [-30, 0, 0],
+      thighL: [-14, 6, 10], kneeL: [16, 0, 0], thighR: [8, -6, -10], kneeR: [10, 0, 0],
+    },
+    // MASTERED ULTRA INSTINCT (the wheel): the silver hook up into the gut from inside the guard
+    g_silverHook: {
+      hands: ['open', 'fist'],
+      root: { y: -0.16, rx: 12 }, hips: [0, 34, 0], spine: [10, 26, 0], chest: [10, 40, 0], head: [-16, -38, 0],
+      shoulderR: [-60, 0, 30], elbowR: [-70, 0, 0], shoulderL: [-14, 0, 26], elbowL: [-50, 0, 0],
+      thighL: [-48, 10, 14], kneeL: [60, 0, 0], thighR: [26, -8, -12], kneeR: [16, 0, 0],
+    },
     g_airUpperW: {
       root: { y: -0.08, rx: 20 }, chest: [20, -20, 0], head: [-10, 20, 0],
       shoulderR: [20, 0, -20], elbowR: [-120, 0, 0], shoulderL: [-50, 0, 20], elbowL: [-80, 0, 0],
@@ -247,6 +395,18 @@
         thighL: [-6, 4, 10], kneeL: [12, 0, 0], footL: [-6, 0, 0], thighR: [4, -4, -10], kneeR: [10, 0, 0], footR: [-6, 0, 0],
       };
     },
+    /* Then up, at the sky he has to get through (Namek's end, the departure): the chin lifts, the knees give a little. */
+    g_lookUp: (t) => {
+      const b = Math.sin(t * 2.2) * 1.2;
+      return {
+        hands: ['fist', 'fist'],
+        root: { y: -0.06 + b * 0.004 },
+        spine: [-4, 0, 0], chest: [-6 + b * 0.3, 0, 0], neck: [-14, 0, 0], head: [-24, 4, 0],
+        shoulderL: [-4, 0, 14], elbowL: [-24, 0, 0], handL: [0, 0, 0],
+        shoulderR: [-4, 0, -14], elbowR: [-24, 0, 0], handR: [0, 0, 0],
+        thighL: [-14, 4, 10], kneeL: [24, 0, 0], footL: [-8, 0, 0], thighR: [-12, -4, -10], kneeR: [22, 0, 0], footR: [-8, 0, 0],
+      };
+    },
     /*
      * SUPER SAIYAN 2 body language: not the loose, bouncing stance of the man who enjoys a fight
      * but a low, square, coiled one — weight forward, fists tight and close, chin down. It is
@@ -276,6 +436,20 @@
         thighR: [12, -8, -10], kneeR: [18, 0, 0], footR: [-8, 0, 0],
       };
     },
+    // ULTRA INSTINCT (the Tournament of Power): upright, shoulders relaxed, the arms hanging naturally at his sides and
+    // the hands loose — not a guard, not a crouch; the stillness the reference asks for
+    g_uiStance: (t) => {
+      const b = Math.sin(t * 1.4);
+      return {
+        hands: ['open', 'open'],
+        root: { y: b * 0.004 }, spine: [-1, 0, 0], chest: [-2, 0, 0], neck: [0, 0, 0], head: [2, 0, 0],
+        shoulderL: [-4, 0, 9], elbowL: [-10, 0, 0], handL: [0, 0, 0], shoulderR: [-4, 0, -9], elbowR: [-10, 0, 0], handR: [0, 0, 0],
+        thighL: [-2, 4, 6], kneeL: [4, 0, 0], thighR: [-1, -4, -6], kneeR: [3, 0, 0],
+      };
+    },
+    // Ultra Instinct's evasion: the head and shoulders slip a hand's width aside, the feet hardly move
+    g_uiSlip: { hands: ['open', 'open'], root: { y: -0.02, rz: 6 }, spine: [0, 6, 8], chest: [-2, 10, 10], head: [4, -8, 12], shoulderL: [-14, 0, 22], elbowL: [-30, 0, 0], shoulderR: [-10, 0, -14], elbowR: [-20, 0, 0], thighL: [-4, 6, 8], kneeL: [8, 0, 0], thighR: [2, -6, -8], kneeR: [6, 0, 0] },
+    g_uiSlip2: { hands: ['open', 'open'], root: { y: -0.03, rz: -6 }, spine: [2, -6, -8], chest: [0, -10, -10], head: [2, 8, -12], shoulderL: [-10, 0, 14], elbowL: [-20, 0, 0], shoulderR: [-14, 0, -22], elbowR: [-30, 0, 0], thighL: [2, 6, 8], kneeL: [6, 0, 0], thighR: [-4, -6, -8], kneeR: [8, 0, 0] },
     // the God Ki settling: eyes closed, hands open at his sides, breathing it in
     g_godCalm: (t) => {
       const b = Math.sin(t * 1.6);
@@ -284,6 +458,16 @@
         root: { y: 0.01 * b }, spine: [-2, 0, 0], chest: [-4 + b * 2, 0, 0], head: [-6, 0, 0],
         shoulderL: [-8, 0, 22], elbowL: [-14, 0, 0], shoulderR: [-8, 0, -22], elbowR: [-14, 0, 0],
         thighL: [-4, 0, 6], kneeL: [6, 0, 0], thighR: [-4, 0, -6], kneeR: [6, 0, 0],
+      };
+    },
+    // GOD BIND (Movie 2): both arms straight out, palms open and turned up toward him, the knees bent, holding
+    g_bind: (t) => {
+      const s = Math.sin(t * 30) * 1.2;
+      return {
+        hands: ['open', 'open'],
+        root: { y: -0.08, rx: 4 }, spine: [4, 0, 0], chest: [2, 0, s * 0.3], head: [-4, 0, 0],
+        shoulderL: [-84 + s, -14, 10], elbowL: [-8, 0, 0], handL: [-70, 0, 0], shoulderR: [-84 - s, 14, -10], elbowR: [-8, 0, 0], handR: [-70, 0, 0],
+        thighL: [-26, 8, 14], kneeL: [34, 0, 0], thighR: [14, -8, -14], kneeR: [20, 0, 0],
       };
     },
     // the ascent to the second level: pulled up and back, the scream going straight up
@@ -566,6 +750,23 @@
             { at: 114, pose: 'g_ssjReveal', speed: 5, expression: 'angry', shot: 'face', mood: [0, 0x000000, 1.4] },
           ],
         },
+        // more decisive than his base self, less than God or Blue: he presses, then reads (base is the explorer)
+        ai: { aggression: 0.78, rhythm: { burst: 3, rest: 34 } },
+        // every Super Saiyan after the awakening (the ToP refinement brief §5): he braces and his fists tighten, the
+        // camera comes in, a small disturbance and the dust driven out from his feet, the aura grows, the hair and brows
+        // go gold, the camera pulls back to the whole silhouette — 1.7 seconds, no lightning, no darkened sky
+        practiced: {
+          length: 104,
+          applyAt: 52,
+          steps: [
+            { at: 0, pose: 'g_ssjClench', speed: 10, expression: 'grit', aura: 0.25, shot: 'face', sfx: 'kiUp' },
+            { at: 14, aura: 0.45, quake: 0.08, dust: 2.5 },
+            { at: 30, aura: 0.8, quake: 0.14, sfx: 'ssjRise', dust: 4, expression: 'shout' },
+            { at: 52, burst: true, small: true, pose: 'powerUp', speed: 16, expression: 'shout', flash: 0.25, crater: 2.5 },
+            { at: 60, shot: 'pull' },
+            { at: 76, pose: 'g_ssjReveal', speed: 6, expression: 'angry' },
+          ],
+        },
       },
       {
         // SUPER SAIYAN 2 (Buu Saga): not a brighter Super Saiyan. Sharper hair with the one loose
@@ -666,7 +867,7 @@
         freeUnlock: 'bog_ritual',
         mult: { damage: 2.3, speed: 1.46, defense: 1.62, kiRegen: 2.8, chargeRate: 1.6, guardStamina: 0.68, accel: 1.4 },
         aura: { color: 0xff3a52, core: 0xfff2d8, particles: 0xff7a3a, idle: 0.5, speed: 1.35, sharp: 0.12, sparks: 0xffd8a0, flame: [0xff5a1a, 0xff2a6a, 0xffc040, 0xff8a2a, 0xe8205a] },
-        look: { hair: { style: 'goku', color: 0xd81c40 }, pupil: 0xc8142e, brow: 0xb0142e, bulk: 0.9, muscle: 0.88, scale: 0.985 },
+        look: { hair: { style: 'goku_god', color: 0xd81c40 }, pupil: 0xc8142e, brow: 0xb0142e, bulk: 0.9, muscle: 0.88, scale: 0.985 },
         poses: { idle: poses.g_godStance },
         moves: {
           // the flash step: he is just there, already striking
@@ -714,8 +915,474 @@
         reactLine: 'react_ssj',
         music: 5,
       },
+      {
+        // SUPER SAIYAN BLUE: the god's ki under a Super Saiyan's control — the Super Saiyan shape in cyan,
+        // lit from inside, a deep cobalt flame with a pale edge. Canon grants it against Frieza; the Broly
+        // film keeps its own reveal in "Beyond the Limits". Either clear gives it to Free Battle.
+        id: 'blue', name: 'Super Saiyan Blue', short: 'SUPER SAIYAN BLUE', kiCost: 90, style: 'full',
+        freeUnlock: ['rof_goku', 'bb_legend'],
+        mult: { damage: 2.6, speed: 1.52, defense: 1.78, kiRegen: 2.4, chargeRate: 1.5, guardStamina: 0.66, accel: 1.45 },
+        aura: { color: 0x2a8aff, core: 0xd8f6ff, particles: 0x6ad0ff, idle: 0.55, speed: 1.5, sharp: 0.3, sparks: 0xbfe8ff, flame: [0x1a5ae8, 0x2a8aff, 0x3ad0ff, 0x8ae8ff], inner: { color: 0x9ae4ff, core: 0xffffff, scale: 0.7, alpha: 0.5 } },
+        look: { hair: { style: 'goku_blue', color: 0x34c4ff }, pupil: 0x1a74e0, brow: 0x2aa0e8, bulk: 1.0 },
+        poses: { idle: poses.g_godStance },
+        moves: {
+          dash: { id: 'blueStep', startup: 2, active: 7, recovery: 12, damage: 1300, reach: 1.3, radius: 1.0, lunge: 34, hitstun: 32, knock: 'heavy', knockSpeed: 34, impact: 3, teleport: { to: 'behind', at: 2 }, pose: { wind: 'g_flyingKnee', strike: 'g_flyingKnee' }, sfx: 'punchHeavy', hitPose: 'hitBack' },
+        },
+        ai: { personality: 'martial', aggression: 0.88, defense: 0.72, ranged: 0.36, beam: 0.55, preferredRange: 2.2 },
+        intro: { pose: 'g_godStance', expression: 'determined' },
+        victory: { poses: ['g_godCalm'], expression: 'grin' },
+        ghost: 0x8ad8ff,
+        line: 'goku_blue',
+        reactLine: 'react_ssj',
+        music: 5,
+        sequence: {
+          length: 196,
+          applyAt: 132,
+          steps: [
+            { at: 0, pose: 'g_ssjClench', speed: 6, expression: 'grit', aura: 0.3, auraColor: 0x8ad0ff, mood: [0.35, 0x061024, 0.9], shot: 'orbit', music: 0, sfx: 'kiUp' },
+            { at: 30, rocks: true, quake: 0.14, sfx: 'rumble' },
+            { at: 60, aura: 0.6, auraColor: 0x4ab8ff, expression: 'shout', sfx: 'ssjRise', quake: 0.24 },
+            { at: 98, pose: 'g2_ascend', speed: 8, expression: 'shout', quake: 0.36 },
+            { at: 132, burst: true, pose: 'powerUp', speed: 14, expression: 'shout', sfx: 'transformBurst', mood: [0.2, 0x0a1a30, 0.3], flash: 0.3, crater: 5, rocks: false },
+            { at: 148, shot: 'pull' },
+            { at: 164, pose: 'g_godStance', speed: 4, expression: 'determined', mood: [0.05, 0x101020, 1.4] },
+          ],
+        },
+      },
+      {
+        // SUPER SAIYAN BLUE KAIOKEN (Universe 6, against Hit; the Tournament of Power, against Jiren): the Kaioken
+        // stacked on Blue. The hair stays blue — a cobalt flame inside an exploding crimson shell, the skin flushed.
+        // x10 (Hit) and x20 (Jiren): the story caps the level (formCaps); the strain builds fast and the body pays
+        // for it (the Kaioken strain model: sore, then overload). Story-given by u6_goku_hit.
+        id: 'blueKaioken', name: 'Super Saiyan Blue Kaioken', short: 'BLUE KAIOKEN', kiCost: 60, style: 'burst',
+        freeUnlock: ['u6_goku_hit'],
+        mult: { damage: 3.4, speed: 1.75, defense: 1.6, kiRegen: 2, chargeRate: 1.4, guardStamina: 0.7, accel: 1.8 },
+        drain: { hpPerSec: 50, minHpFrac: 0.1 },
+        levels: [
+          { name: 'x10', mult: { damage: 3.4, speed: 1.75, defense: 1.6, accel: 1.8 }, hpPerSec: 50, kiPerSec: 5 },
+          { name: 'x20', mult: { damage: 4.1, speed: 1.95, defense: 1.5, accel: 2.0 }, hpPerSec: 110, kiPerSec: 10, line: 'goku_kaioken4' },
+        ],
+        strain: { buildPerSec: [7, 16], max: 100, recoverPerSec: 6, soreAt: 40, reentryAt: 60, overloadDamage: 0.08, overloadLockSeconds: 8, penalty: { speed: 0.85, damage: 0.9, staminaRegen: 0.6 } },
+        defaultLevelCap: 0,
+        levelCost: 20,
+        levelChargeFrames: 45,
+        activation: { pose: 'g_kaiokenFlex' },
+        moves: {
+          heavy: {
+            4: { id: 'blueKaiokenAssault', startup: 6, active: 26, recovery: 24, damage: 170, reach: 1.2, radius: 0.95, lunge: 28, hitstun: 20, knock: 'flinch', impact: 1, multi: [0, 5, 10, 15, 20], finish: { knock: 'smash', knockSpeed: 38, impact: 3, damage: 620 }, pose: { wind: 'g_kaiokenFlex', strike: 'g_flurry' }, sfx: 'punchHeavy', hitPose: 'hitBody' },
+          },
+          dash: { id: 'blueKaiokenCharge', startup: 3, active: 11, recovery: 15, damage: 980, reach: 1.25, radius: 1.0, lunge: 48, hitstun: 32, knock: 'heavy', knockSpeed: 32, impact: 3, pose: { wind: 'dash', strike: 'g_flyingKnee' }, sfx: 'punchHeavy', hitPose: 'hitHeavy' },
+        },
+        // the two flames: blue at the core and in the hair, red all round it
+        aura: { color: 0xff2a3a, core: 0xff4a30, particles: 0xff5a4a, idle: 0.7, speed: 2.0, sharp: 0.6, sparks: 0xff9a7a, flame: [0x2a8aff, 0x3ad0ff, 0xff2a1e, 0xff5a3a], steam: 0xff9a8a, inner: { color: 0x1a7aff, core: 0x8ad8ff, scale: 0.8, alpha: 1.4, sharp: 0.3 }, trail: [0xff3a2a, 0x3ab0ff] },
+        look: { hair: { style: 'goku_blue', color: 0x34c4ff }, pupil: 0x1a74e0, brow: 0x2aa0e8, bulk: 1.03, tint: 0xff1a0a, tintAmount: 0.07 },
+        poses: { idle: poses.g_godStance },
+        ai: { personality: 'martial', aggression: 0.92, defense: 0.6, ranged: 0.3, beam: 0.5, preferredRange: 2 },
+        intro: { pose: 'g_kaiokenFlex', expression: 'grit' },
+        victory: { poses: ['g_godCalm'], expression: 'grin' },
+        ghost: 0xff6a5a,
+        line: 'goku_kaioken',
+        reactLine: 'react_ssj',
+        music: 5,
+      },
+      {
+        // ULTRA INSTINCT -SIGN- (the Tournament of Power, after the Spirit Bomb against Jiren): the hair stays black
+        // with a cold silver sheen, the eyes turn silver-grey, the aura a pale blue-white shimmer with faint violet in
+        // it. Its identity is the body moving by itself: `evade` — while ki lasts, a share of the blows that would land
+        // never do (a slip of the head and shoulders, a few frames of translucent trace, no afterimage clone); the ki
+        // burns while it is held (drain) and an empty tank ends it. Story-given by top_jiren.
+        id: 'uiSign', name: 'Ultra Instinct -Sign-', short: 'ULTRA INSTINCT -SIGN-', kiCost: 60, style: 'full',
+        freeUnlock: ['top_jiren'],
+        mult: { damage: 2.5, speed: 1.75, defense: 1.6, kiRegen: 1.4, chargeRate: 1.2, guardStamina: 0.7, accel: 1.7 },
+        drain: { kiPerSec: 2.2 },
+        // the slip is a few centimetres (swayVel), never a teleport; the attacker's weight carries on through (overrun)
+        evade: { mode: 'god', chance: 0.5, gap: 32, kinds: ['sway', 'sway', 'step'], swayPose: 'g_uiSlip', stepPose: 'g_uiSlip2', whiff: 18, kiCost: 6, trace: 0xc8d4ff, swayVel: 1.8, stepVel: 4.5, overrun: 7 },
+        // pale blue-white outside, a bright core inside it; the colours at the edges are a restrained detail
+        aura: { color: 0xb8d0ff, core: 0xffffff, particles: 0xd8e4ff, idle: 0.45, speed: 1.3, sharp: 0.2, sparks: 0xc8b0ff, flame: [0xdfe8ff, 0xb8c8ff, 0xffffff, 0xc8b8f0], inner: { color: 0xeef4ff, core: 0xffffff, scale: 0.74, alpha: 0.6 } },
+        // the body takes a faint cold cast from the aura; the face waits, focused (look.tint, restFace)
+        look: { hair: { style: 'goku_ui_sign', color: 0x262a3a }, pupil: 0xb8c0d0, brow: 0x2a2e3e, bulk: 1.02, tint: 0x5a6ab0, tintAmount: 0.05 },
+        restFace: 'focused',
+        poses: { idle: poses.g_uiStance },
+        // the Sign waits: short exchanges, long watching; it does not answer every miss
+        ai: { personality: 'martial', aggression: 0.55, defense: 0.92, ranged: 0.25, beam: 0.45, preferredRange: 2, rhythm: { burst: 2, rest: 48 } },
+        intro: { pose: 'g_uiStance', expression: 'calm' },
+        victory: { poses: ['g_uiStance'], expression: 'calm' },
+        ghost: 0xc8d4ff,
+        reactLine: 'react_ssj',
+        music: 5,
+      },
+      {
+        // MASTERED ULTRA INSTINCT (against Jiren, the end of the Tournament of Power): silver hair and eyes, a silver-
+        // white aura with violet in its edges. The evasion nearly always (`evade`), the counters come out of it, and the
+        // body pays: the ki burns fast and an empty tank ends it. Story-given by top_mui.
+        id: 'mui', name: 'Mastered Ultra Instinct', short: 'ULTRA INSTINCT', kiCost: 90, style: 'full',
+        freeUnlock: ['top_mui'],
+        mult: { damage: 3.6, speed: 2.0, defense: 2.0, kiRegen: 1.2, chargeRate: 1.2, guardStamina: 0.5, accel: 2.0 },
+        drain: { kiPerSec: 3.2 },
+        evade: { mode: 'god', chance: 0.8, gap: 16, kinds: ['sway', 'sway', 'parry', 'step'], swayPose: 'g_uiSlip', stepPose: 'g_uiSlip2', whiff: 22, kiCost: 4, trace: 0xeef2ff, swayVel: 2.4, stepVel: 5.5, overrun: 8 },
+        // silver-white with cool blue in it, a brighter core: it surrounds the silhouette without hiding it
+        aura: { color: 0xd8e4ff, core: 0xffffff, particles: 0xf2f4ff, idle: 0.6, speed: 1.4, sharp: 0.25, sparks: 0xb8c8ff, flame: [0xffffff, 0xd8e2ff, 0xa8c0ff, 0xf0f4ff], inner: { color: 0xffffff, core: 0xffffff, scale: 0.72, alpha: 0.75 }, trail: 0xe8f0ff },
+        // a silver sheen over the whole body, stronger than the Sign's; the face at rest is calm, untroubled
+        look: { hair: { style: 'goku_ui', color: 0xcdd3e2 }, pupil: 0xc8ccd8, brow: 0xc8ccd8, bulk: 1.04, tint: 0xb4c2f0, tintAmount: 0.09 },
+        restFace: 'calm',
+        poses: { idle: poses.g_uiStance },
+        // decisive: shorter rests, and it closes in after a slip instead of watching
+        ai: { personality: 'martial', aggression: 0.85, defense: 0.9, ranged: 0.3, beam: 0.5, preferredRange: 1.8, rhythm: { burst: 4, rest: 18 } },
+        intro: { pose: 'g_uiStance', expression: 'calm' },
+        victory: { poses: ['g_uiStance'], expression: 'calm' },
+        ghost: 0xeef2ff,
+        reactLine: 'react_ssj',
+        music: 5,
+      },
     ],
     poses,
+    // on the skill wheel, in the god forms only: GOD BIND (Movie 2) — one enemy held in a crimson ring
+    extras: [
+      {
+        id: 'godBind', name: 'God Bind', type: 'godBind', kiCost: 30, icon: 'guard', cooldown: 600, forms: ['god', 'blue'],
+        range: 14, startup: 16, holdFrames: 150, kiPerSecond: 9, recovery: 20, color: 0xff2a48,
+        poses: { hold: 'g_bind' },
+      },
+      // RADITZ RUSH — a game-original rush after the fight with Raditz (not a named technique): Goku's grounded
+      // martial arts, in his base body (and Kaioken), earned for Free Battle by clearing "Saiyan Brothers"; the
+      // story's own fight keeps its kit. Practical rather than grand: a stance, a shoulder-first rush, a knee that
+      // doubles him up, a cross and an elbow, and a jumping side kick that sends him away. The cooperative
+      // version with Piccolo belongs to that mission and is not this move
+      {
+        id: 'raditzRush', name: 'Raditz Rush', type: 'rush', kiCost: 45, icon: 'rush',
+        forms: ['base', 'kaioken'], freeUnlock: 'saiyan_brothers', freeOnly: true,
+        startup: 14, dashFrames: 30, speed: 46, recovery: 26,
+        poses: { wind: 'g_raditzW', dash: 'g_raditzDash' },
+        hits: [
+          { pose: 'g_raditzKnee', damage: 700, frames: 14, sfx: 'punchHeavy', hitPose: 'hitBody' },
+          { pose: 'g_cross', damage: 450, frames: 10, sfx: 'punchLight', hitPose: 'hitSideR' },
+          { pose: 'g_elbow', damage: 500, frames: 12, sfx: 'punchHeavy', hitPose: 'hitLight' },
+          { pose: 'g_raditzKick', damage: 1300, frames: 26, sfx: 'punchHeavy', knock: 'heavy', knockSpeed: 40, impact: 4, hitPose: 'hitHeavy' },
+        ],
+        // the normal camera for the stance; alongside him on the way in, both of them through the blows, wide on the kick
+        cine: {
+          steps: [
+            { on: 'release', shot: 'track', dur: 0.5 },
+            { on: 'connect', shot: 'wide', dur: 0.9 },
+            { on: 'finish', shot: 'impact', dur: 0.8, quake: 0.25 },
+          ],
+        },
+      },
+      // NAPPA RUSH — a game-original rush after the fight with Nappa (not a named technique): the same base body
+      // (and Kaioken), earned for Free Battle by clearing "Nappa Attacks"; the story's fight keeps its kit. Goku
+      // makes the bigger fighter look slow: a low stance, a slip in under the swing, an elbow and a cross that
+      // straighten him up, then he stands on his head for a moment and stamps him down into the ground
+      {
+        id: 'nappaRush', name: 'Nappa Rush', type: 'rush', kiCost: 45, icon: 'rush',
+        forms: ['base', 'kaioken'], freeUnlock: 'saiyan_nappa', freeOnly: true,
+        startup: 14, dashFrames: 30, speed: 46, recovery: 30,
+        poses: { wind: 'g_nappaW', dash: 'g_nappaPass' },
+        hits: [
+          { pose: 'g_elbow', damage: 450, frames: 12, sfx: 'punchHeavy', hitPose: 'hitBody' },
+          { pose: 'g_cross', damage: 450, frames: 12, sfx: 'punchLight', hitPose: 'hitLight' },
+          { perch: 'head', pose: 'g_nappaPerch', frames: 30, hitPose: 'stand' },
+          { pose: 'g_nappaStomp', damage: 1400, frames: 24, sfx: 'punchHeavy', knock: 'smash', knockSpeed: 30, impact: 4, hitPose: 'hitHeavy' },
+        ],
+        // alongside him on the way in, both of them as it lands, low and up at him on the head, a short impact
+        cine: {
+          steps: [
+            { on: 'release', shot: 'track', dur: 0.45 },
+            { on: 'connect', shot: 'wide', dur: 0.5 },
+            { on: 'perch', shot: 'perch', dur: 0.6 },
+            { on: 'finish', shot: 'impact', dur: 0.7, quake: 0.3 },
+          ],
+        },
+      },
+      // DRAGON FIST (Wrath of the Dragon): Super Saiyan 3 only, earned for Free Battle by clearing Kid Buu (the
+      // story's fights keep the kit they were tuned with). A rush: it can be side-stepped or guarded, and the
+      // recovery is the punish; landed, a golden dragon rises out of the blow
+      {
+        id: 'dragonFist', name: 'Dragon Fist', type: 'rush', kiCost: 100, icon: 'rush', ultimate: true,
+        forms: ['ssj3'], freeUnlock: 'buu_kidbuu', freeOnly: true,
+        startup: 18, dashFrames: 30, speed: 52, recovery: 34,
+        poses: { wind: 'g_dragonFistW', dash: 'g_dragonFistDash' },
+        hits: [
+          { pose: 'g_cross', damage: 1200, frames: 14, sfx: 'punchHeavy' },
+          { pose: 'g_dragonFist', damage: 4800, frames: 30, sfx: 'punchHeavy', knock: 'heavy', knockSpeed: 46, impact: 5 },
+        ],
+        dragon: { color: 0xffc83a, core: 0xfff4c8 },
+        // tight on the stance, low beside him as he goes, then wide on the one it hits as the dragon climbs
+        cine: {
+          steps: [
+            { on: 'start', shot: 'charge', dur: 0.4 },
+            { on: 'release', shot: 'track', dur: 0.8 },
+            { on: 'finish', shot: 'impact', dur: 1.7, slow: [0.35, 0.3], quake: 0.5 },
+          ],
+        },
+      },
+      // ANGRY KAMEHAMEHA — story-inspired (the Namek finale's "You fool!": Frieza's shot into his back answered with a
+      // one-handed wave), made a Super Saiyan wheel move for Free Battle (earned by clearing that finale, namek_end; the
+      // story keeps its own scene). Quick to charge, gold outside and white inside, his face as he turns
+      {
+        id: 'angryKamehameha', name: 'Angry Kamehameha', type: 'beam', kiCost: 45, icon: 'beam',
+        forms: ['ssj'], freeUnlock: 'namek_end', freeOnly: true,
+        chargeMin: 26, chargeMax: 40, tiers: [26], damage: [2600, 2900], radius: [0.9, 1.05], speed: 120, range: 150, sustain: 34,
+        color: 0xffd84a, core: 0xffffff, poses: { charge: 'g_angryKame', fire: 'g_angryKame' }, recovery: 24,
+        sound: 'kame', chargeLight: 0xffe27a,
+        cine: {
+          steps: [
+            { on: 'start', shot: 'face', dur: 0.45 },
+            { on: 'release', shot: 'wide', dur: 1, quake: 0.3 },
+          ],
+        },
+      },
+      // METEOR COMBINATION — the Super Dragon Meteor idea from the games (game-style rush): an elbow, kicks that carry
+      // him up into the air, Goku vanishing behind him for an axe-handle, then under him for a Kamehameha point blank.
+      // Super Saiyan 2 only; earned for Free Battle like the form ("Prince of Saiyans", buu_pride)
+      {
+        id: 'meteorCombination', name: 'Meteor Combination', type: 'rush', kiCost: 55, icon: 'beam',
+        forms: ['ssj2'], freeUnlock: 'buu_pride', freeOnly: true,
+        startup: 12, dashFrames: 30, speed: 54, recovery: 34,
+        poses: { wind: 'g_raditzW', dash: 'g_dragonFistDash' },
+        hits: [
+          { pose: 'g_elbow', damage: 450, frames: 10, sfx: 'punchHeavy', hitPose: 'hitSideR' },
+          { pose: 'g_kick', damage: 300, frames: 8, sfx: 'punchLight', hitPose: 'hitLight', lift: 1.5 },
+          { pose: 'g_spinKick', damage: 350, frames: 10, sfx: 'punchHeavy', hitPose: 'hitSideL', lift: 1.5 },
+          { pose: 'hammer', damage: 600, frames: 14, sfx: 'punchHeavy', hitPose: 'hitBack', to: 'behind' },
+          { pose: 'g_meteorKame', damage: 1900, frames: 30, sfx: 'kiBlastBig', to: 'below', ki: { color: 0x3fb2ff, hand: 'both' }, beam: { length: 16, radius: 0.85, frames: 34, core: 0xe8f8ff }, explode: 1.2, knock: 'launch', knockSpeed: 40, impact: 4, hitPose: 'hitHeavy' },
+        ],
+        cine: {
+          steps: [
+            { on: 'release', shot: 'track', dur: 0.45 },
+            { on: 'connect', shot: 'wide', dur: 1 },
+            { on: 'finish', shot: 'wide', dur: 1, quake: 0.4 },
+          ],
+        },
+      },
+      // SUPER DRAGON TWIN FIST — Super Saiyan 3's second dragon (the games' "True Dragon Fist" idea; a game-style rush,
+      // not the film's Dragon Fist, which stays its own ultimate): a blur of blows, a knee into the stomach, a sweep, both
+      // palms through the guard, and a golden dragon uppercut that throws him into the sky. From low, up at the hair
+      {
+        id: 'superDragonTwinFist', name: 'Super Dragon Twin Fist', type: 'rush', kiCost: 60, icon: 'rush',
+        forms: ['ssj3'], freeUnlock: 'buu_kidbuu', freeOnly: true,
+        startup: 14, dashFrames: 30, speed: 52, recovery: 34,
+        poses: { wind: 'g_dragonFistW', dash: 'g_dragonFistDash' },
+        hits: [
+          { pose: 'g_jab', damage: 150, frames: 4, sfx: 'punchLight', hitPose: 'hitLight' },
+          { pose: 'g_cross', damage: 150, frames: 4, sfx: 'punchLight', hitPose: 'hitSideR' },
+          { pose: 'g_jab', damage: 150, frames: 4, sfx: 'punchLight', hitPose: 'hitLight' },
+          { pose: 'g_cross', damage: 150, frames: 4, sfx: 'punchLight', hitPose: 'hitSideL' },
+          { pose: 'g_elbow', damage: 200, frames: 6, sfx: 'punchLight', hitPose: 'hitLight' },
+          { pose: 'g_twinKnee', damage: 600, frames: 12, sfx: 'punchHeavy', hitPose: 'hitBody' },
+          { pose: 'g_sweep', damage: 400, frames: 10, sfx: 'punchHeavy', hitPose: 'hitSideL' },
+          { pose: 'g_twinPalms', damage: 500, frames: 12, sfx: 'punchHeavy', hitPose: 'hitHeavy' },
+          { pose: 'g_dragonUpper', damage: 2200, frames: 30, sfx: 'punchHeavy', knock: 'launch', knockSpeed: 52, impact: 5, hitPose: 'hitHeavy' },
+        ],
+        dragon: { color: 0xffc83a, core: 0xfff4c8, size: 0.9 },
+        cine: {
+          steps: [
+            { on: 'start', shot: 'low', dur: 0.4 },
+            { on: 'release', shot: 'track', dur: 0.5 },
+            { on: 'connect', shot: 'wide', dur: 1 },
+            { on: 'finish', shot: 'impact', dur: 1.3, quake: 0.45 },
+          ],
+        },
+      },
+      // DIVINE RUSH — Super Saiyan God (the PDF's "God Bound / Divine Rush"; a game-style rush): gliding in, palm thrusts,
+      // two "God Shot" flicks of ki from the finger, a crimson ring of God Bind holding him, then the blazing shoulder
+      // tackle. God only; earned for Free Battle like the form ("The Ritual", bog_ritual). Not the God Bind extra: that
+      // one holds for as long as he pays; here the hold is one beat of the rush
+      {
+        id: 'divineRush', name: 'Divine Rush', type: 'rush', kiCost: 50, icon: 'rush',
+        forms: ['god'], freeUnlock: 'bog_ritual', freeOnly: true,
+        startup: 10, dashFrames: 30, speed: 56, recovery: 28,
+        poses: { wind: 'g_godStance', dash: 'g_godPalm' },
+        hits: [
+          { pose: 'g_godPalm', damage: 350, frames: 8, sfx: 'punchLight', hitPose: 'hitBody' },
+          { pose: 'g_godPalm', damage: 350, frames: 8, sfx: 'punchLight', hitPose: 'hitLight' },
+          { pose: 'g_godShot', damage: 250, frames: 7, sfx: 'kiBlast', ki: { color: 0xff3a4a, hand: 'R' }, hitPose: 'hitLight' },
+          { pose: 'g_godShot', damage: 250, frames: 9, sfx: 'kiBlast', ki: { color: 0xff3a4a, hand: 'R' }, hitPose: 'hitSideR' },
+          { pose: 'g_bind', frames: 26, bind: { color: 0xff2a48 }, hitPose: 'hitBody' },
+          { pose: 'g_shoulder', damage: 1800, frames: 26, sfx: 'kiBlastBig', ki: { color: 0xff5030, hand: 'L' }, explode: 1.3, knock: 'heavy', knockSpeed: 46, impact: 4, hitPose: 'hitHeavy' },
+        ],
+        cine: {
+          steps: [
+            { on: 'release', shot: 'track', dur: 0.45 },
+            { on: 'connect', shot: 'wide', dur: 0.7 },
+            { on: 'bind', shot: 'reverse', dur: 0.45 },
+            { on: 'finish', shot: 'impact', dur: 0.9, quake: 0.4 },
+          ],
+        },
+      },
+      // GOD FIST RUSH — Super Saiyan Blue (the PDF's; a game-style rush): a gut punch, the spinning hook kick, Goku
+      // behind him for a sledgehammer, then hovering over him with a God Kamehameha fired straight down. Blue only;
+      // earned for Free Battle like the form
+      {
+        id: 'godFistRush', name: 'God Fist Rush', type: 'rush', kiCost: 55, icon: 'beam',
+        forms: ['blue'], freeUnlock: ['rof_goku', 'bb_legend'], freeOnly: true,
+        startup: 12, dashFrames: 30, speed: 56, recovery: 36,
+        poses: { wind: 'g_raditzW', dash: 'g_dragonFistDash' },
+        hits: [
+          { pose: 'g_godFistGut', damage: 550, frames: 12, sfx: 'punchHeavy', hitPose: 'hitBody' },
+          { pose: 'g_spinKick', damage: 450, frames: 12, sfx: 'punchHeavy', hitPose: 'hitSideL' },
+          { pose: 'hammer', damage: 600, frames: 16, sfx: 'punchHeavy', hitPose: 'hitBack', to: 'behind' },
+          { pose: 'g_kameFire', damage: 2000, frames: 34, sfx: 'kiBlastBig', to: 'above', ki: { color: 0x40d8ff, hand: 'both' }, beam: { length: 12, radius: 0.9, frames: 36, core: 0xeafcff }, explode: 1.2, knock: 'smash', knockSpeed: 40, impact: 4, hitPose: 'hitHeavy' },
+        ],
+        cine: {
+          steps: [
+            { on: 'release', shot: 'track', dur: 0.45 },
+            { on: 'connect', shot: 'wide', dur: 0.8 },
+            { on: 'finish', shot: 'impact', dur: 1, quake: 0.45 },
+          ],
+        },
+      },
+      // BLUE KAIOKEN RUSH — Super Saiyan Blue Kaioken (the PDF's "Kaioken x20 rush"; a game-style rush): blows from every
+      // side as he flickers round him, then up above him and a red-and-blue Kamehameha fired down. "Twenty hits" is the
+      // art direction, not twenty copies of one blow. Blue Kaioken only; earned like the form ("Goku vs Hit", u6_goku_hit)
+      {
+        id: 'blueKaiokenRush', name: 'Blue Kaioken Rush', type: 'rush', kiCost: 65, icon: 'beam',
+        forms: ['blueKaioken'], freeUnlock: 'u6_goku_hit', freeOnly: true,
+        startup: 10, dashFrames: 26, speed: 64, recovery: 36,
+        poses: { wind: 'g_kaiokenFlex', dash: 'g_dragonFistDash' },
+        hits: [
+          { pose: 'g_jab', damage: 180, frames: 4, sfx: 'punchLight', hitPose: 'hitLight' },
+          { pose: 'g_cross', damage: 180, frames: 4, sfx: 'punchLight', hitPose: 'hitBack', to: 'behind' },
+          { pose: 'g_elbow', damage: 180, frames: 4, sfx: 'punchLight', hitPose: 'hitSideR', to: 'front' },
+          { pose: 'g_kick', damage: 200, frames: 5, sfx: 'punchHeavy', hitPose: 'hitBack', to: 'behind' },
+          { pose: 'g_jab', damage: 180, frames: 4, sfx: 'punchLight', hitPose: 'hitLight', to: 'front' },
+          { pose: 'g_spinKick', damage: 220, frames: 5, sfx: 'punchHeavy', hitPose: 'hitBack', to: 'behind' },
+          { pose: 'g_cross', damage: 200, frames: 4, sfx: 'punchLight', hitPose: 'hitSideL', to: 'front' },
+          { pose: 'g_godFistGut', damage: 400, frames: 10, sfx: 'punchHeavy', hitPose: 'hitBody', lift: 2 },
+          { pose: 'g_kameFire', damage: 2100, frames: 36, sfx: 'kiBlastBig', to: 'above', ki: { color: 0xff3a48, hand: 'both' }, beam: { length: 14, radius: 1.1, frames: 40, core: 0x8ad8ff }, explode: 1.4, knock: 'smash', knockSpeed: 44, impact: 5, hitPose: 'hitHeavy' },
+        ],
+        cine: {
+          steps: [
+            { on: 'release', shot: 'track', dur: 0.35 },
+            { on: 'connect', shot: 'wide', dur: 1 },
+            { on: 'finish', shot: 'impact', dur: 1.1, quake: 0.5 },
+          ],
+        },
+      },
+      // DIVINE KAMEHAMEHA RUSH — Ultra Instinct -Sign- (the PDF's "Divine Kamehameha Rush"; for when nobody is firing a
+      // beam at him): he glides in, up and over the other's head, and fires a Kamehameha into his chest point blank. The
+      // dodging itself is the form's own evasion (form.evade). The surf along an enemy beam is Instinct Surf, below
+      {
+        id: 'divineKameRush', name: 'Divine Kamehameha Rush', type: 'rush', kiCost: 60, icon: 'beam',
+        forms: ['uiSign'], freeUnlock: 'top_jiren', freeOnly: true,
+        startup: 8, dashFrames: 30, speed: 58, recovery: 32,
+        poses: { wind: 'g_uiStance', dash: 'g_uiSlip' },
+        hits: [
+          { pose: 'g_uiSlip2', frames: 14, move: true, to: 'above', hitPose: 'hitLight' },
+          { pose: 'g_kameFire', damage: 2400, frames: 34, sfx: 'kiBlastBig', to: 'front', ki: { color: 0x9ad8ff, hand: 'both' }, beam: { length: 14, radius: 0.9, frames: 36, core: 0xffffff }, explode: 1.2, knock: 'heavy', knockSpeed: 46, impact: 4, hitPose: 'hitHeavy' },
+        ],
+        cine: {
+          steps: [
+            { on: 'release', shot: 'track', dur: 0.5 },
+            { on: 'connect', shot: 'wide', dur: 0.5 },
+            { on: 'finish', shot: 'impact', dur: 1, quake: 0.4 },
+          ],
+        },
+      },
+      // UNLIKELY ALLIANCE — the PDF's Tournament of Power team rush (Goku in Blue and Golden Frieza against Dyspo; a game
+      // rush): only with Golden Frieza fighting on your side (Free Battle / Training → Partner). Frieza is there at once on
+      // the far side: his cage of light holds him, Goku's low kick, Frieza's tail, two finger lasers, Goku kicks him back
+      // into them, and both fire at once — the Kamehameha and the Death Beam. Blue only; earned by clearing "The Final
+      // Battle" (top_finale, where the two of them fight together). The same move led by Frieza is on his wheel
+      {
+        id: 'unlikelyAlliance', name: 'Unlikely Alliance', type: 'rush', kiCost: 60, icon: 'rush',
+        forms: ['blue'], freeUnlock: 'top_finale', freeOnly: true,
+        partner: { ids: ['frieza'], forms: ['golden'], name: 'Golden Frieza', range: 45, pose: 'idle' },
+        startup: 10, dashFrames: 30, speed: 56, recovery: 32,
+        poses: { wind: 'g_raditzW', dash: 'g_dragonFistDash' },
+        hits: [
+          { by: 'partner', pose: 'fz_aim', damage: 300, frames: 16, sfx: 'kiBlast', ki: { color: 0xffd060, hand: 'R' }, slashes: 8, slashColor: 0xffd060, hitPose: 'hitBody' },
+          { pose: 'g_sweep', damage: 450, frames: 10, sfx: 'punchHeavy', hitPose: 'hitSideL' },
+          { by: 'partner', pose: 'fz_tail', damage: 450, frames: 10, sfx: 'punchHeavy', hitPose: 'hitSideR' },
+          { by: 'partner', pose: 'fz_aim', damage: 250, frames: 7, sfx: 'kiBlast', ki: { color: 0xff3a6a, hand: 'R' }, hitPose: 'hitLight' },
+          { by: 'partner', pose: 'fz_aim', damage: 250, frames: 9, sfx: 'kiBlast', ki: { color: 0xff3a6a, hand: 'R' }, hitPose: 'hitLight' },
+          { pose: 'g_kick', damage: 500, frames: 12, sfx: 'punchHeavy', hitPose: 'hitBack' },
+          { pose: 'g_kameFire', damage: 1800, frames: 32, sfx: 'kiBlastBig', ki: { color: 0x40d8ff, hand: 'both' }, beam: { length: 14, radius: 0.9, frames: 34, core: 0xeafcff }, partnerKi: { pose: 'fz_aim', color: 0xff3a6a, damage: 700, hand: 'R' }, explode: 1.2, knock: 'heavy', knockSpeed: 48, impact: 4, hitPose: 'hitHeavy' },
+        ],
+        cine: { steps: [{ on: 'release', shot: 'track', dur: 0.4 }, { on: 'connect', shot: 'wide', dur: 1.6 }, { on: 'finish', shot: 'impact', dur: 1, quake: 0.4 }] },
+      },
+      // THE SAIYAN CHARGE — "We Saiyans have no limits!" (Roadmap Three, the Goku Black arc research: CS-CHG-01 / CHG-S01,
+      // and its section 5 "Super Saiyan Blue Dual Charge: a high-cost tag-team super with synchronized rush animations"):
+      // only with Super Saiyan Blue Vegeta fighting on your side (Free Battle / Training → Partner). The same low stance side
+      // by side, both auras up and the ground cracking under them; they kick off together (twin rings) and fly the charge
+      // side by side — Goku on the right, Vegeta on the left (Fighter: sp.partner.alongside); Goku's right hook, Vegeta's
+      // left hook, then both at once — a double blow bursting out in a ring. Blue only; earned with Vegito Blue ("Vegito",
+      // ft_vegito, or "The Final Battle"). The same charge led by Vegeta is on his wheel. Provisional numbers (70 ki;
+      // 650 + 650 + 1,900 + 900). The story's own charge waits on the owner (which fight, which targets: plan 9.17)
+      {
+        id: 'saiyanCharge', name: 'Saiyan Charge', type: 'rush', kiCost: 70, icon: 'rush',
+        forms: ['blue'], freeUnlock: ['ft_vegito', 'top_finale'], freeOnly: true,
+        partner: { ids: ['vegeta'], forms: ['blue'], name: 'Super Saiyan Blue Vegeta', range: 45, pose: 'v_hookW', alongside: 'left', windPose: 'powerCrouch', dashPose: 'v_dash', ignite: 0x4ad8ff },
+        startup: 30, dashFrames: 34, speed: 64, recovery: 30,
+        poses: { wind: 'powerCrouch', dash: 'dash' },
+        hits: [
+          { pose: 'g_cross', damage: 650, frames: 4, sfx: 'punchHeavy', hitPose: 'hitSideL', ring: { color: 0x4ad8ff, size: 1.2 } },
+          { by: 'partner', pose: 'v_hook', damage: 650, frames: 16, sfx: 'punchHeavy', hitPose: 'hitBody', ring: { color: 0x4ad8ff, size: 1.2 } },
+          { pose: 'g_cross', damage: 1900, frames: 30, sfx: 'punchHeavy', partnerKi: { pose: 'v_hook', color: 0x4ad8ff, damage: 900, hand: 'L' }, explode: 1.2, knock: 'heavy', knockSpeed: 46, impact: 5, hitPose: 'hitHeavy', ring: { color: 0xffffff, size: 2.4 } },
+        ],
+        cine: { steps: [{ on: 'start', shot: 'partnerLow', at: 2, dur: 0.5 }, { on: 'release', shot: 'track', dur: 0.5 }, { on: 'connect', shot: 'reverse', dur: 0.9 }, { on: 'finish', shot: 'impact', dur: 1, quake: 0.45 }] },
+      },
+      // THE SAIYAN ASSAULT (2026-10-19; Dragon Ball Super episode 65 — "Goku and Vegeta combine their power ... when they
+      // attack Zamasu directly, he blocks them easily and knocks them down"; the owner remembers kicks and blows in
+      // succession with slow motion. THE BLOWS, THEIR ORDER AND THE SLOW MOTION ARE AN ADAPTATION — no source gives them;
+      // documentation/FUSED_ZAMASU_EPISODES_64_67.md): with Super Saiyan Blue Vegeta on the far side of him, blow for blow
+      // from both sides — Goku's front kick, Vegeta's knee, Goku's spinning kick (slowed), Vegeta's spinning back kick,
+      // Goku down on him from above with the axe kick (slowed), Vegeta's elbow, Goku back in front with the cross — and
+      // both at once, the fist and Vegeta's kick (slowed). Blue only; earned with "Vegito" (ft_vegito: its played stretch
+      // uses these blows and ends on the god catching the last). Provisional numbers (80 ki; 5,690 in all)
+      {
+        id: 'saiyanAssault', name: 'Saiyan Assault', type: 'rush', kiCost: 80, icon: 'rush',
+        // (top_finale as the Saiyan Charge: a save that cleared The Final Battle before "Vegito" existed)
+        forms: ['blue'], freeUnlock: ['ft_vegito', 'top_finale'], freeOnly: true,
+        partner: { ids: ['vegeta'], forms: ['blue'], name: 'Super Saiyan Blue Vegeta', range: 45, pose: 'v_hookW' },
+        startup: 14, dashFrames: 30, speed: 60, recovery: 34,
+        poses: { wind: 'g_raditzW', dash: 'g_dragonFistDash' },
+        hits: [
+          { pose: 'g_kick', damage: 420, frames: 13, sfx: 'punchHeavy', hitPose: 'hitBody', ring: { color: 0x4ad8ff, size: 1 } },
+          { by: 'partner', pose: 'v_knee', damage: 420, frames: 13, sfx: 'punchHeavy', hitPose: 'hitBack', ring: { color: 0x4ad8ff, size: 1 } },
+          { pose: 'g_spinKick', damage: 520, frames: 16, sfx: 'punchHeavy', hitPose: 'hitSideL', ring: { color: 0x4ad8ff, size: 1.4 }, slow: { scale: 0.3, seconds: 0.35 } },
+          { by: 'partner', pose: 'v_spinBack', damage: 520, frames: 14, sfx: 'punchHeavy', hitPose: 'hitSideR', ring: { color: 0x4ad8ff, size: 1.4 } },
+          { to: 'above', pose: 'g_axeKick', damage: 650, frames: 18, sfx: 'punchHeavy', hitPose: 'hitHeavy', ring: { color: 0xffffff, size: 1.6 }, slow: { scale: 0.25, seconds: 0.45 } },
+          { by: 'partner', pose: 'v_elbow', damage: 480, frames: 12, sfx: 'punchHeavy', hitPose: 'hitBody' },
+          { to: 'front', pose: 'g_cross', damage: 480, frames: 12, sfx: 'punchHeavy', hitPose: 'hitLight' },
+          { pose: 'g_cross', damage: 1600, frames: 30, sfx: 'punchHeavy', partnerKi: { pose: 'v_atomicKick', color: 0x4ad8ff, damage: 600, hand: 'L' }, explode: 1.2, knock: 'heavy', knockSpeed: 44, impact: 5, hitPose: 'hitHeavy', ring: { color: 0xffffff, size: 2.4 }, slow: { scale: 0.2, seconds: 0.7 } },
+        ],
+        cine: { steps: [{ on: 'release', shot: 'track', dur: 0.5 }, { on: 'connect', shot: 'wide', dur: 1.8 }, { on: 'finish', shot: 'impact', dur: 1.1, quake: 0.5 }] },
+      },
+      // INSTINCT SURF — Ultra Instinct -Sign- (the PDF's "Surf" rush): only while an enemy beam is coming at him — he
+      // rides along the top of it to the one firing it, flips over his head and fires a Kamehameha into his chest point
+      // blank, ending the beam (techniques.js beamSurf). The wheel says when there is nothing to surf
+      {
+        id: 'instinctSurf', name: 'Instinct Surf', type: 'beamSurf', kiCost: 50, icon: 'beam',
+        forms: ['uiSign'], freeUnlock: 'top_jiren', freeOnly: true,
+        rideFrames: 32, flipFrames: 12, recovery: 30, damage: 3000, color: 0x9ad8ff,
+        poses: { ride: 'g_uiSlip', flip: 'g_uiSlip2', fire: 'g_kameFire' },
+        cine: { steps: [{ on: 'start', shot: 'track', dur: 0.6 }, { on: 'finish', shot: 'impact', dur: 1, quake: 0.4 }] },
+      },
+      // SILVER DRAGON STRIKE — Mastered Ultra Instinct (the PDF's; a game-style rush): he flickers round him in silver,
+      // strike-lines cutting across his body faster than the eye, then a silver hook into the gut and a silver dragon
+      // rising behind it. MUI only; earned like the form ("Mastered", top_mui)
+      {
+        id: 'silverDragonStrike', name: 'Silver Dragon Strike', type: 'rush', kiCost: 70, icon: 'rush', ultimate: true,
+        forms: ['mui'], freeUnlock: 'top_mui', freeOnly: true,
+        startup: 8, dashFrames: 26, speed: 62, recovery: 34,
+        poses: { wind: 'g_uiStance', dash: 'g_uiSlip' },
+        hits: [
+          { pose: 'g_cross', damage: 300, frames: 6, sfx: 'punchLight', hitPose: 'hitSideR', slashes: 3, to: 'behind' },
+          { pose: 'g_kick', damage: 300, frames: 6, sfx: 'punchLight', hitPose: 'hitBack', slashes: 3, to: 'front' },
+          { pose: 'g_elbow', damage: 300, frames: 6, sfx: 'punchLight', hitPose: 'hitSideL', slashes: 4, to: 'behind' },
+          { pose: 'g_silverHook', damage: 3600, frames: 32, sfx: 'punchHeavy', to: 'front', knock: 'launch', knockSpeed: 54, impact: 5, hitPose: 'hitHeavy', slashes: 6 },
+        ],
+        dragon: { color: 0xdfe6ff, core: 0xffffff, size: 1.1 },
+        cine: {
+          steps: [
+            { on: 'start', shot: 'face', dur: 0.4 },
+            { on: 'release', shot: 'track', dur: 0.4 },
+            { on: 'connect', shot: 'wide', dur: 0.6 },
+            { on: 'finish', shot: 'impact', dur: 1.6, slow: [0.4, 0.25], quake: 0.5 },
+          ],
+        },
+      },
+    ],
     moves: {
       light: [
         { id: 'jab', startup: 4, active: 3, recovery: 10, cancel: 6, damage: 260, reach: 1.15, radius: 0.7, lunge: 10, hitstun: 20, knock: 'flinch', impact: 1, pose: { wind: 'g_jabW', strike: 'g_jab' }, sfx: 'punchLight', hitPose: 'hitLight' },
@@ -754,7 +1421,8 @@
         callout: ['KA', 'ME', 'HA', 'ME', 'HA!'],
         chargeLight: 0x5ac8ff,
         // fired right after Instant Transmission: almost no charge, point blank
-        instant: { name: 'Instant Kamehameha', chargeMin: 6, chargeMax: 16, damageMul: 0.9, kiCost: 25 },
+        // outside the story the lens snaps in behind the one he reappeared behind, and the wave comes at it
+        instant: { name: 'Instant Kamehameha', chargeMin: 6, chargeMax: 16, damageMul: 0.9, kiCost: 25, cine: { steps: [{ on: 'start', shot: 'reverse', dur: 0.9 }] } },
         formVariants: {
           kaioken: { name: 'Kaioken Kamehameha', color: 0xff5a48, core: 0xffe6e0, ringColor: 0xffb0a0, damageMul: 1.15 },
           ssj: { name: 'Super Kamehameha', radiusMul: 1.2, damageMul: 1.1, core: 0xffffff },
@@ -781,6 +1449,15 @@
         poses: { charge: 'g_spiritRaise', release: 'g_spiritThrow' }, recovery: 34,
         mood: { amount: 0.55, color: 0x15254a },
         clashPower: [0.9, 1.9],
+        // outside the story: low behind him as it grows over his head, then wide on the arena it will fall on;
+        // released, the lens rides behind it to the explosion
+        cine: {
+          steps: [
+            { on: 'start', shot: 'rise', dur: 2.6 },
+            { on: 'start', at: 156, shot: 'wide', dur: 2.6 },
+            { on: 'release', shot: 'follow' },
+          ],
+        },
       },
     },
     mechanic: { type: 'saiyanInstinct', name: 'Saiyan Instinct', desc: 'Vanishing and Perfect Guards cost less and empower your next strikes. Every hit taken or blocked teaches him the fight: a full Adaptation meter empowers him too. Near defeat, a Saiyan surge restores ki.' },
@@ -790,4 +1467,12 @@
     victory: { poses: ['g_victory', 'g_victoryFist'], expression: 'grin' },
     defeat: { pose: 'g_defeatKnee', expression: 'hurt' },
   };
+  // MASTERED ULTRA INSTINCT's own timing: the same hands with no wasted motion — each strike starts sooner, closes
+  // further and he is set again sooner, so the counter lands inside the opening a slip makes
+  {
+    const G = SL.data.characters.goku, mui = G.forms.find((f) => f.id === 'mui');
+    mui.moves = {
+      light: G.moves.light.map((m) => Object.assign({}, m, { startup: Math.max(2, m.startup - 2), recovery: Math.max(5, m.recovery - 4), cancel: m.cancel && Math.max(3, m.cancel - 2), lunge: (m.lunge || 0) * 1.3 })),
+    };
+  }
 })();

@@ -162,6 +162,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #000; color:
 .mcard.locked .m-title { color: var(--muted); }
 .story .rewards { font-size: 13px; color: var(--muted); }
 .story .rewards b { color: var(--text); font-weight: 600; }
+/* Records: the panels scroll between the fixed title and Back */
+.records .scroll { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; padding-right: 10px; scrollbar-width: thin; scrollbar-color: rgba(255, 170, 60, 0.6) rgba(255, 255, 255, 0.06); }
 
 /* ---------- select ---------- */
 .select { padding: 4vh 4vw 70px; gap: 3vw; align-items: stretch; }
@@ -199,6 +201,16 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #000; color:
 /* ---------- modal / pause ---------- */
 .modal { align-items: center; justify-content: center; background: rgba(2, 4, 12, 0.6); backdrop-filter: blur(3px); }
 .modal .panel { min-width: 420px; max-width: 90vw; }
+/* fighter picker (Free Battle / Training): a fixed 11-column portrait grid, so the arrows move the way it looks */
+.picker .panel { max-height: 86vh; overflow-y: auto; }
+.pick-grid { display: grid; grid-template-columns: repeat(11, minmax(0, 66px)); gap: 6px; }
+.pick { aspect-ratio: 1; background: radial-gradient(circle at 50% 40%, var(--pc, #ff8a1c) 0%, #0a0f28 74%); border: 2px solid transparent; cursor: pointer; transition: transform 0.12s, border-color 0.12s; }
+.pick img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pick.current { border-color: rgba(255, 255, 255, 0.35); }
+.pick.focused { border-color: var(--gold); transform: scale(1.1); position: relative; z-index: 1; }
+.pick.locked { cursor: default; }
+.pick.locked img { filter: brightness(0) drop-shadow(0 0 1px #fff8); }
+.pick-cap { margin-top: 10px; min-height: 22px; font-family: var(--display); font-size: 18px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold); }
 .pause-grid { display: flex; gap: 26px; align-items: flex-start; }
 .controls-ref { display: grid; grid-template-columns: auto auto; gap: 7px 16px; font-size: 14px; align-items: center; }
 .controls-ref .kbds { display: flex; gap: 4px; justify-content: flex-end; }
@@ -630,6 +642,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #000; color:
 .wd-badges .b.alt { border-color: #7fd0ff; color: #7fd0ff; }
 .wd-badges .b.proto { color: var(--muted); }
 .wd-badges .b.approx { border-style: dashed; color: #ffc98a; }
+.wd-story { margin-top: 6px; font-size: 11px; letter-spacing: 0.16em; color: #d6ddef; }
 .wd-notice { margin-top: 10px; font-size: 13px; color: #ffb3a0; }
 .wd-strip { position: absolute; left: calc(4vw + min(360px, 30vw) + 2vw); right: 3vw; bottom: 6.5vh; display: flex; gap: 8px; overflow-x: auto; padding: 6px 2px; z-index: 2; scrollbar-width: thin; }
 .wd-thumb { position: relative; flex: 0 0 auto; width: 84px; cursor: pointer; background: linear-gradient(180deg, rgba(40, 56, 104, 0.55), rgba(8, 12, 32, 0.85)); border: 1px solid rgba(255, 255, 255, 0.14); transition: transform 0.14s, border-color 0.14s; }
@@ -656,3 +669,11 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #000; color:
 .hud-radar.near .blip { animation-duration: 0.35s; }
 .hud-radar .rdist { position: absolute; left: 0; right: 0; bottom: 10px; text-align: center; font-size: 11px; font-weight: 700; color: #e8fff0; text-shadow: 0 1px 2px #000; }
 @keyframes radarBlip { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.35; transform: scale(0.7); } }
+
+/* the story clock (Mission-owned countdowns: Veku's thirty minutes) */
+.hud-clock { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 92px; height: 92px; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; --frac: 1; --clock: #f08a24; }
+.hud-clock .ring { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(var(--clock) calc(var(--frac) * 360deg), rgba(0,0,0,0.35) 0); -webkit-mask: radial-gradient(circle, transparent 54%, #000 56%); mask: radial-gradient(circle, transparent 54%, #000 56%); box-shadow: 0 0 12px rgba(0,0,0,0.5); }
+.hud-clock .t { position: relative; font-family: var(--display); font-size: 24px; color: #fff; text-shadow: 0 2px 0 #000; }
+.hud-clock .l { position: relative; font-size: 10px; letter-spacing: 1.5px; color: #ffe8c8; text-shadow: 0 1px 0 #000; }
+.hud-clock.urgent .t { color: #ffd0a0; animation: clockPulse 0.6s ease-in-out infinite alternate; }
+@keyframes clockPulse { from { transform: scale(1); } to { transform: scale(1.12); } }

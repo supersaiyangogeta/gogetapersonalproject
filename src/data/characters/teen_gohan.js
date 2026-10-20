@@ -139,6 +139,20 @@
       thighL: [-6, 0, 10], kneeL: [14, 0, 0], thighR: [-40, 0, -8], kneeR: [90, 0, 0],
       hands: ['fist', 'fist'],
     },
+    // CELL GAMES AERIAL JUGGLE (the wheel): the roundhouse that finishes it, the whole body turned through it in the air
+    tg2_roundhouse: {
+      root: { y: 0.06, rx: -6, rz: 22 }, hips: [0, 70, 0], spine: [-6, 20, 0], chest: [-10, 30, 0], head: [8, -70, 0],
+      shoulderL: [-20, 0, 60], elbowL: [-40, 0, 0], shoulderR: [-10, 0, -60], elbowR: [-50, 0, 0],
+      thighR: [-96, 0, -50], kneeR: [4, 0, 0], footR: [40, 0, 0], thighL: [10, 0, 6], kneeL: [40, 0, 0],
+      hands: ['fist', 'fist'],
+    },
+    // STOMACH SMASH (the wheel): both fists locked together and brought down over his head
+    tg2_hammer: {
+      root: { y: 0.08, rx: 26 }, spine: [20, 0, 0], chest: [22, 0, 0], neck: [10, 0, 0], head: [16, 0, 0],
+      shoulderL: [-70, 0, -18], elbowL: [-10, 0, 0], shoulderR: [-70, 0, 18], elbowR: [-10, 0, 0],
+      thighL: [-40, 0, 10], kneeL: [70, 0, 0], thighR: [-20, 0, -10], kneeR: [50, 0, 0],
+      hands: ['fist', 'fist'],
+    },
     tg2_knee: {
       root: { y: 0.04, rx: -6 }, spine: [10, 0, 0], chest: [14, 0, 0], head: [10, 0, 0],
       shoulderL: [-20, 0, 50], elbowL: [-60, 0, 0], shoulderR: [-20, 0, -50], elbowR: [-60, 0, 0],
@@ -233,9 +247,12 @@
     appearance: {
       height: 0.78,
       skin: 0xf6cda6,
-      build: { chestW: 0.215, chestD: 0.155, shoulderX: 0.215, waistW: 0.165, upperArmR: 0.058, foreArmR: 0.05, fist: 0.054, thighR: 0.09, shinR: 0.07, headR: 0.15, neckLen: 0.05 },
+      // (2026-10-16, the Cell Games pass: the head was a big round ball with a small face set low on it — a smaller
+      // cranium shaped down into a jaw and a pointed chin (headShape, as Goku Black's, younger and softer), the eyes
+      // wider apart and larger, a slighter nose, the neck a little longer into the head)
+      build: { chestW: 0.215, chestD: 0.155, shoulderX: 0.215, waistW: 0.165, upperArmR: 0.058, foreArmR: 0.05, fist: 0.054, thighR: 0.09, shinR: 0.07, headR: 0.144, neckR: 0.05, neckLen: 0.062 },
       hair: { style: 'gohan_teen', color: 0x141418 },
-      face: { pupil: 0x101010, eyeW: 1.05 },
+      face: { pupil: 0x101010, eyeX: 0.046, eyeW: 1.16, eyeH: 1.08, browThick: 1.05, jaw: 1.0, cheeks: 0.55, nose: 0.75, headShape: { taper: 0.24, drop: 0.2, fwd: 0.08, nape: 0.14 }, skull: [0.97, 1.02, 1] },
       outfit: {
         topStyle: 'gi', top: 0x9a3a8e, sleeves: 'none', sleeveColor: 0x9a3a8e, wrist: 0xe8e4dc,
         belt: 0xe6c24a, pants: 0x9a3a8e, pantsStyle: 'gi', boots: 0xe8e4dc, bootStyle: 'gi',
@@ -284,7 +301,7 @@
         // the jump the whole saga is pointing at: not a tier, a different fighter
         mult: { damage: 2.1, speed: 1.35, defense: 1.5, kiRegen: 2.4, chargeRate: 1.5, guardStamina: 0.9 },
         aura: { color: 0xffe25a, core: 0xffffff, particles: 0xfff3a0, idle: 0.4, speed: 1.6, sharp: 0.55, sparks: 0xbfe4ff, lightning: true },
-        look: { hair: { style: 'gohan_ssj2', color: 0xffe04a }, pupil: 0x1fc8a8, brow: 0xf0c030, bulk: 1.08 },
+        look: { hair: { style: 'gohan_ssj2', color: 0xffe04a }, pupil: 0x1fc8a8, brow: 0xf0c030, bulk: 1.08, pupilScale: 0.8 },
         // a different fighter's body language: the stance replaces the idle of the frightened boy
         poses: { idle: poses.tg2_stance },
         // faster, shorter, meaner strings; a gut punch that folds a guard; a blink that ends behind you
@@ -381,8 +398,62 @@
         chargeMin: 60, chargeMax: 60, damage: [8200, 8200], radius: [2.2, 2.2], speed: 112, range: 180, sustain: 56,
         color: 0x8ad4ff, core: 0xffffff, poses: { charge: 'tg_kameCharge', fire: 'tg_kameFire' }, recovery: 44, cinematic: true,
         callout: ['KA', 'ME', 'HA', 'ME', 'HA!'],
+        // outside the story (the Cell Games' own beam struggle is the mission's, "Father-Son Kamehameha"): low on his
+        // resolve as the hands go to the hip, then circling him as it gathers, wide from the side as it crosses
+        cine: {
+          steps: [
+            { on: 'start', shot: 'face', dur: 0.7 },
+            { on: 'start', at: 30, shot: 'orbit', dur: 0.6 },
+            { on: 'release', shot: 'wide', dur: 1.3, quake: 0.35 },
+          ],
+        },
       },
     },
+    // on the skill wheel, Super Saiyan 2 only, earned for Free Battle by clearing "Gohan's Turn" (cell_gohan, where he
+    // first reaches it); the Cell Games' own fight keeps its kit
+    extras: [
+      // CELL GAMES AERIAL JUGGLE (the PDF's; a game-style rush): through the guard with an elbow, then roundhouse after
+      // roundhouse as he bounces across the sky, Gohan flickering round him, the last kick sending him away
+      {
+        id: 'aerialJuggle', name: 'Cell Games Aerial Juggle', type: 'rush', kiCost: 45, icon: 'rush',
+        forms: ['ssj2'], freeUnlock: 'cell_gohan', freeOnly: true,
+        startup: 8, dashFrames: 28, speed: 58, recovery: 28,
+        poses: { wind: 'tg2_stance', dash: 'tg2_elbowW' },
+        hits: [
+          { pose: 'tg2_elbow', damage: 500, frames: 9, sfx: 'punchHeavy', hitPose: 'hitSideR' },
+          { pose: 'tg_kick', damage: 350, frames: 9, sfx: 'punchHeavy', hitPose: 'hitSideL', lift: 1.5 },
+          { pose: 'tg_kick', damage: 350, frames: 9, sfx: 'punchHeavy', hitPose: 'hitBack', to: 'behind', lift: 1.2 },
+          { pose: 'tg_kick', damage: 400, frames: 9, sfx: 'punchHeavy', hitPose: 'hitSideR', to: 'front', lift: 1 },
+          { pose: 'tg2_roundhouse', damage: 1400, frames: 24, sfx: 'punchHeavy', knock: 'heavy', knockSpeed: 44, impact: 4, hitPose: 'hitHeavy' },
+        ],
+        cine: {
+          steps: [
+            { on: 'release', shot: 'track', dur: 0.4 },
+            { on: 'connect', shot: 'wide', dur: 0.9 },
+            { on: 'finish', shot: 'impact', dur: 0.8, quake: 0.35 },
+          ],
+        },
+      },
+      // STOMACH SMASH (the PDF's "Stomach Smash & Ground Slam"; a game-style rush, no blood): under him for a knee into
+      // the stomach that carries him up, then over him for a double-fisted hammer that drives him into the ground
+      {
+        id: 'stomachSmash', name: 'Stomach Smash', type: 'rush', kiCost: 40, icon: 'rush',
+        forms: ['ssj2'], freeUnlock: 'cell_gohan', freeOnly: true,
+        startup: 8, dashFrames: 28, speed: 58, recovery: 30,
+        poses: { wind: 'tg2_stance', dash: 'tg2_kneeW' },
+        hits: [
+          { pose: 'tg2_knee', damage: 900, frames: 18, sfx: 'punchHeavy', hitPose: 'hitBody', to: 'below', lift: 2.5 },
+          { pose: 'tg2_hammer', damage: 1500, frames: 24, sfx: 'punchHeavy', to: 'above', knock: 'smash', knockSpeed: 42, impact: 4, hitPose: 'hitHeavy' },
+        ],
+        cine: {
+          steps: [
+            { on: 'release', shot: 'track', dur: 0.4 },
+            { on: 'connect', shot: 'wide', dur: 0.6 },
+            { on: 'finish', shot: 'impact', dur: 0.8, quake: 0.4 },
+          ],
+        },
+      },
+    ],
     mechanic: { type: 'hiddenPotential', name: 'Hidden Potential', desc: 'Damage and fallen allies fill it. When it bursts he is briefly unleashed — and it is what the story uses to open Super Saiyan 2.' },
     ai: { personality: 'adaptive', aggression: 0.55, defense: 0.6, ranged: 0.5, beam: 0.5, transformHp: 0.5, preferredRange: 4, hooks: 'kid_gohan' },
     barks: { combo: 'kid_gohan_combo', hurt: 'kid_gohan_hurt', lowHp: 'kid_gohan_lowHp' },

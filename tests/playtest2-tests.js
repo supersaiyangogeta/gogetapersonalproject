@@ -524,8 +524,13 @@ module.exports = function playtest2Tests({ test, eq, ok }) {
 
   test('every attacking technique on every fighter lands on a target six metres away (owner: "the Namekian attack does not work", "one of Ginyu\'s first attacks does not work")', () => {
     // utility techniques do their job without damage (teleports, flares, grips, senzu, time
-    // freeze, roars, Gotenks' pose buff); a technique gated on a state (requiresMech) is skipped
-    const UTILITY = ['teleport', 'senzu', 'solarFlare', 'telekinesis', 'timeFreeze', 'bossRoar', 'bossTaunt', 'bossPose'];
+    // freeze, roars, Gotenks' pose buff, Janemba's Dimension Door guard and Phantom Shift evade);
+    // a technique gated on a state (requiresMech) is skipped
+    // (2026-10-14: 'godBind' — a hold like telekinesis, Hit's Time Cage now as well as Goku's God Bind; universe6-tests
+    // checks that it holds its target. 2026-10-17: Android 17's Tournament shell ('barrier') became a defence in the ToP
+    // refinement pass — nothing swings into it at six metres — so it is a defence here too, and the next test checks
+    // what it does)
+    const UTILITY = ['teleport', 'senzu', 'solarFlare', 'telekinesis', 'timeFreeze', 'bossRoar', 'bossTaunt', 'bossPose', 'portalGuard', 'phantomShift', 'godBind', 'barrier'];
     const g0 = H.create({ quiet: true, seed: 1 });
     const failures = [];
     let checked = 0;
@@ -559,6 +564,34 @@ module.exports = function playtest2Tests({ test, eq, ok }) {
     }
     ok(checked > 60, 'techniques checked: ' + checked);
     eq(failures.join(' | '), '', 'every one of them hits');
+  });
+
+  test("Android 17's Barrier (Tournament of Power): a blast that reaches the shell bursts on it, a fighter swinging into it is pushed off and hurt, and the shell is gone when it drops", () => {
+    const gg = H.create({ quiet: true, seed: 1 });
+    const b = gg.battle({ p1: 'android_17_top', p2: 'vegeta', distance: 1.4 });
+    const a = b.player, v = b.fighters.find((f) => f !== a);
+    a.ki = a.kiMax;
+    v.controller = { update: () => gg.SL.emptyIntent() };
+    eq(a.specFor('special2').type, 'barrier', 'his Special 2 is the shell');
+    ok(a._trySpecial('special2'), 'raised');
+    eq(a.state, 'barrier');
+    const shell = a.sd.shell;
+    gg.step(b, 8);
+    const hp0 = a.hp;
+    const from = a.chest().addScaledVector(a.forward, 8);
+    const shot = b.projectiles.spawnBlast(v, from, a.chest().sub(from).normalize(), { kind: 'blast', speed: 60, radius: 0.3, damage: 900, color: 0xffffff, life: 2 });
+    let vHurt = 0;
+    b.on('damage', (e) => e.target === v && e.attacker === a && (vHurt += e.amount));
+    v.state = 'free';
+    v._startLight();
+    gg.step(b, 20);
+    ok(!shot.alive, 'the blast burst on the shell');
+    eq(Math.round(a.hp), Math.round(hp0), 'and 17 took nothing behind it');
+    ok(vHurt > 0, 'the one who swung into it is hurt (' + Math.round(vHurt) + ')');
+    gg.step(b, 80);
+    eq(a.state, 'free', 'the shell drops after its hold');
+    ok(!shell.parent, 'and nothing of it is left in the scene');
+    eq(gg.errors.length, 0, 'engine errors: ' + gg.errors.slice(0, 2).join(' | '));
   });
 
   /* ------------------------------------------------------------ the Ginyu Force arc */

@@ -140,7 +140,7 @@
   S.gg_echo = {
     id: 'gg_echo',
     cast,
-    music: { song: 'gogeta_theme', level: 0 },
+    music: { song: 'gogeta_z_arrival', level: 0 },
     events: [
       {
         pose: [
@@ -184,7 +184,7 @@
           { who: 'gogeta', pose: 'gg_fight', face: 'focused', speed: 8 },
         ],
         cam: { subject: 'gogeta', focus: 'wide', angle: 'low', room: 4 },
-        music: { song: 'gogeta_theme', level: 1 },
+        music: { song: 'gogeta_z_arrival', level: 1 },
         hold: 1.6,
       },
     ],

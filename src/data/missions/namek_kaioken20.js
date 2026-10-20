@@ -114,6 +114,7 @@
     const goku = b.spawn({ charId: 'goku', player: true, team: 0, pos: ground(b, FIELD.clone().add(new V3(0, 0, 5))), startKi: 100 });
     goku.lockedSlots = { transform: true };
     goku.formCaps = { kaioken: 3 }; // this mission is where x10 exists; x20 arrives with the fifty percent
+    goku.setDamage(1); // the pillar fight's damage in the gi (namek_goku); x20 tears it further
     const krillin = b.spawn({ charId: 'krillin', team: 0, pos: ground(b, FIELD.clone().add(new V3(16, 0, 18))), startKi: 30 });
     const gohan = b.spawn({ charId: 'kid_gohan', team: 0, pos: ground(b, FIELD.clone().add(new V3(-15, 0, 19))), startKi: 30 });
     for (const f of [krillin, gohan]) {
@@ -230,6 +231,7 @@
       m.flags.fiftyPercent = true;
       m.flags.kaioken20 = true;
       g.hp = Math.max(g.hp, Math.round(g.hpMax * 0.55));
+      if ((g.damageLevel || 0) < 2) g.setDamage(2);
       // fifty percent: much more threatening — longer bursts, shorter looks — but still a rhythm
       fight(m, S, { cap: 4, strainScale: 0.12, frieza: 1.15, rhythm: { burst: 4, rest: 55 }, profile: { comboLen: 3 } });
       // x20 is already burning his health: what Frieza lands on top of it must not grind him to nothing
@@ -286,31 +288,68 @@
       m.teach(g, 'form:kaioken');
       g.formCaps = { kaioken: 4 };
       kaioken(g, 4);
-      g.strainScale = 0; // the scene owns the body now
+      g.strainScale = 0; // the scene owns the body now: no overload, and no ki running out, mid-Kamehameha
+      g.infiniteKi = true;
       g.damageTakenMul = 1;
       // he is spent, not dying: the story needs him on his feet for the Spirit Bomb
       g.hp = Math.max(g.hp, Math.round(g.hpMax * 0.35));
       fz.infiniteHp = true;
       fz.cannotDie = true;
-      g.setState('scripted', { pose: 'g_kameCharge', expression: 'shout' });
+      if ((g.damageLevel || 0) < 2) g.setDamage(2);
+      // the aura held low for the close shots (it washes a face out) and let go in the low-angle one
+      g.setState('scripted', { pose: 'g_kaiokenFlex', expression: 'shout', aura: 0.5 });
       fz.setState('scripted', { pose: 'idle', expression: 'smirk' });
       m.music('climax', 5);
-      // the charge, close on his hands
-      m.shot((t, out) => {
-        const c = g.chest();
-        camAt(out, c.clone().addScaledVector(g.forward, U.lerp(2.4, 1.7, t)).add(new V3(1, 0.2, 0)), c, U.lerp(42, 36, t));
-      }, 3.2, { cut: true, blendIn: 0 });
-      m.say('goku', 'Ka... me... ha... me...', 3, { style: 'shout' });
-      const hands = () => g.chest().addScaledVector(g.forward, -0.35).add(new V3(0, -0.1, 0));
+      const C = { goku: g, frieza: fz };
+      // between his palms, wherever the stance has put them (the joints, not a guess off the chest)
+      const hands = () => {
+        const j = g.model.joints;
+        if (!j || !j.handL || !j.handR || !g.object) return g.chest().addScaledVector(g.forward, -0.35).add(new V3(0, -0.1, 0));
+        g.model.root.updateMatrixWorld(true);
+        const w = (n) => j[n].getWorldPosition(new V3()).sub(g.object.position).add(g.pos);
+        return w('handL').lerp(w('handR'), 0.5);
+      };
       const charge = () => {
         if (b.frame % 3 === 0) b.vfx.streamInward(hands(), 2.4, 0x7ad0ff, 3, 0.12, 0.4);
         if (b.frame % 20 === 0) b.vfx.flash(hands(), 1.2, 0xc8ecff, 0.25, SL.Toon.tex.glow);
-        b.camera.addTrauma(0.01);
+        b.camera.addTrauma(0.008);
       };
       m.tickHooks.push(charge);
-      yield* m.cine(3.2);
-      m.tickHooks.splice(m.tickHooks.indexOf(charge), 1);
-      // Frieza does not dodge it. He puts out one hand.
+      // THE CHARGE, in seven shots (Namek saga brief, phase four): 1. his face, the strain in it
+      SL.Cinema.shotOn(m, C, { subject: 'goku', focus: 'face', angle: 'front' }, 1.4, { cut: true, blendIn: 0 });
+      m.say('goku', 'Ka... me...', 2.4, { style: 'shout' });
+      yield* m.cine(1.3);
+      // 2. both hands coming together at his side
+      g.setState('scripted', { pose: 'g_kameCharge', expression: 'shout', speed: 3, aura: 0.5 });
+      m.shot((t, out) => {
+        const h = hands();
+        const outward = h.clone().sub(g.chest()).setY(0);
+        if (outward.lengthSq() < 1e-4) outward.copy(g.forward);
+        outward.normalize();
+        camAt(out, h.clone().addScaledVector(outward, U.lerp(1.15, 0.95, t)).addScaledVector(g.forward, 0.55).add(new V3(0, 0.3, 0)), h, 34);
+      }, 1.3, { cut: true, blendIn: 0 });
+      yield* m.cine(1.2);
+      // 3. the arms settling into the stance
+      SL.Cinema.shotOn(m, C, { subject: 'goku', focus: 'medium', angle: 'three' }, 1.3, { cut: true, blendIn: 0 });
+      m.say('goku', '...ha... me...', 2.4, { style: 'shout' });
+      yield* m.cine(1.2);
+      // 4. from low, the red climbing round him
+      g.setState('scripted', { pose: 'g_kameCharge', expression: 'shout', aura: 1 });
+      b.vfx.ring(g.pos.clone().add(new V3(0, 0.3, 0)), 9, 0xff3a28, 0.7, new V3(0, 1, 0));
+      b.sfx('kiCharge', g, { vol: 1.2, pitch: 0.75 });
+      SL.Cinema.shotOn(m, C, { subject: 'goku', focus: 'full', angle: 'low' }, 1.5, { cut: true, blendIn: 0 });
+      yield* m.cine(1.4);
+      // 5. the whole field: Frieza across it, waiting
+      m.shot((t, out) => {
+        const s = SL.Cinema.overShoulder(g, fz, { fov: 48, back: U.lerp(4.4, 3.8, t), side: 1.4, height: 1.9, lookUp: 0.2 });
+        camAt(out, s.pos, s.look, s.fov);
+      }, 1.7, { cut: true, blendIn: 0 });
+      yield* m.cine(1.6);
+      // 6. his face as he feels it climbing — and he puts out one hand anyway
+      fz.setState('scripted', { pose: 'idle', expression: 'shock' });
+      SL.Cinema.shotOn(m, C, { subject: 'frieza', focus: 'face', angle: 'front' }, 1.8, { cut: true, blendIn: 0 });
+      m.say('frieza', '...It is still climbing?', 1.8, { style: 'quiet' });
+      yield* m.cine(1.8);
       fz.setState('scripted', { pose: 'fz_aim', expression: 'smirk' });
       m.shot((t, out) => {
         const s = SL.Cinema.overShoulder(fz, g, { fov: 38, back: 2.4, side: -1, height: 0.7, lookUp: 0.2 });
@@ -318,8 +357,9 @@
       }, 1.6, { cut: true, blendIn: 0 });
       m.say('frieza', 'Go on, then.', 1.4);
       yield* m.cine(1.6);
-      // HA
-      g.setState('scripted', { pose: 'g_kameFire', expression: 'shout' });
+      m.tickHooks.splice(m.tickHooks.indexOf(charge), 1);
+      // 7. back to him as it goes: HA
+      g.setState('scripted', { pose: 'g_kameFire', expression: 'shout', aura: 1 });
       const spec = Object.assign({}, g.def.specials.special1, { range: 60, sustain: 999, damage: [0, 0], radius: [0.9, 1.1] });
       const beam = b.projectiles.spawnBeam(g, spec, 1);
       beam.hitSet.add(fz);
@@ -333,14 +373,15 @@
         fz.vel.set(0, 0, 0);
       };
       m.tickHooks.push(hold);
-      m.shot((t, out) => {
-        const mid = g.chest().lerp(fz.chest(), 0.5);
-        const side = new V3(-(fz.pos.z - g.pos.z), 0, fz.pos.x - g.pos.x).normalize();
-        camAt(out, mid.clone().addScaledVector(side, U.lerp(15, 13, t)).add(new V3(0, 1.6, 0)), mid, 50);
+      // the beam crossing the gap: from low and to the side, far enough back for both of them
+      m.shot((t, out, el) => {
+        const s2 = SL.Cinema.twoShot(g.chest(), fz.chest(), { fov: 48, height: -0.35, lookUp: 0.15, pad: U.lerp(1.8, 1.2, Math.min(1, el / 2)) });
+        camAt(out, s2.pos, s2.look, s2.fov);
       }, 999, { hold: true, cut: true, blendIn: 0 });
       yield* m.cine(0.8);
-      // the push: everything he has left. It shapes the score, not the outcome
-      let pushed = 0;
+      // the push: everything he has left. It shapes the score, not the outcome. Halfway, the camera goes
+      // round behind Frieza: the blast coming at him, and him holding it on one palm
+      let pushed = 0, behind = false;
       const res = yield* m.struggle({
         start: 0.5,
         drain: 0.3,
@@ -353,6 +394,14 @@
           const back = fz.forward.clone().multiplyScalar(-(1 - grip) * 0.02);
           fz.setPosition(fz.pos.clone().add(back));
           b.cameraTraumaAt(palm(), 0.04 + (1 - grip) * 0.08);
+          if (!behind && t >= 2.1) {
+            behind = true;
+            m.shot((k, out) => {
+              const toG = g.chest().sub(fz.chest()).setY(0).normalize();
+              const side = new V3(toG.z, 0, -toG.x);
+              camAt(out, fz.chest().addScaledVector(toG, U.lerp(-2.8, -2.4, k)).addScaledVector(side, 0.9).add(new V3(0, 0.45, 0)), fz.chest().addScaledVector(toG, 5), 46);
+            }, 999, { hold: true, cut: true, blendIn: 0 });
+          }
         },
       });
       m.flags.kameAvg = Math.round(res.avg * 100) / 100;
@@ -373,6 +422,7 @@
       for (const f of [g, fz]) f.controller = scripted();
       if (g.formIndex !== 0) g.applyForm(0);
       g.strainScale = 1;
+      g.infiniteKi = false;
       g.hp = Math.max(g.hp, Math.round(g.hpMax * 0.25));
       g.setState('scripted', { pose: 'g_defeatKnee', expression: 'hurt' });
       fz.setState('scripted', { pose: 'idle', expression: 'smirk' });

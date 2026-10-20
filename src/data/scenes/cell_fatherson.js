@@ -6,8 +6,11 @@
  *   cf_despair       one knee, the arm, the guttering aura; Cell's solar-system Kamehameha stance
  *   cf_voice         King Kai's link: his father's voice; he stands on one leg, side-on; a gold ghost
  *                    of Goku behind him, a hand on his shoulder
- *   cf_disintegrate  the beam doubles; ash, skin, body, and the purple core that tries to regrow
- *   cf_after         the trench; black hair; the fall forward, smiling; Vegeta on a rock
+ *   cf_disintegrate  the beam doubles and swallows him: from far off, the light engulfing him and the space
+ *                    round him, then the beam leaving the sky — and a moment of silence (non-graphic, owner
+ *                    2026-10-14: no body coming apart)
+ *   cf_after         the trench; Gohan on his feet; black hair; the others getting up — Piccolo, Krillin;
+ *                    the fall forward, smiling; Vegeta on a rock
  *
  * Dialogue is paraphrased English written for this project, following the owner's brief.
  */
@@ -284,25 +287,21 @@
         say: { who: 'teen_gohan', line: 'NO!', duration: 1, style: 'shout' },
         hold: 1.4,
       },
-      // the smoke goes: his left arm hangs useless, blood dripping onto the burnt ground
+      // the smoke goes: his left arm hangs useless at his side — the arm, then his face, and no lingering on it
       {
         call: (ctx) => {
           const st = story(ctx), g = st.gohan;
           CK().place(g, ground(ctx, g.pos));
           g.setTorn(true);
-          ctx.drip = 0;
         },
         pose: [{ who: 'gohan', pose: 'cradleArm', face: 'hurt', speed: 3, aura: 0.15 }],
         cam: { from: { at: 'gohan', local: [0.8, 0.1, 1.8] }, look: { at: 'gohan', off: [0, -0.1, 0] }, fov: 38 },
-        tick: (ctx) => {
-          const g = story(ctx).gohan, b = ctx.b;
-          if (b.frame % 18 === 0) {
-            const hand = g.model.joints.handL ? (g.model.root.updateMatrixWorld(true), g.model.joints.handL.getWorldPosition(new V3()).sub(g.object.position).add(g.pos)) : g.chest();
-            b.vfx.sparks(hand, 0x9a0a14, 2, 0.6, 0.05);
-          }
-        },
-        sfx: { name: 'boneCrack', who: 'gohan', vol: 0.8, pitch: 0.8 },
-        hold: 2.6,
+        sfx: { name: 'groundImpact', who: 'gohan', vol: 0.5, pitch: 1.3 },
+        hold: 1.4,
+      },
+      {
+        cam: { from: { at: 'gohan:face', local: [0.15, 0.14, 0.85] }, look: { at: 'gohan:head', off: [0, 0.15, 0] }, fov: 33 },
+        hold: 1.4,
       },
     ],
     end(ctx) {
@@ -496,75 +495,43 @@
         say: { who: 'cell', line: 'N-NO! THIS... THIS CAN\'T—', duration: 1.8, style: 'shout' },
         hold: 1.8,
       },
-      // frame 1: the green-and-black armour flakes away into ash
-      {
-        call: (ctx) => pt(ctx, 'core', story(ctx).cell.chest()),
-        cam: { from: { at: 'cell', local: [1.8, 0.2, 1.6] }, look: { at: 'cell', off: [0, 0.3, 0] }, fov: 40 },
-        tick: (ctx) => {
-          const b = ctx.b, c = story(ctx).cell;
-          if (b.frame % 2 === 0) b.vfx.debrisBurst(c.chest().add(new V3(Math.sin(b.frame) * 0.4, Math.cos(b.frame) * 0.6, 0)), 3, b.frame % 4 ? 0x2a4a2a : 0x1a1a1a, 4, 0.06);
-        },
-        slow: { scale: 0.4, seconds: 1.6 },
-        hold: 1.4,
-      },
-      // frame 2: the skin peels back to red; frame 3: muscle and bone go to nothing
+      // from far off: the column of light reaching him and swallowing him, and the space round him with him —
+      // he goes white inside it, and then there is only the light
       {
         call: (ctx) => {
-          const c = story(ctx).cell;
-          ctx.tint = [];
+          const st = story(ctx), c = st.cell, B = st.fskBeam;
+          B.beam.visible = B.core.visible = true;
+          pt(ctx, 'core', c.chest());
+          ctx.white = [];
           c.model.root.traverse((o) => {
-            if (o.isMesh && o.material && o.material.color && !o.userData.isOutline) ctx.tint.push({ m: o.material, c0: o.material.color.clone() });
+            if (o.isMesh && o.material && o.material.color && !o.userData.isOutline) ctx.white.push({ m: o.material, c0: o.material.color.clone() });
           });
-          ctx.base = c.model.root.scale.x;
+          // the camera far out to the side, the whole length of the beam in the frame
+          const mid = B.from.clone().lerp(c.chest(), 0.72);
+          const side = new V3(-B.dir.z, 0, B.dir.x).normalize();
+          pt(ctx, 'farCam', mid.clone().addScaledVector(side, 54).add(new V3(0, 11, 0)));
+          pt(ctx, 'farLook', mid.clone().add(new V3(0, 4, 0)));
         },
-        cam: { from: { at: 'core', off: [2.4, 0.4, 2.4] }, look: { at: 'core' }, fov: 40 },
+        cam: { from: { at: 'farCam' }, look: { at: 'farLook' }, fov: 50, raw: true },
         tick: (ctx, t) => {
-          const c = story(ctx).cell, b = ctx.b;
-          const red = Math.min(1, t / 0.9), gone = U.clamp01((t - 1) / 1.2);
-          for (const x of ctx.tint) x.m.color.copy(x.c0).lerp(new THREE.Color(0xc8281e), red);
-          c.model.root.scale.setScalar(ctx.base * (1 - gone * 0.92));
-          if (b.frame % 2 === 0) b.vfx.sparks(c.chest(), red > 0.6 ? 0xff6a4a : 0xdff4ff, 5, 6, 0.08);
-          if (gone >= 1 && !c.hidden) c.setHidden(true);
-        },
-        hold: 2.4,
-      },
-      // frame 4: the core: one purple cell, glowing, trying to begin again — and burned out
-      {
-        call: (ctx) => {
-          const b = ctx.b, at = ctx.cast.core.pos;
-          const nuc = new THREE.Mesh(new THREE.SphereGeometry(0.07, 16, 12), new THREE.MeshBasicMaterial({ color: 0xc86aff }));
-          const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: SL.Toon.tex.glow, color: 0xa04aff, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.9 }));
-          glow.scale.setScalar(0.6);
-          nuc.position.copy(at);
-          glow.position.copy(at);
-          b.scene.add(nuc, glow);
-          ctx.nuc = { nuc, glow };
-          ctx.m.onDispose(() => {
-            b.scene.remove(nuc, glow);
-            nuc.geometry.dispose();
-            nuc.material.dispose();
-            glow.material.dispose();
-          });
-        },
-        cam: { from: { at: 'core', off: [1.1, 0.15, 1.1] }, look: { at: 'core' }, fov: 36 },
-        tick: (ctx, t) => {
-          const N = ctx.nuc, b = ctx.b;
-          if (!N) return;
-          const s = 1 + Math.sin(t * 18) * 0.25 + Math.min(0.6, t * 0.4);
-          N.nuc.scale.setScalar(s);
-          N.glow.scale.setScalar(0.6 * s);
-          if (t > 1.4 && N.nuc.visible) {
-            N.nuc.visible = false;
-            N.glow.visible = false;
-            b.vfx.flash(ctx.cast.core.pos, 1.4, 0xffffff, 0.25, SL.Toon.tex.glow);
-            b.vfx.sparks(ctx.cast.core.pos, 0xc86aff, 24, 8, 0.08);
-            b.sfx('explosionSmall', null, { at: ctx.cast.core.pos, pitch: 1.8 });
+          const st = story(ctx), c = st.cell, B = st.fskBeam, b = ctx.b;
+          const k = Math.min(1, t / 1.1);
+          const r = 2.6 + k * 1.6;
+          B.beam.scale.set(r, r, 1);
+          B.core.scale.set(r * 0.5, r * 0.5, 1);
+          for (const x of ctx.white) x.m.color.copy(x.c0).lerp(new THREE.Color(0xffffff), k);
+          if (b.frame % 4 === 0) b.vfx.flash(ctx.cast.core.pos, 3 + k * 4, 0xdff4ff, 0.3, SL.Toon.tex.glow);
+          if (t > 1.3 && !c.hidden) {
+            c.setHidden(true);
+            b.vfx.flash(ctx.cast.core.pos, 9, 0xffffff, 0.5, SL.Toon.tex.glow);
+            b.vfx.ring(ctx.cast.core.pos, 14, 0xdff4ff, 0.6);
           }
+          b.camera.addTrauma(0.01);
         },
-        sfx: { name: 'regrow', at: { at: 'core' }, pitch: 1.4, vol: 0.8 },
-        hold: 2.2,
+        slow: { scale: 0.6, seconds: 1.2 },
+        hold: 2.8,
       },
-      // the beam leaves the atmosphere, carrying what is left of him out of the solar system
+      // the beam leaves the atmosphere, out past the edge of the sky
       {
         call: (ctx) => {
           const B = story(ctx).fskBeam;
@@ -580,16 +547,20 @@
         },
         hold: 2.6,
       },
+      // and then nothing: no music, no wind, the arena under an empty sky
+      {
+        call: (ctx) => pt(ctx, 'quiet', ring(ctx, 0, 0)),
+        music: { song: null, level: 0 },
+        cam: { from: { at: 'quiet', off: [26, 10, 22] }, to: { at: 'quiet', off: [24, 9, 20] }, look: { at: 'quiet', off: [0, 2, 0] }, fov: 52 },
+        hold: 2.4,
+      },
     ],
     end(ctx) {
       const st = story(ctx), c = st.cell;
+      if (ctx.white) for (const x of ctx.white) x.m.color.copy(x.c0);
       if (st.fskBeam) {
         st.fskBeam.beam.visible = false;
         st.fskBeam.core.visible = false;
-      }
-      if (ctx.nuc) {
-        ctx.nuc.nuc.visible = false;
-        ctx.nuc.glow.visible = false;
       }
       c.setHidden(true);
       CK().gone(c);
@@ -633,6 +604,21 @@
         pose: [{ who: 'gohan', pose: 'sway', face: 'soft', speed: 3, aura: 0 }],
         cam: { from: { at: 'gohan:face', local: [0.15, 0.16, 0.9] }, look: { at: 'gohan:head', off: [0, 0.15, 0] }, fov: 34 },
         hold: 2.8,
+      },
+      // the others getting up out of the dirt, and looking at what is left standing
+      {
+        when: (ctx) => ctx.cast.krillin && !ctx.cast.krillin.hidden,
+        pose: [{ who: 'krillin', pose: 'g_riseSlow', face: 'shock', speed: 1 }],
+        cam: { subject: 'krillin', focus: 'upper', angle: 'front' },
+        say: { who: 'krillin', line: 'He did it... Gohan actually did it...', duration: 2.6, style: 'quiet' },
+        hold: 2.8,
+      },
+      {
+        when: (ctx) => ctx.cast.piccolo && !ctx.cast.piccolo.hidden,
+        pose: [{ who: 'piccolo', pose: 'p_kneelLook', face: 'soft', speed: 2 }],
+        cam: { subject: 'piccolo', focus: 'upper', angle: 'three' },
+        say: { who: 'piccolo', line: '...Well done, kid.', duration: 2, style: 'quiet' },
+        hold: 2.2,
       },
       // the knees go; he falls forward onto his face, smiling
       {

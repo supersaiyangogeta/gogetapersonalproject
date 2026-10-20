@@ -176,6 +176,8 @@
         vfx: { kind: 'ring', at: { at: 'vegeta' }, radius: 9, color: 0xffd45a, life: 0.6 },
         shake: { at: { at: 'vegeta' }, amount: 0.8 },
         transform: { who: 'vegeta', form: 'ssj' },
+        // his Super Saiyan has its own music (soundtrack PDF p.93–94, "I Didn't Care Anymore": an original stand-in)
+        music: { song: 'vegeta_awakening', level: 4 },
         cam: { from: { at: 'vegeta', local: [0.7, 0.5, 2.4] }, to: { at: 'vegeta', local: [0.9, 0.9, 3.6] }, look: { at: 'vegeta', off: [0, 0.5, 0] }, fov: 34, fov2: 46 },
         hold: 2,
       },
@@ -219,7 +221,7 @@
       const s = m.battle.story;
       return { vegeta: s.vegeta, a19: s.a19, a20: s.a20, goku: s.goku, krillin: s.krillin };
     },
-    music: { song: 'super_saiyan', level: 6 },
+    music: { song: 'vegeta_awakening', level: 6 },
     events: [
       // both wrists caught in the absorbing palms
       {

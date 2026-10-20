@@ -344,7 +344,8 @@
    *   opts: fighter, form (id), witness, seconds (holding needed, default 4.5), label,
    *         beats: [{ at: 0..1, run(m, f) }] staged as the power rises, line, witnessLine,
    *         music (intensity for the reveal), onReady(m) (called at full, before the event),
-   *         dust (false: rubble only, no ground dust — for paved stages)
+   *         dust (false: rubble only, no ground dust — for paved stages), transform (extra options for
+   *         SL.data.cinematics.transform: changeShots, onFrame)
    * Holding raises it, letting go lets it sink back (it never fails: the story is going to
    * happen, the player decides how long it takes). At full, the form's own sequence plays
    * through SL.data.cinematics.transform, and the form is taught (Mission.teach 'form:<id>').
@@ -395,7 +396,7 @@
     m.limits(null);
     if (opts.onReady) opts.onReady(m);
     if (f.lockedForms) delete f.lockedForms[opts.form];
-    yield* C.transform(m, { fighter: f, formIndex: idx, witness: opts.witness, line: opts.line, witnessLine: opts.witnessLine, music: opts.music, dust: opts.dust, silent: opts.silent });
+    yield* C.transform(m, Object.assign({ fighter: f, formIndex: idx, witness: opts.witness, line: opts.line, witnessLine: opts.witnessLine, music: opts.music, dust: opts.dust, silent: opts.silent }, opts.transform || {}));
     m.teach(f, 'form:' + opts.form);
     m.flags['ascended_' + opts.form] = Math.round(t * 10) / 10;
     return t;

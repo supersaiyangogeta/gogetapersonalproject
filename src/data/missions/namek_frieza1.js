@@ -87,7 +87,8 @@
     run: function* (m) {
       const b = m.battle, S = b.story, v = S.vegeta, fz = S.frieza, k = S.krillin, g = S.gohan;
       m.lock(true);
-      m.music('menu', 0);
+      // the emperor, far off and in no hurry: thin tremolo violins on wrong notes (soundtrack PDF p.96, "Looming Threat")
+      m.music('looming_threat', 2);
       m.title(m.def.chapter, m.def.title.toUpperCase(), m.def.subtitle, 3.6);
       for (const f of [v, k, g]) f.setState('scripted', { pose: 'idle', expression: 'grit' });
       fz.setState('scripted', { pose: 'idle', expression: 'calm' });

@@ -110,6 +110,7 @@
     goku.lockedSlots = { transform: true };
     goku.formCaps = { kaioken: 4 };
     goku.hp = Math.round(goku.hpMax * 0.3);
+    goku.setDamage(2); // the gi as the Kaioken and the Spirit Bomb left it
     const krillin = b.spawn({ charId: 'krillin', team: 0, pos: ground(b, FIELD.clone().add(new V3(3.2, 0, 9.5))), startKi: 30 });
     const gohan = b.spawn({ charId: 'kid_gohan', team: 0, pos: ground(b, FIELD.clone().add(new V3(-1.8, 0, 12))), startKi: 30 });
     const piccolo = b.spawn({ charId: 'piccolo', team: 0, pos: ground(b, FIELD.clone().add(new V3(2, 0, 6.5))), startKi: 10 });
@@ -133,7 +134,7 @@
     battered(frieza);
     faceTo(goku, frieza.pos);
     faceTo(frieza, krillin.pos);
-    b.story = { goku, krillin, gohan, piccolo, frieza, cliff };
+    b.story = { goku, krillin, gohan, piccolo, frieza, cliff, field: { pos: FIELD.clone() } };
   }
 
   const P = {};
@@ -244,6 +245,14 @@
       fz.controller = new SL.AIController(b, { difficulty: SL.Settings.data.gameplay.difficulty, profile: { aggression: 0.7, defense: 0.45, preferredRange: 7, hooks: 'frieza', comboLen: 2 } });
       fz.target = g;
       g.target = fz;
+      // the first exchanges are staged (scene `ssj_first_exchange`): he lets Frieza come, steps off the
+      // line, and answers; then the fight is handed over
+      const ai = fz.controller;
+      fz.controller = scripted();
+      faceTo(g, fz.pos);
+      faceTo(fz, g.pos);
+      yield* SL.Cinema.play(m, 'ssj_first_exchange');
+      fz.controller = ai;
       g.setState('free');
       fz.setState('free');
       m.lock(false);
@@ -274,7 +283,20 @@
         m.progress('reverse', U.clamp(pct, 0, REVERSAL_TARGET));
       };
       m.tickHooks.push(hook);
-      yield () => start - fz.hp >= fz.hpMax * (REVERSAL_TARGET / 100) || !g.alive;
+      // halfway, the fight goes up into the sky for one staged exchange (scene `ssj_sky_exchange`)
+      const done = () => start - fz.hp >= fz.hpMax * (REVERSAL_TARGET / 100) || !g.alive;
+      yield () => done() || start - fz.hp >= fz.hpMax * (REVERSAL_TARGET / 200);
+      if (!done()) {
+        clearCombat(b);
+        fz.controller = scripted();
+        yield* SL.Cinema.play(m, 'ssj_sky_exchange');
+        fz.controller = ai;
+        g.setState('free');
+        fz.setState('free');
+        m.lock(false);
+        b.aiLocked = false;
+      }
+      yield done;
       for (const h of [hook, storm, poise]) {
         const i = m.tickHooks.indexOf(h);
         if (i >= 0) m.tickHooks.splice(i, 1);

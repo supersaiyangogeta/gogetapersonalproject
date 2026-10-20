@@ -308,7 +308,9 @@
         hits: [
           { pose: 'bs_slap', damage: 900, frames: 6, sfx: 'punchLight' },
           { pose: 'bs_backhand', damage: 950, frames: 7, sfx: 'punchHeavy' },
-          { pose: 'bs_hakai', damage: 8200, frames: 34, ki: { color: 0x8a3adf, hand: 'R' }, explode: 2.4, knock: 'heavy', knockSpeed: 34, impact: 4 },
+          // the last one: no explosion (2026-10-19, the research: the body does not explode) — violet light over him and
+          // dust coming off him from the feet up (fighter.js h.hakai)
+          { pose: 'bs_hakai', damage: 8200, frames: 34, ki: { color: 0x8a3adf, hand: 'R' }, hakai: { color: 0xb060ff, frames: 50 }, knock: 'heavy', knockSpeed: 34, impact: 4 },
         ],
       },
     },

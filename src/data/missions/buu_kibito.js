@@ -107,9 +107,9 @@
       const sk = () => (b.stage.cheer && b.stage.cheer(0.6));
       // THE POWER SHOT: low, in front of him, pushing in and tilting up as it rises (the rising is
       // read off his ki bar, so the camera answers the player's hold)
-      m.shot((t, out) => {
+      m.shot((t, out, el) => {
         const c = g.chest();
-        const k = SL.util.clamp01(t / 5);
+        const k = SL.util.clamp01(el / 5);
         const side = new V3(g.forward.z, 0, -g.forward.x);
         out.pos.copy(c).addScaledVector(g.forward, U.lerp(5.2, 3.1, k)).addScaledVector(side, U.lerp(1.6, 0.9, k)).add(new V3(0, U.lerp(-0.7, -1.05, k), 0));
         out.look.copy(c).add(new V3(0, U.lerp(0.2, 0.55, k), 0));
@@ -258,10 +258,10 @@
       }, 1.3, { cut: true, blendIn: 0 });
       yield* m.cine(1.3);
       // then the three of them, heads and all: the glass between them filling
-      const drainCam = () => m.shot((t, out) => {
+      const drainCam = () => m.shot((t, out, el) => {
         const c = g.chest();
         const side = new V3(g.forward.z, 0, -g.forward.x);
-        out.pos.copy(c).addScaledVector(side, 3 + t * 0.03).addScaledVector(g.forward, 1.3).add(new V3(0, 0.55, 0));
+        out.pos.copy(c).addScaledVector(side, 3 + el * 0.03).addScaledVector(g.forward, 1.3).add(new V3(0, 0.55, 0));
         out.look.copy(c).lerp(y.handPos('R'), 0.3).add(new V3(0, 0.3, 0));
         out.fov = 42;
       }, 999, { hold: true, cut: true, blendIn: 0 });

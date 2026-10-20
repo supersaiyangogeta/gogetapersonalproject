@@ -243,7 +243,9 @@
           b.sfx('kaiokenBoom', g, { vol: 1.4, pitch: 0.7 });
         },
         music: { song: 'finale', level: 5 },
-        screen: { flash: 0.7, color: '#ffc8c0' },
+        // the body pays for it at once: the gi splits further as the twenty times goes through it
+        damage: { who: 'goku', level: 2, burst: true },
+        screen: { flash: 0.55, color: '#ffc8c0' },
         slow: { scale: 0.5, seconds: 0.8 },
         cam: { from: { at: 'goku', local: [0.5, 0.2, 3] }, to: { at: 'goku', local: [0.3, 1.6, 7.5] }, look: { at: 'goku', off: [0, 0.5, 0] }, fov: 36, fov2: 54 },
         say: { who: 'goku', line: 'KAIOKEN... TIMES TWENTY!', duration: 2.8, style: 'shout' },
@@ -295,6 +297,19 @@
         },
         hold: 1.6,
       },
+      // the light swallows him and drives him back: for a moment it looks like it worked
+      {
+        call: (ctx) => {
+          const b = ctx.b, fz = ctx.cast.frieza;
+          b.vfx.flash(fz.chest().addScaledVector(fz.forward, 0.8), 9, 0xe8f8ff, 0.7, SL.Toon.tex.glow);
+          b.vfx.ring(fz.pos.clone().add(new V3(0, 0.3, 0)), 9, 0xbfe8ff, 0.6, new V3(0, 1, 0));
+          b.sfx('explosionBig', fz, { vol: 1.2, pitch: 0.8 });
+        },
+        space: { who: 'frieza', mode: 'slide', distance: 2.2, seconds: 0.6, endPose: 'fz_aim', expr: 'shout' },
+        screen: { flash: 0.6, color: '#eaf8ff' },
+        cam: { from: { at: 'goku', local: [2.6, 1.2, -2.2] }, look: { at: 'frieza', off: [0, 0.6, 0] }, fov: 48 },
+        hold: 1.2,
+      },
       // and he throws it into the sky
       {
         call: (ctx) => {
@@ -344,24 +359,41 @@
         say: { who: 'frieza', line: '...You actually hurt me.', duration: 3, style: 'quiet' },
         hold: 3.2,
       },
+      // the red goes out of him: it fades rather than stops, the shoulders drop, he can barely stand
       {
-        say: { who: 'frieza', line: 'And that was your best shot, wasn\'t it?', duration: 2.8 },
-        hold: 2.8,
+        pose: [{ who: 'goku', pose: 'exhausted', face: 'hurt', speed: 2, aura: 0.35 }],
+        music: { level: 1 },
+        cam: { subject: 'goku', focus: 'full', angle: 'three', side: -1 },
+        tick: (ctx) => {
+          const b = ctx.b, g = ctx.cast.goku;
+          if (b.frame % 5 === 0) b.vfx.sparks(g.chest().add(new V3(U.rand(-0.3, 0.3), U.rand(0, 0.6), U.rand(-0.3, 0.3))), 0xff6a50, 3, 3, 0.08);
+        },
+        hold: 1.2,
       },
-      // the Kaioken goes out, and he goes down with it
       {
         call: (ctx) => {
           const g = ctx.cast.goku, b = ctx.b;
           if (g.formIndex !== 0) g.applyForm(0);
           g.strain = 90;
-          b.vfx.flash(g.chest(), 3, 0xffffff, 0.2, SL.Toon.tex.glow);
-          b.sfx('kiUp', g, { pitch: 0.5 });
+          b.sfx('kiUp', g, { pitch: 0.5, vol: 0.6 });
         },
-        pose: [{ who: 'goku', pose: 'g_defeatKnee', face: 'hurt', speed: 2 }],
-        music: { level: 1 },
+        pose: [{ who: 'goku', pose: 'exhausted', face: 'hurt' }],
         mood: { amount: 0.4, color: 0x14101a, seconds: 1.5 },
+        cam: { subject: 'goku', focus: 'upper', angle: 'front' },
+        say: { who: 'goku', line: 'That was... everything I had.', duration: 2.8, style: 'quiet' },
+        hold: 3,
+      },
+      {
+        pose: [{ who: 'frieza', pose: 'idle', face: 'cold' }],
+        cam: { subject: 'frieza', focus: 'upper', angle: 'three' },
+        say: { who: 'frieza', line: 'Then you have very little left to offer.', duration: 2.8 },
+        hold: 3,
+      },
+      // and his legs go
+      {
+        pose: [{ who: 'goku', pose: 'g_defeatKnee', face: 'hurt', speed: 2 }],
         cam: { from: { at: 'goku', local: [1.8, 0.6, 3] }, to: { at: 'goku', local: [1.2, 0.3, 2.2] }, look: { at: 'goku', off: [0, -0.2, 0] }, fov: 42, fov2: 36 },
-        hold: 2.4,
+        hold: 1.6,
       },
       {
         // kneeling, head down: low and in front, looking up into his face

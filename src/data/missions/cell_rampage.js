@@ -2,23 +2,24 @@
  * CHAPTER 6 — CELL SAGA: THE CELL GAMES, PART THREE (rebuilt 2026-10-01)
  * Mission "The Difference in Power" (canon, played as Super Saiyan 2 Gohan).
  *
- * The owner's brief, kill by kill — each Cell Junior Gohan finishes is EXECUTED on camera, in order:
- *   1  the speed blitz      a blur, an open-hand chop across the neck: the head comes off and bursts
- *   2  the vertical slice   one lunges from above: an upward kick cuts it in half at the middle
- *   3+4 the double strike   two at once from left and right: an elbow through one face, a fist through
- *                           the other chest
- *   5  the counter          (they fire everything they have; he walks through it) one snatched by the
- *                           ankle and slammed into the ground until it bursts
+ * Each Cell Junior Gohan finishes gets its own staged, decisive blow, in order — non-graphic by the
+ * owner's choice of 2026-10-14: the blow lands on camera and the Junior is gone in light at that instant
+ * (CellKit burst 'energy'); nothing is cut apart:
+ *   1  the speed blitz      a blur, one open-hand chop
+ *   2  the rising kick      one lunges from above: an upward kick meets it in the air
+ *   3+4 the double strike   two at once from left and right: an elbow and a fist at the same instant
+ *   5  the counter          (they fire everything they have; he walks through it) one caught by the ankle,
+ *                           over and down into the stone
  *   6  the flash            a short-range ki flash, point-blank
- *   7  the execution        the last one screams and flies for its father; he is already above it, and
- *                           one strike turns it to dust before it reaches the ground
+ *   7  the last one         it screams and flies for its father; he is already above it: one strike
  * Between the kills it is played: they swarm him and their blows do NOTHING (storyNoSell — a power gap
  * you can feel), and whoever he beats down is the next one executed.
  *
  *   OPEN      (scene)       seven of them round him on the ring
  *   RAMPAGE * (play + six executions)
  *   CATCH     (scene)       Cell's full-power punch stopped in one hand an inch from his nose; the gut
- *                           punch; Cell's back bulges, his eyes go white, he folds and vomits Android 18;
+ *                           punch; Cell's eyes go white, he folds, and Android 18 is forced out of him in a
+ *                           burst of green light;
  *                           the perfect form melts back into the semi-perfect one
  *   TOYED *   (play)        semi-perfect Cell, desperate: nothing he throws registers
  *   SWELL     (scene)       "If I lose, everybody loses": he begins to inflate
@@ -73,7 +74,7 @@
   /* ------------------------------------------------------------ the executions */
   const X = {};
 
-  /** 1 — a blur, a chop across the neck, the head off. */
+  /** 1 — a blur, and one open-hand chop: the Junior is gone in light at the instant it lands. */
   X.chop = function* (m, gh, j) {
     const b = m.battle;
     const side = new V3(-j.forward.z, 0, j.forward.x);
@@ -90,42 +91,23 @@
     b.slowmo(0.3, 0.4);
     yield* hold(m, 0.35);
     gh.setState('scripted', { pose: 'chop', expression: 'angry', speed: 30, aura: 0.1 });
-    b.sfx('swordSlash', gh, { pitch: 1.4 });
-    yield* hold(m, 0.12);
-    j.model.root.updateMatrixWorld(true);
-    const neck = j.model.joints.head.getWorldPosition(new V3());
-    const cut = CK.split(b, j, { joint: 'head', at: neck.clone().add(new V3(0, -0.02, 0)), normal: UP, centerA: neck.clone().add(new V3(0, j.model.b.headR, 0)), centerB: j.chest() });
-    cut.a.vel.copy(gh.dirTo(j).setY(0).multiplyScalar(3).add(new V3(0, 7, 0)));
-    cut.a.spin.set(9, 4, 2);
-    b.vfx.sparks(neck, 0x6a9aff, 16, 6, 0.08);
-    b.slowmo(0.25, 0.7);
-    let t = 0, burst = false;
-    const hook = () => {
-      t += 1 / 60;
-      CK.animatePieces(b, cut, { gravity: 14 });
-      if (t > 0.5 && !burst) {
-        burst = true;
-        CK.burst(b, cut.a.pivot.position, 'junior', 1);
-        cut.hide(cut.a);
-        cut.b.frozen = false;
-      }
-      if (t > 1.1 && cut.b.alive) {
-        CK.burst(b, cut.b.pivot.position, 'junior', 0.9);
-        cut.hide(cut.b);
-      }
-    };
-    cut.b.frozen = true;
-    m.tickHooks.push(hook);
+    b.sfx('punchHeavy', gh, { pitch: 1.3, vol: 1.2 });
+    yield* hold(m, 0.1);
+    // the decisive impact: light where it landed, and nothing of him left in it
+    const hit = j.chest().lerp(gh.chest(), 0.3);
+    b.vfx.impact(hit, 2.2, 0xfff3c0);
+    CK.burst(b, j.chest(), 'energy', 1);
+    j.setHidden(true);
+    b.slowmo(0.25, 0.6);
+    // the follow-through, held: the hand still out, the dust settling past him
     shot(m, (tt, out) => {
-      const c = neck;
-      cam(out, c.clone().add(new V3(2.8, 0.6, 2.8)), c.clone().add(new V3(0, 0.6, 0)), 44);
+      const c = gh.chest(), f = gh.forward.clone().setY(0).normalize(), sd = new V3(-f.z, 0, f.x);
+      cam(out, c.clone().addScaledVector(sd, 2.6).addScaledVector(f, 1.2).add(new V3(0, 0.3, 0)), c.clone().addScaledVector(f, 0.6), 42);
     });
-    yield* hold(m, 1.5);
-    unhook(m, hook);
-    cut.dispose();
+    yield* hold(m, 1.3);
   };
 
-  /** 2 — from above; an upward kick; in two at the middle. */
+  /** 2 — from above; an upward kick meets it in the air, and it is gone in the flash. */
   X.slice = function* (m, gh, j) {
     const b = m.battle;
     const fwd = gh.forward.clone().setY(0).normalize();
@@ -151,34 +133,18 @@
     yield* hold(m, 0.4);
     unhook(m, dive);
     gh.setState('scripted', { pose: 'tg_kick', expression: 'shout', speed: 30, aura: 0.1 });
-    b.sfx('swordSlash', gh, { pitch: 1.1 });
+    b.sfx('punchHeavy', gh, { pitch: 0.9, vol: 1.3 });
     b.slowmo(0.22, 0.8);
-    const mid = j.chest().add(new V3(0, -0.05, 0));
-    const cut = CK.split(b, j, { at: mid, normal: new V3(fwd.x * 0.3, 1, fwd.z * 0.3).normalize(), centerA: mid.clone().add(new V3(0, 0.3, 0)), centerB: mid.clone().add(new V3(0, -0.3, 0)) });
-    const sd = new V3(-fwd.z, 0, fwd.x);
-    cut.a.vel.copy(sd).multiplyScalar(4).add(new V3(0, 6, 0)).addScaledVector(fwd, 2);
-    cut.b.vel.copy(sd).multiplyScalar(-4).add(new V3(0, 2, 0)).addScaledVector(fwd, 2);
-    cut.a.spin.set(5, 0, 6);
-    cut.b.spin.set(-4, 0, -5);
+    const mid = j.chest();
     b.vfx.ring(mid, 2.4, 0xfff3c0, 0.3, fwd);
-    b.vfx.sparks(mid, 0x6a9aff, 20, 8, 0.1);
-    let t2 = 0;
-    const fall = () => {
-      t2 += 1 / 60;
-      CK.animatePieces(b, cut, { gravity: 16 });
-      if (t2 > 0.9 && cut.a.alive) {
-        for (const p of [cut.a, cut.b]) CK.burst(b, p.pivot.position, 'junior', 0.8);
-        cut.hide(cut.a);
-        cut.hide(cut.b);
-      }
-    };
-    m.tickHooks.push(fall);
-    yield* hold(m, 1.4);
-    unhook(m, fall);
-    cut.dispose();
+    b.vfx.impact(mid, 2.4, 0xfff3c0);
+    CK.burst(b, mid, 'energy', 1.1);
+    j.setHidden(true);
+    b.cameraTraumaAt(mid, 0.5);
+    yield* hold(m, 1.2);
   };
 
-  /** 3 + 4 — two at once from left and right: an elbow through a face, a fist through a chest. */
+  /** 3 + 4 — two at once from left and right: an elbow one way and a fist the other, at the same instant. */
   X.double = function* (m, gh, j, k) {
     const b = m.battle;
     const fwd = gh.forward.clone().setY(0).normalize();
@@ -207,14 +173,15 @@
     b.vfx.sparks(hl, 0x6a9aff, 16, 8, 0.1);
     b.vfx.sparks(cr, 0x6a9aff, 16, 8, 0.1);
     b.cameraTraumaAt(gh.pos, 0.6);
-    yield* hold(m, 0.8);
-    CK.burst(b, hl, 'junior', 1);
-    CK.burst(b, cr, 'junior', 1);
+    // both gone in light at the instant the blows land
+    CK.burst(b, hl, 'energy', 1);
+    CK.burst(b, cr, 'energy', 1);
     for (const x of [jl, jr]) x.setHidden(true);
+    yield* hold(m, 0.8);
     yield* hold(m, 0.8);
   };
 
-  /** 5 — they fire everything; he walks through it; one by the ankle, into the ground, until it bursts. */
+  /** 5 — they fire everything; he walks through it; one by the ankle, over and down into the stone — and gone in light. */
   X.slam = function* (m, gh, j, others) {
     const b = m.battle;
     const fwd = gh.forward.clone().setY(0).normalize();
@@ -271,7 +238,7 @@
       b.cameraTraumaAt(down, 0.5);
       yield* hold(m, 0.32);
     }
-    CK.burst(b, j.chest(), 'junior', 0.8);
+    CK.burst(b, j.chest(), 'energy', 0.9);
     j.setHidden(true);
     b.slowmo(0.3, 0.5);
     yield* hold(m, 0.9);
@@ -293,13 +260,13 @@
     b.vfx.explosion(j.chest(), 1.2, 0xffe890, { smoke: true });
     b.sfx('kiBlastBig', gh, { vol: 1.3 });
     SL.ScreenFX.flash(0.15, '#fff4d8');
-    CK.burst(b, j.chest(), 'junior', 1);
+    CK.burst(b, j.chest(), 'energy', 1);
     j.setHidden(true);
     b.slowmo(0.3, 0.5);
     yield* hold(m, 1.1);
   };
 
-  /** 7 — the last one runs for its father; he is above it; dust before it hits the ground. */
+  /** 7 — the last one runs for its father; he is above it; one strike, and it is gone in light. */
   X.dust = function* (m, gh, j) {
     const b = m.battle, c = b.story.cell;
     CK.faceTo(j, gh.pos);
@@ -337,22 +304,11 @@
     gh.setState('scripted', { pose: 'tg_axe', expression: 'shout', speed: 30, aura: 0.1 });
     b.sfx('punchHeavy', gh, { pitch: 0.4, vol: 1.5 });
     b.slowmo(0.25, 0.8);
-    // pulverised: a cloud of blue dust and fragments, falling apart before it reaches the ground
-    CK.burst(b, j.chest(), 'dust', 1.4);
-    const bits = SL.data.trunksKit.dice(b, j.chest(), [0x3a5ad0, 0x2a3a8a, 0x6a8ae8], { count: 34, height: 0.8, width: 0.6, seed: 7 });
-    for (const p of bits.pieces) p.v.set(p.mesh.position.x * 8, -6 + p.mesh.position.y * 4, p.mesh.position.z * 8);
+    // the blow lands and it is gone in light before it reaches the ground
+    CK.burst(b, j.chest(), 'energy', 1.4);
+    b.vfx.ring(j.chest(), 4, 0xfff3c0, 0.45);
     j.setHidden(true);
-    let t3 = 0;
-    const settle = () => {
-      t3 += 1 / 60;
-      bits.tick(1 / 60);
-      // the fragments shrink to nothing on the way down (no flash per piece: that whited the frame out)
-      if (t3 > 0.5) for (const p of bits.pieces) p.mesh.scale.multiplyScalar(0.94);
-    };
-    m.tickHooks.push(settle);
-    yield* hold(m, 1.6);
-    unhook(m, settle);
-    bits.dispose();
+    yield* hold(m, 1.4);
     CK.placeAir(gh, pin.clone().add(new V3(0, 1.4, 0)));
   };
 

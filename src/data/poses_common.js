@@ -218,6 +218,18 @@
     shoulderL: [-170, 0, 20], elbowL: [-10, 0, 0], shoulderR: [-170, 0, -20], elbowR: [-10, 0, 0],
     thighL: [20, 0, 10], kneeL: [20, 0, 0], thighR: [30, 0, -10], kneeR: [30, 0, 0],
   };
+  // a tucked backflip off a blow, one full turn in half a second (the root's turn is wrapped back by whoever plays it,
+  // so the next pose does not unwind it)
+  P.backflip = (t) => {
+    const k = Math.min(1, t / 0.5), s = k * k * (3 - 2 * k), tuck = Math.sin(k * Math.PI);
+    return {
+      root: { rx: -360 * s },
+      spine: [10 + 16 * tuck, 0, 0], chest: [6 + 12 * tuck, 0, 0], head: [-6 + 18 * tuck, 0, 0],
+      shoulderL: [-30 - 40 * tuck, 0, 30], elbowL: [-60 - 40 * tuck, 0, 0], shoulderR: [-30 - 40 * tuck, 0, -30], elbowR: [-60 - 40 * tuck, 0, 0],
+      thighL: [-30 - 60 * tuck, 0, 8], kneeL: [40 + 80 * tuck, 0, 0], footL: [20, 0, 0],
+      thighR: [-20 - 60 * tuck, 0, -8], kneeR: [30 + 80 * tuck, 0, 0], footR: [20, 0, 0],
+    };
+  };
   P.recover = {
     root: { y: 0.02 },
     spine: [18, 0, 0], chest: [10, 0, 0], head: [-10, 0, 0],
@@ -343,6 +355,14 @@
   };
   P.punchWindL = M(P.punchWindR);
   P.punchL = M(P.punchR);
+  // a blow that met only air (Ultra Instinct's slip): the weight carried on through, one foot stepping far
+  // ahead to stop the fall, the striking arm still out, the other flung back for balance
+  P.overreach = {
+    root: { y: -0.12, rx: 18 },
+    hips: [0, 14, 0], spine: [12, 14, 0], chest: [10, 22, 0], head: [-24, -14, 0],
+    shoulderR: [-70, 0, 4], elbowR: [-10, 0, 0], shoulderL: [20, 0, 50], elbowL: [-30, 0, 0],
+    thighL: [-62, 0, 8], kneeL: [70, 0, 0], thighR: [30, 0, -8], kneeR: [14, 0, 0],
+  };
   P.kickWindR = {
     root: { y: -0.02, rx: -6 },
     chest: [-4, -10, 0], shoulderL: [-40, 0, 30], elbowL: [-90, 0, 0], shoulderR: [-30, 0, -40], elbowR: [-90, 0, 0],
@@ -398,6 +418,18 @@
     shoulderL: [-50, 0, 60], elbowL: [-20, 0, 0], shoulderR: [-50, 0, -60], elbowR: [-20, 0, 0],
     thighL: [-10, 0, 10], kneeL: [26, 0, 0], thighR: [4, 0, -10], kneeR: [30, 0, 0],
   };
+  // held in the air by the Divine Lasso's needles: chest thrown forward, arms flung out and back, legs hanging; the face
+  // kept up enough for a close-up to read (the research's goku_ssb_impalement_pinned — nothing graphic: no wound). Used
+  // by "Zero Mortals" and by the technique on whoever it catches
+  P.needled = (t) => {
+    const s = Math.sin(t * 52) * 1.5;
+    return {
+      hands: ['open', 'open'],
+      root: { rx: -8 }, spine: [-12, 0, 0], chest: [-14 + s, 0, 0], neck: [-6, 0, 0], head: [-10, 0, 0],
+      shoulderL: [-10, 0, 72 + s], elbowL: [-18, 0, 0], shoulderR: [-10, 0, -72 - s], elbowR: [-18, 0, 0],
+      thighL: [-12, 0, 6], kneeL: [34, 0, 0], thighR: [6, 0, -6], kneeR: [44, 0, 0],
+    };
+  };
   // on his knees, head lowered but the face still readable (defeatKneel bows it to the ground)
   P.kneelGrieve = {
     root: { y: -0.46, rx: 8 },
@@ -405,6 +437,22 @@
     shoulderL: [-30, 0, 8], elbowL: [-40, 0, 0], shoulderR: [-26, 0, -8], elbowR: [-40, 0, 0],
     thighL: [-92, 0, 6], kneeL: [92, 0, 0], thighR: [12, 0, -6], kneeR: [115, 0, 0], footR: [40, 0, 0],
   };
+  // caught in a vortex (the Mafuba): the arms forced tight to the sides, legs together, the head thrown back
+  P.vortexBound = ((t) => ({
+    hands: ['fist', 'fist'],
+    root: { rz: Math.sin(t * 9) * 28, rx: Math.cos(t * 7) * 14 }, spine: [-10, 0, 0], chest: [-10, 0, 0], neck: [-10, 0, 0], head: [-22, 0, 0],
+    shoulderL: [6, 0, 4], elbowL: [-6, 0, 0], shoulderR: [6, 0, -4], elbowR: [-6, 0, 0],
+    thighL: [-6, 0, 2], kneeL: [10, 0, 0], thighR: [-6, 0, -2], kneeR: [10, 0, 0],
+  }));
+  // rock, paper, scissors (2026-10-19, "The Park Ranger": who gets the poacher boss): the right hand thrown out low in
+  // front, a fist (rock) or flat (paper). Hands are [left, right]
+  P.rpsRock = {
+    root: { y: -0.02 }, spine: [6, 0, 0], chest: [4, -10, 0], head: [6, 0, 0],
+    shoulderL: [-10, 0, 14], elbowL: [-40, 0, 0], shoulderR: [-60, 0, -10], elbowR: [-20, 0, 0],
+    thighL: [-8, 0, 8], kneeL: [10, 0, 0], thighR: [4, 0, -8], kneeR: [6, 0, 0],
+    hands: ['fist', 'fist'],
+  };
+  P.rpsPaper = Object.assign({}, P.rpsRock, { hands: ['fist', 'open'] });
   P.armsCrossed = {
     chest: [-4, 0, 0], head: [-6, 0, 0],
     // V0.2: upper arms hang, twist inward, forearms fold across the chest

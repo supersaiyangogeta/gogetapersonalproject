@@ -583,6 +583,92 @@
   });
 
   /* ======================================================================
+   * STARDUST BREAKER — Gogeta's (Fusion Reborn) finisher outside the story
+   * (the records PDF: "a short, controlled startup and a unique impact
+   * effect", not another big beam). The palm up, the prism orb growing over
+   * it (SL.Dimension.prismOrb — the same orb Fusion Reborn stages), the fist
+   * closing round it, and its glittering dust thrown into him: a homing
+   * burst of light that does the damage, glitter breaking over him where it
+   * lands. Interrupted before the crush, the orb just fades.
+   * ====================================================================== */
+  register('stardustBreaker', {
+    start(f, sp, slot, cost) {
+      const t = f.target;
+      if (!t || !t.alive) return false;
+      if (!R.spendKi(f, cost)) return false;
+      f.setState('breaker', { spec: sp, slot, phase: 'raise' });
+      f.anim.play(sp.poses.raise, 9);
+      f.battle.sfx('kiUp', f, { vol: 0.6, pitch: 1.4 });
+      return true;
+    },
+    armor: { breaker: () => 2 },
+    states: {
+      breaker(it) {
+        const sd = this.sd, sp = sd.spec, f = this.stateFrame, b = this.battle, t = this.target;
+        this.vel.multiplyScalar(0.8);
+        if (this.grounded) this.vel.y = 0;
+        this.faceTarget(12);
+        const raise = sp.raise || 44, maxR = sp.orbR || 0.55;
+        const PR = SL.Dimension.PRISM;
+        if (sd.phase === 'raise') {
+          if (!sd.prism) sd.prism = SL.Dimension.prismOrb(b, { fade: 14 });
+          const k = Math.min(1, f / raise), r = maxR * (0.12 + 0.88 * (1 - (1 - k) * (1 - k)));
+          sd.prism.set(this.handPos('R').add(new V3(0, r + 0.12, 0)), r);
+          if (f % 2 === 0) b.vfx.streamInward(sd.prism.pos, 1.4, PR[f % PR.length], 2, 0.08, 0.3);
+          if (f % 30 === 0) b.sfx('prismHum', this, { vol: 0.3 + 0.4 * k });
+          if (f >= raise) {
+            sd.phase = 'crush';
+            sd.at = f;
+            this.anim.play(sp.poses.crush, 24);
+          }
+          return;
+        }
+        if (sd.phase === 'crush') {
+          const n = f - sd.at, fist = this.handPos('R').add(new V3(0, 0.08, 0));
+          if (n <= 8) sd.prism.set(sd.prism.pos.clone().lerp(fist, n / 8), maxR * (1 - 0.85 * (n / 8)));
+          if (n === 8) {
+            sd.prism.close();
+            sd.prism = null;
+            SL.Dimension.glitter(b, fist, 40, { speed: 2.4, life: 0.9, size: 0.09 });
+            b.vfx.flash(fist, 0.9, 0xfff4ff, 0.14, SL.Toon.tex.glow);
+            b.sfx('warpShatter', this, { pitch: 1.7, vol: 0.8 });
+          }
+          if (n === 16) {
+            // the dust thrown into him: it finds him (homing), and the light does the work — a small violet burst, the
+            // glitter carrying the impact (no white sphere over the frame)
+            const dir = t && t.alive ? t.chest().sub(fist).normalize() : this.forward.clone();
+            sd.dust = b.projectiles.spawnBlast(this, fist, dir, { kind: 'ball', speed: sp.speed || 64, radius: 0.55, damage: sp.damage || 5200, color: 0xb08aff, core: 0xe8f8ff, homing: 1.4, knock: 'heavy', knockSpeed: 30, hitstun: 50, impact: 3, explode: 1.1, life: 2.4, name: sp.name });
+            if (sd.dust && t) sd.dust.target = t;
+            b.sfx('prismHum', this, { vol: 0.9 });
+            if (this.cine) this._cineEvent('release');
+            sd.phase = 'recover';
+            sd.at = f;
+          }
+          return;
+        }
+        // the dust in flight: glitter shed along it, and breaking over him when it lands
+        const p = sd.dust;
+        if (p && p.alive && f % 2 === 0) SL.Dimension.glitter(b, p.pos, 3, { speed: 0.6, life: 0.6, size: 0.07 });
+        if (p && !p.alive && !sd.landed) {
+          sd.landed = true;
+          if (t && t.alive && p.pos.distanceTo(t.chest()) < 3) {
+            SL.Dimension.glitter(b, t.chest(), 60, { speed: 3, life: 1.2, size: 0.1 });
+            b.vfx.flash(t.chest(), 1.2, 0xd8c8ff, 0.18, SL.Toon.tex.glow);
+          }
+        }
+        if (f - sd.at >= (sp.recovery || 30)) this.setState('free');
+      },
+    },
+    exits: {
+      breaker(f, sd) {
+        // (sd.prism, not sd.orb: _exitState drops any sd.orb before this runs)
+        if (sd.prism) sd.prism.close();
+        sd.prism = null;
+      },
+    },
+  });
+
+  /* ======================================================================
    * SOLAR FLARE — Tien's blinding flash: every enemy in range that is
    * looking at him is blinded and helpless for a moment. Useless against
    * someone looking away.
@@ -638,8 +724,8 @@
    * leaves a punish window afterwards.
    * ====================================================================== */
 
-  /** A glowing warning disc on the ground that fills up until the hit lands. */
-  function telegraph(b, pos, radius, color, frames) {
+  /** A glowing warning disc on the ground that fills up until the hit lands. owner (optional): the event's fighter. */
+  function telegraph(b, pos, radius, color, frames, owner) {
     const g = new THREE.Group();
     // normal blending: additive warnings vanish on bright sand; polygon offset keeps them above bumpy ground
     const mat = (opacity) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6 });
@@ -682,7 +768,7 @@
       }
       return true;
     });
-    b.emit('telegraph', { pos: t.pos, radius, frames });
+    b.emit('telegraph', { fighter: owner, pos: t.pos, radius, frames });
     return t;
   }
   SL.telegraph = telegraph;
@@ -703,9 +789,13 @@
 
   /* --- GROUND SLAM: crouch, leap at the target's position, crash down in a shockwave ring --- */
   register('groundSlam', {
-    start(f, sp) {
+    // from a button (a special slot) it pays its ki and starts its cooldown like every other technique (2026-10-15: it
+    // did neither, so Magetta's press, Broly's leap, Zarbon's quake and the other slams were free and could be repeated
+    // at once); a boss pattern ('boss') and a direct call (no slot) stay free
+    start(f, sp, slot, cost) {
       const t = f.target;
       if (!t || !t.alive || !f.battle.stage.hasGround) return false;
+      if (!payFromSlot(f, sp, slot, cost)) return false;
       f.setState('bossSlam', { spec: sp, phase: 'crouch' });
       f.anim.play(sp.poses.crouch, 16);
       f.battle.sfx('kiUp', f, { pitch: 0.6 });
@@ -751,9 +841,11 @@
             if (sd.mark) sd.mark.remove();
             const c = this.pos.clone();
             b.stage.crater(c, sp.radius * 0.45, 1.2, this);
-            b.vfx.ring(c.clone().add(new V3(0, 0.3, 0)), sp.radius * 1.9, 0xffe0b0, 0.55, UP);
-            b.vfx.ring(c.clone().add(new V3(0, 0.3, 0)), sp.radius * 1.2, 0xffffff, 0.35, UP);
-            b.vfx.dust(c, sp.radius * 0.8, 30);
+            // sp.ringColor / sp.coreColor / sp.dustColor: a slam in its owner's colours (Broly's green on the snow,
+            // where white rings and brown dust washed the frame out); the defaults are the old ones
+            b.vfx.ring(c.clone().add(new V3(0, 0.3, 0)), sp.radius * 1.9, sp.ringColor === undefined ? 0xffe0b0 : sp.ringColor, 0.55, UP);
+            b.vfx.ring(c.clone().add(new V3(0, 0.3, 0)), sp.radius * 1.2, sp.coreColor === undefined ? 0xffffff : sp.coreColor, 0.35, UP);
+            b.vfx.dust(c, sp.radius * 0.8, 30, sp.dustColor === 'stage' ? b.stage.def.terrain && b.stage.def.terrain.sand : sp.dustColor);
             b.vfx.debrisBurst(c.clone().add(new V3(0, 0.5, 0)), 24, b.stage.rockColor || 0x8a6a4a, 14, 0.35);
             b.sfx('groundImpact', null, { at: c, vol: 1.5 });
             b.cameraTraumaAt(c, 0.8);
@@ -791,8 +883,11 @@
    * sp.look (optional, every field defaults to the boss version): a hero's burst shot close by the
    * gameplay camera — { telegraph: false (no warning marker or dome), color, ringColor, aura (flare
    * during the charge, 1), blast (fireball, 0.55 × reach), ring (ground ring, 2.2 × reach), light (4),
-   * ground (crater and dust, 0.8 × reach), flash (screen flash, 0.55) }. The reach and the damage
-   * are the same whatever it looks like. sp.impact: the hit's impact level (4).
+   * ground (crater and dust, 0.8 × reach), flash (screen flash, 0.55), grow (the aura and the shaking
+   * swell through the charge), bolts (colour: lightning crackling round him), blastFlash (the burst's flash
+   * sprites, 1) }. The reach and the damage
+   * are the same whatever it looks like. sp.impact: the hit's impact level (4). sp.selfCost: the share
+   * of his own maximum health the burst takes from him (never below 1 HP — Final Explosion).
    */
   register('bomberWave', {
     start(f, sp, slot, cost) {
@@ -832,16 +927,20 @@
             sd.dome.material.opacity = 0.12 + 0.1 * Math.abs(Math.sin(f * 0.25)) + k * 0.08;
           }
           const L = sp.look || {};
+          const g = Math.min(1, f / sp.charge);
           if (f % 4 === 0) b.vfx.streamInward(this.chest(), 4, L.color || 0xffc060, 2, 0.12, 0.35);
           if (f % 10 === 0) b.cameraTraumaAt(this.pos, 0.12);
-          this.anim.shake = 0.08;
+          this.anim.shake = L.grow ? 0.03 + 0.12 * g : 0.08;
+          // (the state's aura override: Fighter._post sets the aura from sd.aura every frame)
+          if (L.grow) sd.aura = (L.aura === undefined ? 1 : L.aura) * (0.5 + g);
+          if (L.bolts && f % 5 === 0) b.vfx.bolt(this.chest().add(new V3(U.rand(-0.5, 0.5), U.rand(-0.6, 0.6), U.rand(-0.5, 0.5)).multiplyScalar(this.scale)), (1 + g) * this.scale, L.bolts);
           if (f >= sp.charge) {
             const c = this.chest();
             if (sd.mark) sd.mark.remove();
             removeDome(sd);
             this.aura.target = 0;
             const k = (v, d) => (L[v] === undefined ? d : L[v]);
-            b.vfx.explosion(c, sp.radius * k('blast', 0.55), L.color || 0xffb060, { smoke: true });
+            b.vfx.explosion(c, sp.radius * k('blast', 0.55), L.color || 0xffb060, { smoke: true, flash: L.blastFlash });
             b.vfx.ring(this.pos.clone().add(new V3(0, 0.4, 0)), sp.radius * k('ring', 2.2), L.ringColor || 0xffe0a0, 0.7, UP);
             b.vfx.light(c, L.color || 0xffb060, k('light', 4), sp.radius * 4, 0.5);
             b.sfx('explosionHuge', null, { at: c });
@@ -854,6 +953,9 @@
               if (d < sp.radius) e.takeHit(this, { type: 'explosion', damage: sp.damage * (1 - (d / sp.radius) * 0.45), knock: 'heavy', knockSpeed: sp.knockSpeed, hitstun: 50, impact: sp.impact || 4, dir: e.chest().sub(c).setY(0.25).normalize(), point: e.chest(), technique: sp.id });
             }
             b.stage.explode(this.pos.clone(), sp.radius * k('ground', 0.8), 6000, null, this);
+            if (sp.selfCost) this.hp = Math.max(1, this.hp - this.hpMax * sp.selfCost);
+            if (L.grow) sd.aura = 0;
+            if (this.cine) this._cineEvent('release');
             b.emit('bomberWave', { fighter: this });
             this.anim.play(sp.poses.release, 40, { restart: true });
             sd.phase = 'release';
@@ -881,9 +983,11 @@
 
   /* --- ERUPTION (Break Cannon): points two fingers up; the ground under each marked spot bursts --- */
   register('eruption', {
-    start(f, sp) {
+    // pays from a button like groundSlam (Magetta's Molten Ground and Frieza's Death Storm were free from their slots)
+    start(f, sp, slot, cost) {
       const t = f.target;
       if (!t || !t.alive || !f.battle.stage.hasGround) return false;
+      if (!payFromSlot(f, sp, slot, cost)) return false;
       f.setState('bossEruption', { spec: sp, fired: 0, next: 0 });
       f.anim.play(sp.poses.cast, 16);
       return true;
@@ -901,14 +1005,17 @@
             // aim a little ahead of a moving target
             const lead = t.pos.clone().addScaledVector(t.vel.clone().setY(0), sp.lead);
             const spot = groundAt(b, lead);
-            telegraph(b, spot, sp.radius, 0xffc400, sp.delay);
+            telegraph(b, spot, sp.radius, sp.markColor || 0xffc400, sp.delay, this);
             b.sfx('kiUp', this, { pitch: 1.5, vol: 0.6 });
             const owner = this;
             b.after(sp.delay, () => {
               if (b.disposed) return;
               const top = spot.clone().add(new V3(0, 1.5, 0));
-              for (let i = 0; i < 4; i++) b.vfx.ball(spot.clone().add(new V3(0, i * 1.6, 0)), sp.radius * (0.9 - i * 0.15), 0xffd070, 0.45 + i * 0.05);
-              b.vfx.flash(top, sp.radius * 3, 0xffe0a0, 0.25);
+              // sp.color / sp.flashColor / sp.skyBolt (optional, 2026-10-19: Fused Zamasu's judgment comes down as pink
+              // lightning): the column in its owner's colours, a bolt out of the sky onto it; the defaults are the old ones
+              for (let i = 0; i < 4; i++) b.vfx.ball(spot.clone().add(new V3(0, i * 1.6, 0)), sp.radius * (0.9 - i * 0.15), sp.color || 0xffd070, 0.45 + i * 0.05);
+              b.vfx.flash(top, sp.radius * 3, sp.flashColor || 0xffe0a0, 0.25);
+              if (sp.skyBolt) b.vfx.skyBolt(top, 26, sp.skyBolt);
               b.vfx.debrisBurst(spot.clone().add(new V3(0, 0.3, 0)), 14, b.stage.rockColor || 0x8a6a4a, 16, 0.3);
               b.sfx('explosionBig', null, { at: spot, vol: 0.9 });
               b.cameraTraumaAt(spot, 0.4);
@@ -962,10 +1069,11 @@
         this.anim.shake = 0.1;
         if (f === sp.blastAt) {
           const c = this.chest();
-          b.vfx.ring(c, sp.radius * 1.6, 0xffffff, 0.5);
-          b.vfx.ring(this.pos.clone().add(new V3(0, 0.3, 0)), sp.radius * 2, 0xffd090, 0.6, UP);
-          b.vfx.dust(this.pos, sp.radius * 0.6, 24);
-          b.sfx('roar', this, { pitch: 0.7, vol: 1.2 });
+          // sp.cloud / sp.sfx: the same shove with another face (Veku's Panic Puff is a little cloud, not a roar)
+          b.vfx.ring(c, sp.radius * 1.6, sp.cloud || 0xffffff, 0.5);
+          b.vfx.ring(this.pos.clone().add(new V3(0, 0.3, 0)), sp.radius * 2, sp.cloud || 0xffd090, 0.6, UP);
+          b.vfx.dust(this.pos, sp.radius * 0.6, 24, sp.cloud);
+          b.sfx(sp.sfx || 'roar', this, { pitch: sp.sfx ? 1 : 0.7, vol: 1.2 });
           b.cameraTraumaAt(c, 0.7);
           for (const e of b.enemiesOf(this)) {
             const d = e.pos.distanceTo(this.pos);
@@ -1458,6 +1566,1094 @@
     exits: {
       timeFreeze(f, sd) {
         SL.Techniques.timeFreeze.release(f, sd);
+      },
+    },
+  });
+
+  /* ======================================================================
+   * GOD BIND (Super Broly) — divine restraint: both palms out, a crimson
+   * ring closes round ONE enemy in front of the user and holds him where he
+   * is (no mashing out of it) while the user's ki drains. It ends when the
+   * hold runs out, the ki does, the user is hit — or when something stronger
+   * than the bind breaks it: SL.Techniques.godBind.shatter(f) breaks the ring
+   * like glass (a story beat calls it). Only in the forms listed in sp.forms (checked here as well as by
+   * Fighter.extraLock: Broly's mission hands it over on the Special 2 button).
+   * ====================================================================== */
+  register('godBind', {
+    lockedReason(f, sp) {
+      return sp.forms && !sp.forms.includes(f.form.id) ? 'Needs divine ki' : null;
+    },
+    start(f, sp, slot, cost) {
+      if (sp.forms && !sp.forms.includes(f.form.id)) return false;
+      const foes = f.battle.enemiesOf(f).filter((e) => e.alive && !e.hidden && !e.untargetable && f.distTo(e) <= sp.range);
+      const victim = f.target && foes.includes(f.target) ? f.target : foes.sort((a, c) => f.distTo(a) - f.distTo(c))[0];
+      if (!victim || !payFromSlot(f, sp, slot, cost)) return false;
+      f.cooldowns[slot] = sp.cooldown || 0;
+      f.setState('godBind', { spec: sp, slot, victim, bound: false, rings: null });
+      f.anim.play(sp.poses.hold, 10);
+      f.battle.sfx('kiCharge', f, { pitch: 1.5, vol: 0.8 });
+      return true;
+    },
+    states: {
+      godBind() {
+        const sd = this.sd, sp = sd.spec, fr = this.stateFrame, v = sd.victim;
+        const b = this.battle;
+        this.vel.multiplyScalar(0.5);
+        if (this.grounded) this.vel.y = 0;
+        if (v && v.alive) this.yaw = Math.atan2(v.pos.x - this.pos.x, v.pos.z - this.pos.z);
+        if (fr === sp.startup && v && v.alive) {
+          sd.bound = true;
+          v.setState('held', { by: this, frames: sp.holdFrames + 10, psychic: true, frozen: true });
+          v.vel.set(0, 0, 0);
+          // two crimson rings round him, crossing: they turn while he is held
+          const R = Math.max(0.6, v.height * 0.42);
+          const mat = new THREE.MeshBasicMaterial({ color: sp.color || 0xff2a48, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false });
+          const geo = new THREE.TorusGeometry(R, 0.045, 6, 48);
+          const g = new THREE.Group();
+          const a = new THREE.Mesh(geo, mat), c = new THREE.Mesh(geo, mat);
+          a.rotation.x = Math.PI / 2;
+          c.rotation.y = Math.PI / 2;
+          g.add(a, c);
+          b.scene.add(g);
+          sd.rings = { g, a, c, geo, mat, R };
+          b.vfx.ring(v.chest(), R * 2.2, sp.color || 0xff2a48, 0.35);
+          b.sfx('itPop', v, { pitch: 0.6 });
+          b.emit('godBind', { fighter: this, victim: v, frames: sp.holdFrames });
+        }
+        if (sd.bound) {
+          if (v && v.alive && v.state === 'held') v.vel.set(0, 0, 0);
+          const r = sd.rings;
+          if (r && v) {
+            r.g.position.copy(v.chest());
+            r.a.rotation.z += 0.05;
+            r.c.rotation.x += 0.04;
+            r.mat.opacity = 0.7 + Math.sin(fr * 0.3) * 0.15;
+          }
+          if (fr % 9 === 0 && v) b.vfx.bolt(v.chest().add(new V3(U.rand(-0.5, 0.5), U.rand(-0.4, 0.6), U.rand(-0.5, 0.5))), U.rand(0.3, 0.6), sp.color || 0xff6a7a);
+          if (!this.infiniteKi) this.ki -= sp.kiPerSecond / 60;
+        }
+        if (sd.bound && (fr >= sp.startup + sp.holdFrames || this.ki <= 0 || !v || !v.alive || v.state !== 'held')) {
+          SL.Techniques.godBind.release(this, sd);
+          this.setState('stagger', { frames: sp.recovery });
+        }
+      },
+    },
+    /** The ring opens (opts.shatter: it breaks like glass — something stronger than the bind). */
+    release(f, sd, opts = {}) {
+      if (!sd || !sd.bound) return;
+      sd.bound = false;
+      const b = f.battle, v = sd.victim;
+      const r = sd.rings;
+      if (r) {
+        if (opts.shatter && SL.Dimension) SL.Dimension.cubes(b, r.g.position.clone(), { count: 26, spread: r.R, speed: 7, life: 40, size: 0.09, colors: [0xff2a48, 0xff8a9a, 0xffe0e6, 0x8a0a1a], drift: 10 });
+        b.scene.remove(r.g);
+        r.geo.dispose();
+        r.mat.dispose();
+        sd.rings = null;
+      }
+      if (v && v.alive && v.state === 'held' && v.sd.by === f) v.setState('free');
+      b.sfx(opts.shatter ? 'warpShatter' : 'itPop', v || f, { pitch: opts.shatter ? 0.8 : 1.2 });
+      b.emit(opts.shatter ? 'godBindBroken' : 'godBindEnd', { fighter: f, victim: v });
+    },
+    /** Something stronger than the bind: the ring breaks like glass and the user reels. */
+    shatter(f) {
+      if (f.state !== 'godBind') return false;
+      SL.Techniques.godBind.release(f, f.sd, { shatter: true });
+      f.setState('stagger', { frames: 36 });
+      return true;
+    },
+    exits: {
+      godBind(f, sd) {
+        SL.Techniques.godBind.release(f, sd);
+      },
+    },
+  });
+
+  /* ======================================================================
+   * DIVINE LASSO (Goku Black in Super Saiyan Rosé — Roadmap Three, the Goku Black arc research: DL-S01 to S04 and its
+   * section 5, "Ultimate / Command Grab Super"). He pulls the open right hand back across his waist and a crescent of
+   * dark magenta grows out of the side of the palm; the sweep breaks it into needles that cross the gap; if they reach
+   * the target they hold him where he is, in the air or on the ground (no guard stops them — a command grab; a vanish,
+   * a dodge or a fighter that cannot be grabbed does); Black turns half away and closes his fist and they burst: a
+   * blast that smashes him down. The needles touch him; nothing goes through (the owner's non-graphic rule).
+   * The crescent and the needles are shared with "Zero Mortals" (ft_zero), which stages the same beats.
+   * ====================================================================== */
+  const LASSO_SPOTS = [[0.19, 0.36], [-0.19, 0.36], [0.08, 0.26], [-0.07, 0.22], [0, 0.12], [0.11, 0.04], [-0.1, 0.02], [0.2, 0.2], [-0.2, 0.16]];
+
+  /**
+   * THE CRESCENT (M_Lasso_Crescent_Blade): a curved blade of light grown from the side of the right palm, its edge
+   * flickering. set(k) grows it 0..1; follow(f) puts it on f's right hand (call it every tick); edge(n) gives points
+   * along its edge in world space (where the needles break off); dispose().
+   */
+  function lassoCrescent(scene, color = 0xc23cff) {
+    const shape = new THREE.Shape();
+    const N = 26, a0 = (-100 * Math.PI) / 180, a1 = (100 * Math.PI) / 180;
+    const c = -0.42, r = Math.hypot(Math.cos(a1) - c, Math.sin(a1)), phi = Math.atan2(Math.sin(a1), Math.cos(a1) - c);
+    for (let i = 0; i <= N; i++) {
+      const a = a0 + ((a1 - a0) * i) / N;
+      if (i === 0) shape.moveTo(Math.cos(a), Math.sin(a));
+      else shape.lineTo(Math.cos(a), Math.sin(a));
+    }
+    for (let i = 0; i <= N; i++) {
+      const a = phi - (2 * phi * i) / N;
+      shape.lineTo(c + Math.cos(a) * r, Math.sin(a) * r);
+    }
+    const geo = new THREE.ShapeGeometry(shape, 2);
+    geo.translate(-Math.cos(a0), -Math.sin(a0), 0); // the lower tip at the palm
+    // the blade blended over what is behind it (additive washed it to white against a bright sky), its pale core added
+    const mat = (col, opacity, blending) => new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity, blending, depthWrite: false, side: THREE.DoubleSide });
+    const outer = new THREE.Mesh(geo, mat(color, 0.85, THREE.NormalBlending));
+    const core = new THREE.Mesh(geo, mat(0xffd8ff, 0.3, THREE.AdditiveBlending));
+    core.scale.set(0.9, 0.96, 1);
+    core.position.z = 0.01;
+    const g = new THREE.Group();
+    g.add(outer, core);
+    g.visible = false;
+    scene.add(g);
+    let k = 0, n = 0, gone = false;
+    return {
+      group: g,
+      set(v) {
+        k = U.clamp01(v);
+      },
+      follow(f) {
+        if (gone) return;
+        n++;
+        g.visible = k > 0.01 && !f.hidden;
+        g.position.copy(f.handPos('R'));
+        // the blade's plane faces the way he faces; it rises from the palm and curls out past his right side
+        g.rotation.set(0, f.yaw, 0.55);
+        const jit = 1 + Math.sin(n * 2.3) * 0.03 + Math.sin(n * 5.1) * 0.02;
+        g.scale.set(-1.9 * k * jit, 1.9 * k * jit, 1);
+        outer.material.opacity = 0.7 + Math.sin(n * 1.7) * 0.15;
+      },
+      edge(count) {
+        g.updateMatrixWorld(true);
+        const out = [];
+        for (let i = 0; i < count; i++) {
+          const a = a0 + ((a1 - a0) * (i + 0.5)) / count;
+          out.push(new V3(Math.cos(a) - Math.cos(a0), Math.sin(a) - Math.sin(a0), 0).applyMatrix4(g.matrixWorld));
+        }
+        return out;
+      },
+      dispose() {
+        if (gone) return;
+        gone = true;
+        scene.remove(g);
+        geo.dispose();
+        outer.material.dispose();
+        core.material.dispose();
+      },
+    };
+  }
+
+  /**
+   * THE NEEDLES (PS_Energy_Needles): thin shafts of violet light from the blade's edge (`from`), each flying to a point
+   * on the target's chest, shoulders or stomach and stopping there, the shaft standing out toward `toward` (where they
+   * came from). fly(k) 0..1 of the way; place() keeps them on him (call it every tick while they are in him); flare(k)
+   * brightens them before the burst; tips(); dispose().
+   */
+  function lassoNeedles(scene, from, target, toward) {
+    const geo = new THREE.CylinderGeometry(0.022, 0.006, 1, 6);
+    geo.translate(0, -0.5, 0); // the tip at the origin, the shaft along -y
+    // blended over the background like the blade (additive turned them pale pink against a bright sky)
+    const mat = new THREE.MeshBasicMaterial({ color: 0xc040f0, transparent: true, opacity: 0.92, depthWrite: false });
+    const fwd = toward.clone().sub(target.pos).setY(0);
+    if (fwd.lengthSq() < 1e-6) fwd.set(0, 0, 1);
+    fwd.normalize();
+    const side = new V3(fwd.z, 0, -fwd.x);
+    const list = LASSO_SPOTS.map(([x, y], i) => {
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.scale.set(1, 1.15 + (i % 3) * 0.12, 1);
+      scene.add(mesh);
+      const spread = new V3(U.rand(-0.25, 0.25), U.rand(-0.2, 0.3), U.rand(-0.25, 0.25));
+      return { mesh, x, y, start: from[i % from.length].clone(), spread, k: 0 };
+    });
+    const down = new V3(0, -1, 0);
+    let gone = false;
+    const place = () => {
+      if (gone) return;
+      const c = target.chest();
+      for (const nd of list) {
+        const tip = c.clone().addScaledVector(fwd, 0.14).addScaledVector(side, nd.x).add(new V3(0, nd.y, 0));
+        nd.mesh.position.copy(nd.k < 1 ? nd.start.clone().lerp(tip, nd.k) : tip);
+        nd.mesh.quaternion.setFromUnitVectors(down, fwd.clone().add(nd.spread).normalize()); // the shaft stands out toward him
+      }
+    };
+    return {
+      list,
+      place,
+      /** 0..1 of the way from the blade to him, each a little after the last. */
+      fly(k) {
+        list.forEach((nd, i) => (nd.k = U.clamp01(k * 1.5 - i * 0.06)));
+        place();
+      },
+      flare(k) {
+        mat.opacity = 0.9 + k * 0.1;
+        mat.color.setHex(k > 0.5 ? 0xffd0ff : 0xc040f0);
+        for (const nd of list) nd.mesh.scale.x = nd.mesh.scale.z = 1 + k * 2.2;
+      },
+      tips: () => list.map((nd) => nd.mesh.position.clone()),
+      dispose() {
+        if (gone) return;
+        gone = true;
+        for (const nd of list) scene.remove(nd.mesh);
+        geo.dispose();
+        mat.dispose();
+      },
+    };
+  }
+
+  register('divineLasso', {
+    crescent: lassoCrescent,
+    needles: lassoNeedles,
+    lockedReason(f, sp) {
+      return sp.forms && !sp.forms.includes(f.form.id) ? 'Needs Super Saiyan Rosé' : null;
+    },
+    start(f, sp, slot, cost) {
+      if (sp.forms && !sp.forms.includes(f.form.id)) return false;
+      const foes = f.battle.enemiesOf(f).filter((e) => e.alive && !e.hidden && !e.untargetable && f.distTo(e) <= sp.range);
+      const victim = f.target && foes.includes(f.target) ? f.target : foes.sort((a, c) => f.distTo(a) - f.distTo(c))[0];
+      if (!victim || !payFromSlot(f, sp, slot, cost)) return false;
+      f.setState('divineLasso', { spec: sp, slot, victim, phase: 'wind', blade: lassoCrescent(f.battle.scene, sp.color), needles: null, flyAt: 0, lockAt: 0 });
+      f.anim.play('gb_lassoW', 10);
+      f.battle.sfx('kiCharge', f, { pitch: 1.3, vol: 0.8 });
+      f.battle.emit('divineLasso', { fighter: f, victim, stage: 'start' });
+      return true;
+    },
+    states: {
+      divineLasso() {
+        const sd = this.sd, sp = sd.spec, fr = this.stateFrame, v = sd.victim, b = this.battle;
+        this.vel.multiplyScalar(0.5);
+        if (this.grounded) this.vel.y = 0;
+        if (v && v.alive && sd.phase !== 'hold') this.yaw = Math.atan2(v.pos.x - this.pos.x, v.pos.z - this.pos.z);
+        // DL-S01: the crescent grows out of the palm
+        if (sd.phase === 'wind') {
+          sd.blade.set(U.easeOutCubic(Math.min(1, fr / (sp.windup * 0.7))));
+          sd.blade.follow(this);
+          if (fr % 7 === 0) b.vfx.sparks(this.handPos('R'), 0xe0a0ff, 4, 3, 0.05);
+          if (fr === sp.windup - 6) this.anim.play('gb_sweepW', 30);
+          if (fr < sp.windup) return;
+          // DL-S02: the sweep, and the blade breaks into needles that cross the gap
+          this.anim.play('gb_sweep', 34);
+          b.sfx('swordSlash', this, { vol: 1.1 });
+          sd.needles = lassoNeedles(b.scene, sd.blade.edge(LASSO_SPOTS.length), v, this.pos.clone());
+          sd.blade.dispose();
+          sd.blade = null;
+          sd.phase = 'fly';
+          sd.flyAt = fr;
+          if (this.cine) this._cineEvent('release');
+          return;
+        }
+        if (sd.phase === 'fly') {
+          const k = Math.min(1, (fr - sd.flyAt) / sp.flight);
+          sd.needles.fly(k);
+          if (k < 1) return;
+          // they arrive: the target held where he is — or nothing to hold
+          const reach = v && v.alive && !v.hidden && !v.untargetable && this.distTo(v) <= sp.range * 1.3 && !UNGRABBABLE.includes(v.state);
+          const res = reach ? v.takeHit(this, { type: 'ki', damage: sp.needleDamage * LASSO_SPOTS.length, knock: 'held', impact: 1, dir: this.dirTo(v), point: v.chest(), pose: 'needled', sfx: 'kiBlast', guardPierce: true, technique: sp.id }) : 'miss';
+          if (res !== 'hit' || !v.alive) {
+            sd.needles.dispose();
+            sd.needles = null;
+            b.emit('divineLasso', { fighter: this, victim: v, stage: 'miss', result: res });
+            this.setState('recoverSpecial', { frames: sp.missRecovery || 40 });
+            return;
+          }
+          // DL-S03: held where he is, the needles in his chest and shoulders
+          v.setState('held', { by: this, frames: sp.holdFrames + 20, frozen: true });
+          v.vel.set(0, 0, 0);
+          v.anim.play('needled', 40, { restart: true });
+          v.sd.expression = 'shout';
+          if (v.model.setExpression) v.model.setExpression('shout');
+          for (const p of sd.needles.tips()) b.vfx.flash(p, 0.3, 0xe8b8ff, 0.16, SL.Toon.tex.glow);
+          b.cameraTraumaAt(v.chest(), 0.3);
+          sd.phase = 'hold';
+          sd.lockAt = fr;
+          b.emit('divineLasso', { fighter: this, victim: v, stage: 'lock' });
+          if (this.cine) this._cineEvent('connect');
+          return;
+        }
+        // the hold: Black turns half away and closes his fist; the needles flare; the burst
+        const h = fr - sd.lockAt;
+        if (!v || !v.alive || v.state !== 'held' || v.sd.by !== this) {
+          this.setState('recoverSpecial', { frames: sp.recovery });
+          return;
+        }
+        v.vel.set(0, 0, 0);
+        sd.needles.place();
+        if (h === Math.round(sp.holdFrames * 0.4)) {
+          this.anim.play('gb_lassoClose', 14);
+          if (this.model.setExpression) this.model.setExpression('smirk');
+          b.sfx('kiUp', v, { pitch: 1.4 });
+        }
+        if (h > sp.holdFrames - 14) sd.needles.flare((h - (sp.holdFrames - 14)) / 14);
+        if (h < sp.holdFrames) return;
+        // DL-S04: the detonation — smashed down
+        const at = v.chest();
+        sd.needles.dispose();
+        sd.needles = null;
+        v.setState('free');
+        b.vfx.explosion(at, 1.8, sp.color || 0xc23cff, { smoke: true });
+        b.vfx.ring(at, 7, 0xe070ff, 0.5);
+        b.sfx('explosionBig', v, { vol: 1.1 });
+        const dir = this.dirTo(v).setY(0).normalize().add(new V3(0, -0.5, 0)).normalize();
+        v.takeHit(this, { type: 'explosion', damage: sp.damage, knock: 'smash', knockSpeed: sp.knockSpeed, hitstun: 60, impact: 5, dir, point: at, guardPierce: true, technique: sp.id });
+        b.emit('divineLasso', { fighter: this, victim: v, stage: 'detonate' });
+        if (this.cine) this._cineEvent('finish');
+        this.setState('recoverSpecial', { frames: sp.recovery });
+      },
+    },
+    exits: {
+      // interrupted, finished or the battle torn down: nothing of it is left, and whoever it held goes free
+      divineLasso(f, sd) {
+        if (sd.blade) sd.blade.dispose();
+        if (sd.needles) sd.needles.dispose();
+        sd.blade = sd.needles = null;
+        const v = sd.victim;
+        if (v && v.alive && v.state === 'held' && v.sd.by === f) v.setState('free');
+      },
+    },
+  });
+
+  /* ======================================================================
+   * THE DIVINE SCYTHE (Rosé Black; the Goku Black arc research CS-SCY-01 / SCY-S01 / CLN-S01 and its section 6:
+   * "a mid-match stance ... wide-range spatial slashes and ... AI smoke clones"). The blade, the tear it leaves in the
+   * air and the smoke clones' rule are shared by the story ("The Divine Scythe", ft_scythe) and the Free Battle
+   * technique below. 2026-10-19.
+   * ====================================================================== */
+
+  /**
+   * THE BLADE (the reference image): a shaft of pink-white light going on from the right fist along the line of the
+   * arm, and at its top the Divine Lasso's crescent made large, hanging back down beside it, bowed out to his right
+   * with its edge toward him; crimson smoke and pink bolts round it (pass `b` to follow for those). set(k) 0..1;
+   * follow(f, b) every tick; tip(); dispose(). { shaft, blade } are the meshes.
+   */
+  function scytheBlade(scene, color = 0xc23cff) {
+    const blade = lassoCrescent(scene, color);
+    const shaftGeo = new THREE.CylinderGeometry(0.045, 0.045, 1, 8);
+    shaftGeo.translate(0, 0.5, 0);
+    const shaftMat = new THREE.MeshBasicMaterial({ color: 0xf2b4ff, transparent: true, opacity: 0.92, depthWrite: false });
+    const shaft = new THREE.Mesh(shaftGeo, shaftMat);
+    shaft.visible = false;
+    scene.add(shaft);
+    const Y = new V3(0, 1, 0), M4 = new THREE.Matrix4(), tip = new V3(), s = new V3();
+    let k = 0, n = 0, gone = false;
+    return {
+      shaft,
+      blade: blade.group,
+      set(v) {
+        k = U.clamp01(v);
+      },
+      follow(f, b) {
+        if (gone) return;
+        n++;
+        blade.set(k);
+        blade.follow(f); // its visibility and flicker; the placing is the scythe's
+        const h = f.handPos('R');
+        s.copy(h).sub(f.chest());
+        if (s.lengthSq() < 1e-4) s.set(0, 1, 0);
+        s.normalize();
+        const L = 3.4 * k * (f.scale || 1);
+        shaft.visible = k > 0.01 && !f.hidden;
+        shaft.position.copy(h).addScaledVector(s, -0.3 * k);
+        shaft.quaternion.setFromUnitVectors(Y, s);
+        shaft.scale.set(1, Math.max(0.01, L + 0.3 * k), 1);
+        tip.copy(h).addScaledVector(s, L);
+        const fw = f.forward;
+        const X = new V3(-fw.z, 0, fw.x);
+        X.addScaledVector(s, -X.dot(s));
+        if (X.lengthSq() < 1e-4) X.copy(fw);
+        X.normalize();
+        const by = s.clone().negate(), bz = new V3().crossVectors(X, by).normalize();
+        M4.makeBasis(X, by, bz);
+        blade.group.position.copy(tip);
+        blade.group.quaternion.setFromRotationMatrix(M4);
+        const jit = 1 + Math.sin(n * 2.3) * 0.03;
+        blade.group.scale.set(1.8 * k * jit * (f.scale || 1), 1.8 * k * jit * (f.scale || 1), 1);
+        if (b && k > 0.3 && !f.hidden && n % 4 === 0) {
+          b.vfx.dust(h.clone().addScaledVector(s, L * Math.random()), 0.35, 1, 0x5a0a1e);
+          if (n % 12 === 0) b.vfx.bolt(tip.clone().addScaledVector(by, Math.random() * 3), 0.9, 0xff6ad0);
+        }
+      },
+      tip: () => tip.clone(),
+      dispose() {
+        if (gone) return;
+        gone = true;
+        blade.dispose();
+        scene.remove(shaft);
+        shaftGeo.dispose();
+        shaftMat.dispose();
+      },
+    };
+  }
+
+  /**
+   * THE TEAR (CS-SCY-01: "a floating, jagged red-and-black crack in space"; CLN-S01: "a giant red rift"; the reference
+   * image: a long band, red at its heart, pink-magenta haze round it): a ragged lens of black edged in red with a magenta
+   * haze, turned to the lens about the vertical. set(k) open 0..1 at size(w, h); moveTo(p); face(camPos) every tick;
+   * spill(b, count) dark mist out of it; k; dispose(). { group } is the mesh group.
+   */
+  function spaceTear(scene, centre) {
+    const noise = (i) => {
+      const x = Math.sin(i * 12.9898 + 4.1) * 43758.5453;
+      return x - Math.floor(x);
+    };
+    const shape = new THREE.Shape();
+    const N = 26, top = [], bot = [];
+    for (let i = 0; i <= N; i++) {
+      const x = -1 + (2 * i) / N, env = Math.pow(Math.max(0, 1 - x * x), 0.7);
+      top.push([x, env * (0.35 + 0.65 * (i % 2 ? noise(i) : 0.25 + noise(i) * 0.4))]);
+      bot.push([x, -env * (0.35 + 0.65 * (i % 2 ? 0.25 + noise(i + 40) * 0.4 : noise(i + 40)))]);
+    }
+    shape.moveTo(top[0][0], top[0][1]);
+    for (const [x, y] of top) shape.lineTo(x, y);
+    for (let i = bot.length - 1; i >= 0; i--) shape.lineTo(bot[i][0], bot[i][1]);
+    const geo = new THREE.ShapeGeometry(shape);
+    const mk = (color, opacity, blending) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity, blending, depthWrite: false, side: THREE.DoubleSide, fog: false });
+    const core = new THREE.Mesh(geo, mk(0x0c0206, 0.94, THREE.NormalBlending));
+    const edge = new THREE.Mesh(geo, mk(0xff1e3c, 0.9, THREE.AdditiveBlending));
+    const haze = new THREE.Mesh(geo, mk(0xff3aa8, 0.32, THREE.AdditiveBlending));
+    edge.scale.set(1.04, 1.28, 1);
+    edge.position.z = -0.02;
+    haze.scale.set(1.12, 2.2, 1);
+    haze.position.z = -0.04;
+    core.renderOrder = 3;
+    const g = new THREE.Group();
+    g.add(haze, edge, core);
+    g.position.copy(centre);
+    g.visible = false;
+    scene.add(g);
+    let k = 0, W = 4, H = 0.9, n = 0, gone = false;
+    const api = {
+      group: g,
+      get k() {
+        return k;
+      },
+      set(v) {
+        k = U.clamp01(v);
+      },
+      size(w, h) {
+        W = w;
+        H = h;
+      },
+      moveTo(p) {
+        g.position.copy(p);
+      },
+      face(c) {
+        if (gone) return;
+        n++;
+        g.visible = k > 0.01;
+        if (!g.visible) return;
+        g.rotation.set(0, Math.atan2(c.x - g.position.x, c.z - g.position.z), 0);
+        const pulse = 1 + Math.sin(n * 0.21) * 0.04;
+        g.scale.set(W * k, H * (0.25 + 0.75 * k) * pulse, 1);
+        edge.material.opacity = 0.75 + Math.sin(n * 0.37) * 0.15;
+      },
+      /** dark, gas-like mist spilling out of it (CS-SCY-01) */
+      spill(b, count = 3) {
+        if (k < 0.05) return;
+        const along = new V3(Math.cos(g.rotation.y), 0, -Math.sin(g.rotation.y));
+        for (let i = 0; i < count; i++) b.vfx.dust(g.position.clone().addScaledVector(along, U.rand(-0.8, 0.8) * W * k).add(new V3(0, U.rand(-0.3, 0.1) * H, 0)), U.rand(0.8, 1.6), 2, 0x1e1424);
+      },
+      dispose() {
+        if (gone) return;
+        gone = true;
+        scene.remove(g);
+        geo.dispose();
+        for (const o of [core, edge, haze]) o.material.dispose();
+      },
+    };
+    return api;
+  }
+
+  const SMOKE = 0x1e1424, SILVER = 0xe4ecff;
+  /** A clone's eyes: hollow silver light (CS-SCY-01) — the pupils gone; flash: a glint on the face. */
+  function silverEyes(b, c, flash) {
+    if (c.model && c.model.setPupilScale) c.model.setPupilScale(0.04);
+    if (flash && SL.data.brolyKit && SL.data.brolyKit.facePoint) {
+      const F = SL.data.brolyKit.facePoint(c);
+      b.vfx.flash(F.center.clone().addScaledVector(F.fwd, F.R * 0.9), 0.35, SILVER, 0.25, SL.Toon.tex.glow);
+    }
+  }
+  /** Dark mist where a clone forms or comes apart. */
+  function cloneSmoke(b, f, big) {
+    b.vfx.dust(f.chest(), big ? 1.6 : 1.1, big ? 18 : 12, SMOKE);
+    const g = f.pos.clone();
+    if (b.stage.hasGround) g.y = b.stage.heightAt(g.x, g.z);
+    b.vfx.dust(g, 1, 8, SMOKE);
+  }
+
+  /**
+   * THE SMOKE CLONES' RULE (CS-SCY-01: "whenever Goku or Vegeta punches a clone, it dissipates into dark smoke,
+   * instantly reforming behind them to strike again"): a clone struck by a striker (opts.isStriker(attacker); default
+   * anybody on another team) comes apart into dark smoke and violet sparks and, opts.reform frames later (24), stands
+   * again 1.7 m behind whoever struck it, facing him, and strikes (a heavy, then its own controller again). Never while
+   * it is someone's rush victim (held): it comes apart when the rush lets it go. opts.quiet: no effects (a skipped
+   * scene). Emits 'swarmReform' { clone, by }. Returns { off(), dissolved, reformed }; off() stands anything still in
+   * smoke back up where it came apart and gives every clone its own controller back.
+   */
+  function smokeSwarm(b, clones, opts = {}) {
+    const reformAfter = opts.reform || 24;
+    const isStriker = opts.isStriker || ((a, c) => a && a.team !== c.team);
+    const quiet = opts.quiet || (() => false);
+    const st = new Map(), out = { dissolved: 0, reformed: 0 };
+    const ais = new Map(clones.map((c) => [c, c.controller]));
+    const scripted = { update: () => SL.emptyIntent() };
+    const offD = b.on('damage', (e) => {
+      const c = e.target;
+      if (!clones.includes(c) || st.has(c) || !isStriker(e.attacker, c)) return;
+      st.set(c, { by: e.attacker, n: -1 });
+    });
+    const dissolve = (c) => {
+      if (!quiet()) {
+        cloneSmoke(b, c, true);
+        b.vfx.sparks(c.chest(), 0xc070ff, 10, 6, 0.1); // the Rosé light going out of it
+        b.sfx('vanish', c, { vol: 0.8, pitch: 0.7 });
+      }
+      c.setState('scripted', { pose: 'idle', expression: 'calm' });
+      c.vel.set(0, 0, 0);
+      c.untargetable = c.intangible = true;
+      c.setHidden(true);
+      c.controller = scripted;
+      for (const f of b.fighters) if (f.target === c) f.target = null;
+      out.dissolved++;
+    };
+    const reform = (c, by) => {
+      const back = by.forward.clone().setY(0).normalize().negate();
+      const p = by.pos.clone().addScaledVector(back, 1.7);
+      if (by.grounded && b.stage.hasGround) p.y = b.stage.heightAt(p.x, p.z);
+      c.setPosition(p);
+      c.grounded = by.grounded;
+      c.yaw = c.prevYaw = Math.atan2(by.pos.x - c.pos.x, by.pos.z - c.pos.z);
+      c.hp = c.hpMax;
+      c.setHidden(false);
+      c.untargetable = c.intangible = false;
+      c.setState('free');
+      c.target = by;
+      silverEyes(b, c, !quiet());
+      if (!quiet()) {
+        cloneSmoke(b, c, false);
+        b.sfx('teleport', c, { vol: 0.7, pitch: 0.8 });
+      }
+      // and it strikes again: a heavy blow out of the smoke, then its own controller
+      const ai = ais.get(c);
+      let f = 0;
+      c.controller = {
+        update: () => {
+          const it = SL.emptyIntent();
+          if (++f === 2) it.heavy = true;
+          if (f >= 10) c.controller = ai;
+          return it;
+        },
+      };
+      out.reformed++;
+      b.emit('swarmReform', { clone: c, by });
+    };
+    let done = false;
+    b.onTick(() => {
+      if (done || b.disposed) return false;
+      for (const [c, s] of st) {
+        if (s.n < 0) {
+          if (c.state === 'held') continue;
+          dissolve(c);
+          s.n = reformAfter;
+        } else if (--s.n <= 0) {
+          st.delete(c);
+          reform(c, s.by);
+        }
+      }
+      // the mist they are made of trails off them
+      if (b.frame % 18 === 0 && !quiet()) for (const c of clones) if (!c.hidden) b.vfx.dust(c.chest().add(new V3(0, -0.4, 0)), 0.5, 1, SMOKE);
+      return true;
+    });
+    out.off = () => {
+      if (done) return;
+      done = true;
+      offD();
+      for (const [c] of st) {
+        c.setHidden(false);
+        c.untargetable = c.intangible = false;
+        c.hp = c.hpMax;
+      }
+      st.clear();
+      for (const [c, ai] of ais) c.controller = ai;
+    };
+    return out;
+  }
+
+  /**
+   * THE FREE BATTLE TECHNIQUE (Rosé only, after "The Divine Scythe"): the hand drawn into the chest and the scythe
+   * grown out of it (no armour: a hit stops it); the horizontal swing that cuts the air in front of him — anything in
+   * its arc is struck; the tear it leaves hanging there spills dark mist that becomes `clones` smoke clones of him (his
+   * team, his AI, silver-eyed, dealing `cloneDealt` of his damage), which hunt his target for `cloneSeconds` and come
+   * apart and re-form behind whoever strikes them; then they go back into smoke and the tear closes. They go the moment
+   * he is out of it (knocked out, or anybody is: they never keep a finished fight going). The player's move only.
+   */
+  function scytheSummon(b, f, sp, tear) {
+    const v = f.target;
+    const rose = f.def.forms.findIndex((x) => x.id === 'rose');
+    const clones = [];
+    for (let i = 0; i < sp.clones; i++) {
+      const side = i % 2 ? 1 : -1, fw = f.forward.clone().setY(0).normalize(), sd = new V3(fw.z, 0, -fw.x);
+      const p = tear.group.position.clone().addScaledVector(sd, side * (1.6 + i)).add(new V3(0, -1.2, 0));
+      if (b.stage.hasGround) p.y = Math.max(b.stage.heightAt(p.x, p.z), p.y - 2);
+      const c = b.spawn({ charId: f.def.id, team: f.team, pos: p, form: rose > 0 ? rose : undefined, startKi: 0, cannotDie: true, difficulty: 'normal' });
+      c.isClone = true;
+      c.summonedBy = f;
+      c.damageDealtMul = sp.cloneDealt;
+      c.controller = new SL.AIController(b, { difficulty: 'normal', profile: Object.assign({}, c.def.ai, c.form.ai || {}, { aggression: 0.85, transformHp: 0 }) });
+      c.target = v && v.alive ? v : null;
+      silverEyes(b, c, true);
+      cloneSmoke(b, c, true);
+      clones.push(c);
+    }
+    const rule = smokeSwarm(b, clones, { reform: sp.reform });
+    let life = Math.round(sp.cloneSeconds * 60), ended = false, removed = false;
+    // a knockout anywhere ends them at once: they must never count for his team when the fight is decided
+    const end = () => {
+      if (ended) return;
+      ended = true;
+      rule.off();
+      for (const c of clones) {
+        c.alive = false;
+        if (!c.hidden) cloneSmoke(b, c, true);
+        c.setHidden(true);
+      }
+      // out of the fight on the next tick (from this tick handler: a b.after() added inside one is lost)
+      b.emit('scytheClones', { fighter: f, stage: 'end' });
+    };
+    const offKO = b.on('ko', () => end());
+    b.onTick(() => {
+      if (b.disposed) return false;
+      tear.face(b.camera.pos);
+      if (!ended && b.frame % 3 === 0) tear.spill(b, 1);
+      if (!ended && (--life <= 0 || !f.alive || f.hidden)) end();
+      if (ended && !removed) {
+        removed = true;
+        for (const c of clones) if (b.fighters.includes(c)) b.remove(c);
+      }
+      if (ended) {
+        tear.set(tear.k - 1 / 30);
+        if (tear.k <= 0) {
+          tear.dispose();
+          offKO();
+          return false;
+        }
+      }
+      return true;
+    });
+    b.emit('scytheClones', { fighter: f, stage: 'start', clones });
+    return clones;
+  }
+
+  register('divineScythe', {
+    blade: scytheBlade,
+    tear: spaceTear,
+    swarm: smokeSwarm,
+    silverEyes,
+    smoke: cloneSmoke,
+    lockedReason(f, sp) {
+      return sp.forms && !sp.forms.includes(f.form.id) ? 'Needs Super Saiyan Rosé' : null;
+    },
+    start(f, sp, slot, cost) {
+      if (sp.forms && !sp.forms.includes(f.form.id)) return false;
+      if (!payFromSlot(f, sp, slot, cost)) return false;
+      f.setState('divineScythe', { spec: sp, phase: 'wind', blade: scytheBlade(f.battle.scene, sp.color), tear: null });
+      f.anim.play('gb_scytheDraw', 12);
+      f.battle.sfx('kiCharge', f, { pitch: 0.9, vol: 0.9 });
+      f.battle.emit('divineScythe', { fighter: f, stage: 'start' });
+      return true;
+    },
+    states: {
+      divineScythe() {
+        const sd = this.sd, sp = sd.spec, fr = this.stateFrame, b = this.battle, t = this.target;
+        this.vel.multiplyScalar(0.5);
+        if (this.grounded) this.vel.y = 0;
+        if (t && t.alive && sd.phase === 'wind') this.yaw = Math.atan2(t.pos.x - this.pos.x, t.pos.z - this.pos.z);
+        if (sd.blade) sd.blade.follow(this, b);
+        if (sd.phase === 'wind') {
+          sd.blade.set(U.easeOutCubic(Math.min(1, fr / (sp.windup * 0.6))));
+          if (fr === Math.round(sp.windup * 0.4)) {
+            this.anim.play('gb_scytheHold', 10);
+            b.sfx('swordDraw', this, { vol: 1, pitch: 0.7 });
+          }
+          if (fr === sp.windup - 8) this.anim.play('gb_sweepW', 24);
+          if (fr < sp.windup) return;
+          // the swing: across the air in front of him — whatever is in the arc is cut
+          this.anim.play('gb_sweep', 34);
+          b.sfx('swordSlash', this, { vol: 1.3, pitch: 0.6 });
+          b.sfx('swordClang', this, { vol: 0.8, pitch: 0.7 });
+          const fw = this.forward.clone().setY(0).normalize(), S = this.scale || 1;
+          const sd2 = new V3(fw.z, 0, -fw.x), c = this.chest().add(new V3(0, 0.6 * S, 0));
+          b.vfx.slash(c.clone().addScaledVector(sd2, sp.reach * 0.7 * S).addScaledVector(fw, sp.reach * 0.5 * S), c.clone().addScaledVector(sd2, -sp.reach * 0.7 * S).addScaledVector(fw, sp.reach * 0.5 * S), 0xff7ad8, 0.35, 0.16 * S);
+          b.cameraTraumaAt(c, 0.35);
+          const cos = Math.cos(((sp.arc / 2) * Math.PI) / 180);
+          for (const e of b.enemiesOf(this)) {
+            if (!e.alive || e.hidden || e.untargetable) continue;
+            const d = e.pos.clone().sub(this.pos);
+            const dy = d.y;
+            d.y = 0;
+            const dist = d.length();
+            if (dist > sp.reach * S + e.radius || Math.abs(dy) > 3 * S || (dist > 0.01 && d.normalize().dot(fw) < cos)) continue;
+            e.takeHit(this, { type: 'melee', damage: sp.damage, knock: 'heavy', knockSpeed: sp.knockSpeed, hitstun: 40, impact: 4, dir: d.lengthSq() ? d : fw.clone(), point: e.chest(), sfx: 'swordSlash', technique: sp.id });
+          }
+          // the cut stays in the air: a floating crack where the blade went
+          sd.tear = spaceTear(b.scene, this.pos.clone().addScaledVector(fw, 3 * S).add(new V3(0, 2.6 * S, 0)));
+          sd.tear.size(5 * S, 0.9 * S);
+          b.sfx('portalOpen', this, { vol: 1, pitch: 0.8 });
+          sd.phase = 'tear';
+          sd.tearAt = fr;
+          if (this.cine) this._cineEvent('release');
+          return;
+        }
+        if (sd.phase === 'tear') {
+          const k = Math.min(1, (fr - sd.tearAt) / 24);
+          sd.tear.set(k);
+          sd.tear.face(b.camera.pos);
+          if (fr % 3 === 0) sd.tear.spill(b, 3);
+          if (sd.blade && fr - sd.tearAt > 8) {
+            sd.blade.dispose();
+            sd.blade = null;
+          }
+          if (k < 1) return;
+          // the mist condenses into the clones
+          const tear = sd.tear;
+          sd.tear = null;
+          scytheSummon(b, this, sp, tear);
+          b.sfx('teleport', this, { vol: 0.9, pitch: 0.6 });
+          if (this.cine) this._cineEvent('finish');
+          this.setState('recoverSpecial', { frames: sp.recovery });
+        }
+      },
+    },
+    exits: {
+      // interrupted before the clones: nothing of it is left
+      divineScythe(f, sd) {
+        if (sd.blade) sd.blade.dispose();
+        if (sd.tear) sd.tear.dispose();
+        sd.blade = sd.tear = null;
+      },
+    },
+  });
+
+  /* ======================================================================
+   * THE MAFUBA (Future Trunks; the Goku Black arc research CS-MAF-01 / MAF-S01 and its section 6: "an interactive
+   * quick-time event or ultimate counter move ... If executed successfully, it ... drains stamina, triggering a
+   * high-damage sealing cutscene"). The jar and the vortex are shared by the story ("The Divine Scythe", ft_scythe) and
+   * the Free Battle technique below. 2026-10-19.
+   * ====================================================================== */
+  const MF_GREEN = 0x5aff8a, MF_PALE = 0xd8ffe0, MF_CLAY = 0xa8603a, MF_CLAY_DARK = 0x7a4228;
+
+  /**
+   * THE JAR (CS-MAF-01): a small clay jar with a narrow neck and its lid. place(at, lidAside); mouth() the neck's
+   * opening; lidOn(on); shake(k) a tremble; tick() every frame; burst(b, quiet) — gone in shards; dispose().
+   * { group, lid } are the meshes.
+   */
+  function mafubaJar(scene) {
+    const prof = [[0.001, 0], [0.12, 0], [0.17, 0.06], [0.2, 0.17], [0.18, 0.27], [0.12, 0.34], [0.075, 0.39], [0.075, 0.42], [0.096, 0.44], [0.084, 0.452], [0.062, 0.43]];
+    const geo = new THREE.LatheGeometry(prof.map(([x, y]) => new THREE.Vector2(x, y)), 22);
+    const lidGeo = new THREE.CylinderGeometry(0.1, 0.104, 0.03, 18);
+    const knobGeo = new THREE.SphereGeometry(0.026, 10, 8);
+    const g = new THREE.Group();
+    const body = new THREE.Mesh(geo, SL.Toon.mat(MF_CLAY, { side: THREE.DoubleSide }));
+    SL.Toon.addOutline(body, 1);
+    const lid = new THREE.Group();
+    const lidM = new THREE.Mesh(lidGeo, SL.Toon.mat(MF_CLAY_DARK));
+    SL.Toon.addOutline(lidM, 1);
+    const knob = new THREE.Mesh(knobGeo, SL.Toon.mat(MF_CLAY_DARK));
+    knob.position.y = 0.03;
+    lid.add(lidM, knob);
+    g.add(body);
+    scene.add(g, lid);
+    g.visible = lid.visible = false;
+    const home = new V3(), aside = new V3();
+    let shaking = 0, gone = false, n = 0;
+    return {
+      group: g,
+      lid,
+      tick() {
+        if (gone || !g.visible) return;
+        n++;
+        const s = shaking * 0.12;
+        g.rotation.set(Math.sin(n * 1.9) * s, 0, Math.cos(n * 2.3) * s);
+        g.position.copy(home).add(new V3(Math.sin(n * 3.1) * s * 0.06, 0, Math.cos(n * 2.7) * s * 0.06));
+      },
+      place(p, lidAt) {
+        home.copy(p);
+        aside.copy(lidAt);
+        g.position.copy(p);
+        lid.position.copy(lidAt);
+        lid.rotation.set(0, 0, 0);
+        g.visible = lid.visible = true;
+      },
+      mouth: () => home.clone().add(new V3(0, 0.45, 0)),
+      lidOn(on) {
+        lid.position.copy(on ? home.clone().add(new V3(0, 0.455, 0)) : aside);
+      },
+      shake(k) {
+        shaking = k;
+        if (lid.position.distanceTo(aside) > 0.01) lid.position.copy(home).add(new V3(Math.sin(n * 2.9) * k * 0.01, 0.455 + Math.abs(Math.sin(n * 1.7)) * k * 0.025, 0));
+      },
+      burst(b, quiet) {
+        if (!g.visible) return;
+        const c = home.clone().add(new V3(0, 0.22, 0));
+        g.visible = lid.visible = false;
+        if (quiet) return;
+        for (let i = 0; i < 14; i++) b.vfx.rock(c, new V3(U.rand(-1, 1), U.rand(0.4, 1.4), U.rand(-1, 1)).normalize().multiplyScalar(U.rand(4, 9)), U.rand(0.05, 0.11), i % 3 ? MF_CLAY : MF_CLAY_DARK);
+      },
+      dispose() {
+        if (gone) return;
+        gone = true;
+        scene.remove(g, lid);
+        geo.dispose();
+        lidGeo.dispose();
+        knobGeo.dispose();
+      },
+    };
+  }
+
+  /**
+   * THE WIND (CS-MAF-01): open arcs of green light turning round an axis and flowing from its wide end to its narrow
+   * one — a tornado from Trunks' hands out to the one it takes, later a funnel down into the jar's neck.
+   * span(narrow, wide, rNarrow, rWide); set(k) how much of it there is; tick(b, quiet) every frame; k; dispose().
+   * { group } is the mesh group.
+   */
+  function mafubaVortex(scene) {
+    const g = new THREE.Group();
+    const rings = [];
+    const N = 14;
+    for (let i = 0; i < N; i++) {
+      const geo = new THREE.TorusGeometry(1, 0.05, 5, 32, Math.PI * (0.9 + (i % 3) * 0.3));
+      const mat = new THREE.MeshBasicMaterial({ color: i % 3 === 1 ? MF_PALE : MF_GREEN, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false });
+      const mesh = new THREE.Mesh(geo, mat);
+      g.add(mesh);
+      rings.push({ mesh, phase: i / N, spin: (i % 2 ? 1 : -1) * (0.16 + i * 0.015), roll: i * 0.9 });
+    }
+    scene.add(g);
+    let k = 0, n = 0, rA = 0.3, rB = 2, gone = false;
+    const A = new V3(), B = new V3(), Z = new V3(0, 0, 1), q = new THREE.Quaternion();
+    return {
+      group: g,
+      span(narrow, wide, rn, rw) {
+        A.copy(narrow);
+        B.copy(wide);
+        rA = rn;
+        rB = rw;
+      },
+      set(v) {
+        k = U.clamp01(v);
+      },
+      get k() {
+        return k;
+      },
+      tick(b, quiet) {
+        if (gone) return;
+        n++;
+        const axis = B.clone().sub(A);
+        const L = axis.length();
+        if (L < 1e-3) return;
+        axis.normalize();
+        q.setFromUnitVectors(Z, axis);
+        for (const R of rings) {
+          const t = 1 - ((R.phase + n * 0.014) % 1); // from the wide end in to the narrow one: drawn in
+          R.mesh.position.copy(A).addScaledVector(axis, L * t);
+          R.mesh.quaternion.copy(q);
+          R.mesh.rotateZ(R.roll + n * R.spin);
+          R.mesh.scale.setScalar(U.lerp(rA, rB, t));
+          R.mesh.material.opacity = k * 0.8 * Math.sin(Math.max(0.05, t) * Math.PI);
+        }
+        if (b && k > 0.2 && n % 2 === 0 && !quiet) {
+          const t = Math.random(), a = Math.random() * Math.PI * 2, r = U.lerp(rA, rB, t);
+          const u = new V3(1, 0, 0).applyQuaternion(q), w = new V3(0, 1, 0).applyQuaternion(q);
+          b.vfx.trail(A.clone().addScaledVector(axis, L * t).addScaledVector(u, Math.cos(a) * r).addScaledVector(w, Math.sin(a) * r), MF_GREEN, 0.3, 0.3);
+        }
+      },
+      dispose() {
+        if (gone) return;
+        gone = true;
+        scene.remove(g);
+        for (const R of rings) {
+          R.mesh.geometry.dispose();
+          R.mesh.material.dispose();
+        }
+      },
+    };
+  }
+
+  /** A body's model at k of its own size (the jar takes him in; 1 gives his size back). */
+  function bodySize(f, k) {
+    const md = f.model;
+    if (!md || !md.root) return;
+    md.root.scale.setScalar((md.baseScale || 1) * (f.form && f.form.look && f.form.look.scale ? f.form.look.scale : 1) * k);
+  }
+
+  /**
+   * THE FREE BATTLE TECHNIQUE (Future Trunks, any form, after "The Divine Scythe"): the jar set down a pace in front
+   * (no armour: a hit before the catch stops it, nothing left); the stance, the green wind round him; the lasso out to
+   * the target in reach — a guard does not stop it, a dodge or vanish does, nobody is caught out of reach; then the
+   * quick-time part: the one caught is dragged spinning through the tornado toward the jar, slowly on its own and
+   * faster with every Light the player presses (the meter is the struggle HUD); the funnel into the neck; sealed, the
+   * lid on, the jar shaking — and, as in the story, there is no talisman: it bursts in a green blast and he comes out
+   * of it hurt, his ki and most of his stamina gone (the PDF's "drains stamina"; this game has no tag-swaps to lock).
+   * The player's move only (the AI picks wheel rushes, not this).
+   */
+  register('mafuba', {
+    jar: mafubaJar,
+    vortex: mafubaVortex,
+    start(f, sp, slot, cost) {
+      const foes = f.battle.enemiesOf(f).filter((e) => e.alive && !e.hidden && !e.untargetable && f.distTo(e) <= sp.range);
+      const victim = f.target && foes.includes(f.target) ? f.target : foes.sort((a, c) => f.distTo(a) - f.distTo(c))[0];
+      if (!victim || !payFromSlot(f, sp, slot, cost)) return false;
+      const b = f.battle, fw = f.forward.clone().setY(0).normalize();
+      const jar = mafubaJar(b.scene);
+      const at = f.pos.clone().addScaledVector(fw, 1.5 * (f.scale || 1));
+      if (b.stage.hasGround) at.y = b.stage.heightAt(at.x, at.z);
+      const aside = at.clone().addScaledVector(new V3(fw.z, 0, -fw.x), 0.45);
+      jar.place(at, aside);
+      f.setState('mafuba', { spec: sp, victim, phase: 'set', jar, vortex: null, pull: 0, prevLight: false, presses: 0, at: 0, from: null });
+      f.anim.play('ft_lid', 12);
+      b.sfx('block', f, { vol: 0.5, pitch: 1.4 });
+      b.emit('mafuba', { fighter: f, victim, stage: 'start' });
+      return true;
+    },
+    states: {
+      mafuba() {
+        const sd = this.sd, sp = sd.spec, fr = this.stateFrame, b = this.battle, v = sd.victim;
+        this.vel.multiplyScalar(0.5);
+        if (this.grounded) this.vel.y = 0;
+        if (v && v.alive && (sd.phase === 'set' || sd.phase === 'stance')) this.yaw = Math.atan2(v.pos.x - this.pos.x, v.pos.z - this.pos.z);
+        sd.jar.tick();
+        if (sd.vortex) sd.vortex.tick(b);
+        const hands = this.handPos('L').lerp(this.handPos('R'), 0.5);
+        const fw = this.forward.clone().setY(0).normalize();
+        if (sd.phase === 'set') {
+          if (fr < sp.setFrames) return;
+          this.anim.play('ft_mafuba', 16);
+          sd.vortex = mafubaVortex(b.scene);
+          sd.vortex.span(hands, hands.clone().addScaledVector(fw, 0.3), 0.2, 0.3);
+          b.sfx('kiUp', this, { vol: 1 });
+          b.sfx('steam', this, { vol: 0.6, pitch: 0.6 });
+          sd.phase = 'stance';
+          sd.at = fr;
+          if (this.cine) this._cineEvent('release');
+          return;
+        }
+        if (sd.phase === 'stance') {
+          const k = (fr - sd.at) / sp.stanceFrames;
+          sd.vortex.set(0.3 + 0.4 * k);
+          if (fr % 5 === 0) b.vfx.ring(this.pos.clone().add(new V3(0, 0.25 + ((fr / 5) % 4) * 0.2, 0)), 2 + k, MF_GREEN, 0.4, new V3(0, 1, 0));
+          if (k < 1) return;
+          // the lasso out to him: nobody out of reach, no dodge or vanish caught; a guard does not stop it
+          const reach = v && v.alive && !v.hidden && !v.untargetable && this.distTo(v) <= sp.range * 1.2 && !UNGRABBABLE.includes(v.state);
+          const res = reach ? v.takeHit(this, { type: 'ki', damage: sp.catchDamage, knock: 'held', impact: 1, dir: this.dirTo(v), point: v.chest(), guardPierce: true, technique: sp.id }) : 'miss';
+          if (res !== 'hit' || !v.alive) {
+            b.emit('mafuba', { fighter: this, victim: v, stage: 'miss', result: res });
+            this.setState('recoverSpecial', { frames: sp.missRecovery || 40 });
+            return;
+          }
+          v.setState('held', { by: this, frames: 9999, frozen: true });
+          v.vel.set(0, 0, 0);
+          v.anim.play('vortexBound', 30, { restart: true });
+          sd.from = v.pos.clone();
+          sd.phase = 'pull';
+          sd.at = fr;
+          b.sfx('drain', v, { vol: 0.9, pitch: 0.7 });
+          b.vfx.flash(v.chest(), 2.2, MF_GREEN, 0.25, SL.Toon.tex.glow);
+          b.emit('mafuba', { fighter: this, victim: v, stage: 'lock' });
+          if (this.cine) this._cineEvent('connect');
+          return;
+        }
+        const held = v && v.alive && v.state === 'held' && v.sd.by === this;
+        if (!held) {
+          this.setState('recoverSpecial', { frames: sp.recovery });
+          return;
+        }
+        v.vel.set(0, 0, 0);
+        const above = sd.jar.mouth().add(new V3(0, 1.6, 0));
+        if (sd.phase === 'pull') {
+          // the quick-time part: Light presses (the player's) drive it faster; on its own it still gets there
+          const down = !!(this.intent && this.intent.light);
+          if (down && !sd.prevLight) {
+            sd.presses++;
+            sd.pull += sp.pullPress;
+          }
+          sd.prevLight = down;
+          sd.pull = Math.min(1, sd.pull + 1 / sp.pullFrames);
+          const k = U.easeInOutCubic(sd.pull), a = sd.pull * Math.PI * 5, side = new V3(fw.z, 0, -fw.x);
+          v.setPosition(sd.from.clone().lerp(above, k).addScaledVector(side, Math.cos(a) * 0.8 * (1 - k)).add(new V3(0, Math.sin(a) * 0.5 * (1 - k), 0)));
+          v.grounded = false;
+          v.yaw = v.prevYaw = v.yaw + 0.35;
+          sd.vortex.set(1);
+          sd.vortex.span(hands, v.chest(), 0.4, U.lerp(3.2, 1.6, k));
+          if (this.isPlayer) b.emit('struggle', { active: true, progress: 1 - sd.pull, rate: sd.presses, label: 'MAFUBA — mash Light!', action: 'light' });
+          if (sd.pull < 1) return;
+          if (this.isPlayer) b.emit('struggle', { active: false });
+          this.anim.play('ft_mafubaDown', 16);
+          sd.phase = 'funnel';
+          sd.at = fr;
+          return;
+        }
+        const mouth = sd.jar.mouth();
+        if (sd.phase === 'funnel') {
+          const k = U.easeInCubic(Math.min(1, (fr - sd.at) / 30));
+          v.setPosition(above.clone().lerp(mouth, k));
+          v.yaw = v.prevYaw = v.yaw + 0.5;
+          bodySize(v, U.lerp(1, 0.04, k));
+          sd.vortex.span(mouth, v.chest().add(new V3(0, 0.6 * (1 - k), 0)), 0.06, U.lerp(1.6, 0.2, k));
+          if (fr % 2 === 0) b.vfx.trail(v.chest().lerp(mouth, Math.random()), MF_PALE, 0.25, 0.35);
+          if (k < 1) return;
+          // sealed: the lid on — and no talisman to hold it
+          v.setHidden(true);
+          bodySize(v, 1);
+          sd.vortex.dispose();
+          sd.vortex = null;
+          sd.jar.lidOn(true);
+          this.anim.play('ft_lid', 14);
+          b.vfx.flash(mouth, 0.8, MF_GREEN, 0.3, SL.Toon.tex.glow);
+          b.sfx('block', this, { vol: 0.7, pitch: 0.9 });
+          b.emit('mafuba', { fighter: this, victim: v, stage: 'seal' });
+          sd.phase = 'sealed';
+          sd.at = fr;
+          return;
+        }
+        // sealed: the jar shakes — then bursts in a blinding green blast, and he comes out of it hurt and drained
+        const h = fr - sd.at;
+        sd.jar.shake(Math.min(1, h / 40));
+        if (h % 6 === 0) b.vfx.flash(mouth, 0.4 + h / 120, MF_GREEN, 0.15, SL.Toon.tex.glow);
+        if (h === 1) b.sfx('rumble', this, { vol: 0.9, dur: 1.2 });
+        if (h < sp.sealFrames) return;
+        sd.jar.shake(0);
+        sd.jar.burst(b);
+        const at = mouth.clone().add(new V3(0, -0.15, 0));
+        b.vfx.explosion(at, 2.2, MF_GREEN, { smoke: false });
+        b.vfx.ring(at, 9, MF_PALE, 0.6, new V3(0, 1, 0));
+        b.sfx('explosionBig', this, { vol: 1.1 });
+        b.sfx('rockBreak', this, { vol: 0.8 });
+        b.cameraTraumaAt(at, 0.6);
+        v.setHidden(false);
+        v.setPosition(at.clone().addScaledVector(fw, 0.8).add(new V3(0, 0.3, 0)));
+        v.setState('free');
+        v.ki = v.ki * (1 - sp.kiDrain);
+        v.stamina = v.stamina * (1 - sp.staminaDrain);
+        v.takeHit(this, { type: 'explosion', damage: sp.damage, knock: 'heavy', knockSpeed: sp.knockSpeed, hitstun: 50, impact: 4, dir: fw.clone().add(new V3(0, 0.6, 0)).normalize(), point: v.chest(), guardPierce: true, technique: sp.id });
+        b.emit('mafuba', { fighter: this, victim: v, stage: 'burst' });
+        if (this.cine) this._cineEvent('finish');
+        this.setState('recoverSpecial', { frames: sp.recovery });
+      },
+    },
+    exits: {
+      // interrupted, finished or the battle torn down: nothing of it left, and whoever it held goes free at his own size
+      mafuba(f, sd) {
+        if (sd.vortex) sd.vortex.dispose();
+        if (sd.jar) sd.jar.dispose();
+        sd.vortex = sd.jar = null;
+        const v = sd.victim;
+        if (v) {
+          bodySize(v, 1);
+          if (v.hidden && v.alive) v.setHidden(false);
+          if (v.alive && v.state === 'held' && v.sd.by === f) v.setState('free');
+        }
+        if (f.isPlayer && f.battle) f.battle.emit('struggle', { active: false });
       },
     },
   });
@@ -2311,16 +3507,19 @@
    * readable, interruptible moment: a hit before he swallows keeps the bean
    * in his pouch). If an ally close by is in worse shape, he tosses it to them.
    * ====================================================================== */
-  function beansLeft(f) {
-    return f.mech && f.mech.beans !== undefined ? f.mech.beans : 0;
+  function beansLeft(f, sp) {
+    if (!f.mech) return 0;
+    // a kit without Yajirobe's Senzu mechanic (Turles' fruit, Gine's rations) starts with its own spec's count
+    if (f.mech.beans === undefined && sp) f.mech.beans = sp.count || 0;
+    return f.mech.beans !== undefined ? f.mech.beans : 0;
   }
   register('senzu', {
-    lockedReason(f) {
-      return beansLeft(f) > 0 ? null : 'No beans left';
+    lockedReason(f, sp) {
+      return beansLeft(f, sp) > 0 ? null : 'No beans left';
     },
     start(f, sp, slot) {
       const b = f.battle;
-      if (beansLeft(f) <= 0) {
+      if (beansLeft(f, sp) <= 0) {
         f._denied && f._denied();
         b.emit('senzuEmpty', { fighter: f });
         return false;
@@ -2359,6 +3558,412 @@
           b.bark(this, 'senzu');
         }
         if (fr >= sp.eatAt + sp.recovery) this.setState('free');
+      },
+    },
+  });
+
+  /* ======================================================================
+   * THE DIMENSIONAL TECHNIQUES (Janemba, Fusion Reborn). The pictures come from SL.Dimension; the
+   * rules for what a portal does to a hit live in the `dimensional` mechanic (mechanics.js).
+   *
+   *   portalGuard   DIMENSION DOOR — the tell (a giggle, both palms out: startup frames), then a
+   *                 portal stands open in front of him for `frames`: a blow or a blast from the
+   *                 front comes out on the attacker's own back. Go round, or wait. A hit from
+   *                 behind knocks him out of it.        spec: startup, frames, recovery, poses { tell, hold }
+   *   phantomShift  he comes apart into floating cubes and reassembles somewhere else (behind /
+   *                 side / away from the target), already facing it. Invulnerable while apart.
+   *                 spec: frames, appearAt, dist, recovery, mode, pose
+   *   portalStrike  he drives a fist (or the blade) into a portal in front of him; a second portal
+   *                 opens beside the target FIRST (the warning: windup frames) and the blow comes out
+   *                 of it where the target WAS standing — move and it hits nothing.
+   *                 spec: windup, reach, radius, damage, knockSpeed, recovery, poses { wind, strike }
+   * ====================================================================== */
+  register('portalGuard', {
+    start(f, sp, slot, cost) {
+      if (!SL.Mechanics.dimensional || !payFromSlot(f, sp, slot, cost)) return false;
+      f.setState('portalGuard', { spec: sp, phase: 'tell' });
+      f.anim.play(sp.poses.tell, 12);
+      f.battle.sfx('giggle', f, { pitch: 1 + (f.frame % 3) * 0.08 });
+      f.battle.emit('portalTell', { fighter: f });
+      return true;
+    },
+    states: {
+      portalGuard(it) {
+        const sd = this.sd, sp = sd.spec, fr = this.stateFrame;
+        const b = this.battle, M = SL.Mechanics.dimensional;
+        this.vel.multiplyScalar(0.7);
+        if (this.grounded) this.vel.y = 0;
+        if (this.target && this.target.alive) this.faceTarget(sd.phase === 'tell' ? 14 : 6);
+        if (sd.phase === 'tell') {
+          if (fr % 6 === 0) b.vfx.streamInward(this.chest().addScaledVector(this.forward, this.radius + 0.4), 1.2 * this.scale, SL.Dimension.COLORS.rim, 2, 0.12, 0.25);
+          if (fr >= sp.startup) {
+            sd.phase = 'hold';
+            sd.holdAt = fr;
+            M.openDoor(this, sp.frames);
+            this.anim.play(sp.poses.hold, 10);
+          }
+          return;
+        }
+        if (sd.phase === 'hold') {
+          if (!M.doorOpen(this) || fr - sd.holdAt >= sp.frames) {
+            M.closeDoor(this);
+            sd.phase = 'recover';
+            sd.recAt = fr;
+          }
+          return;
+        }
+        if (fr - sd.recAt >= (sp.recovery || 10)) this.setState('free');
+      },
+    },
+    exits: {
+      portalGuard(f) {
+        if (SL.Mechanics.dimensional && f.mech && f.mech.door) SL.Mechanics.dimensional.closeDoor(f);
+      },
+    },
+  });
+
+  register('phantomShift', {
+    start(f, sp, slot, cost) {
+      const t = sp.from || f.target;
+      if (!t || !t.alive) return false;
+      if (slot !== 'evade' && !payFromSlot(f, sp, slot, cost)) return false;
+      const b = f.battle;
+      const mode = sp.mode || 'behind';
+      const k = (sp.dist || 1.8) * t.scale;
+      const fwd = t.forward.clone().setY(0).normalize();
+      const side = new V3(fwd.z, 0, -fwd.x).multiplyScalar(f.frame % 2 ? 1 : -1);
+      let dest;
+      if (mode === 'away') dest = f.pos.clone().add(f.pos.clone().sub(t.pos).setY(0).normalize().multiplyScalar(sp.dist || 8));
+      else if (mode === 'side') dest = t.pos.clone().addScaledVector(side, k);
+      else if (mode === 'front') dest = t.pos.clone().addScaledVector(fwd, k);
+      else dest = t.pos.clone().addScaledVector(fwd, -k);
+      dest.y = t.grounded ? t.pos.y : Math.max(t.pos.y, f.pos.y);
+      b.stage.clampPosition(dest);
+      SL.Dimension.shatter(b, f, { hide: true });
+      f.invuln = Math.max(f.invuln, sp.frames + 2);
+      f.setState('phantom', { spec: sp, dest, from: t });
+      return true;
+    },
+    gravityExempt: ['phantom'],
+    states: {
+      phantom(it) {
+        const sd = this.sd, sp = sd.spec, fr = this.stateFrame;
+        const b = this.battle;
+        this.vel.set(0, 0, 0);
+        const assemble = Math.max(1, sp.appearAt - 12);
+        if (fr === assemble) SL.Dimension.reassemble(b, this, sd.dest, { frames: sp.appearAt - assemble });
+        if (fr === sp.appearAt) {
+          this.setPosition(sd.dest);
+          this.prevPos.copy(sd.dest);
+          this.grounded = false;
+          this.setHidden(false);
+          if (sd.from && sd.from.alive) {
+            this.target = sd.from;
+            this.faceTarget(100);
+          }
+          this.anim.play(sp.pose || 'flyIdle', 30, { snap: true });
+          this.counterFrames = 45;
+          b.emit('phantomShift', { fighter: this, to: sd.dest.clone() });
+        }
+        if (fr >= sp.appearAt + (sp.recovery || 4)) this.setState('free');
+      },
+    },
+    exits: {
+      phantom(f) {
+        if (f.hidden && f.alive) f.setHidden(false);
+      },
+    },
+  });
+
+  /* ======================================================================
+   * TIME-SKIP (Hit). Not a teleport button: a short, still preparation (the head dips, a violet glint at the
+   * eyes), then he is simply not there for a fraction of a second — the opponent loses him — while a small
+   * distortion gathers where he is going: inside the guard, at the shoulder. He is there, one precise blow, and he
+   * is back in his stance. No screen flash: the read is the glint and the distortion.
+   * spec: { prepFrames, gapFrames, damage, knock, knockSpeed, hitstun, recovery, reach, color, poses { prep, strike, recover } }
+   * ====================================================================== */
+  register('timeSkip', {
+    start(f, sp, slot, cost) {
+      const t = f.target;
+      if (!t || !t.alive || t.hidden) return false;
+      if (!payFromSlot(f, sp, slot, cost)) return false;
+      f.setState('timeSkip', { spec: sp, victim: t });
+      f.anim.play(sp.poses.prep, 14);
+      f.battle.vfx.flash(f.headPos(), 0.35, sp.color || 0xb070ff, 0.18, SL.Toon.tex.glow);
+      f.battle.sfx('kiUp', f, { pitch: 1.8, vol: 0.3 });
+      return true;
+    },
+    gravityExempt: ['timeSkip'],
+    states: {
+      timeSkip() {
+        const sd = this.sd, sp = sd.spec, fr = this.stateFrame, b = this.battle, t = sd.victim;
+        const prep = sp.prepFrames || 10, gap = sp.gapFrames || 8, col = sp.color || 0xb070ff;
+        this.vel.set(0, 0, 0);
+        // where he will be: inside the guard, at the shoulder (kept with the target as it moves)
+        const dest = () => {
+          const side = new V3(-t.forward.z, 0, t.forward.x).multiplyScalar(sd.side);
+          const p = t.pos.clone().addScaledVector(t.forward, 0.55 * t.scale).addScaledVector(side, 0.75 * t.scale);
+          b.stage.clampPosition(p);
+          return p;
+        };
+        if (fr === prep) {
+          sd.side = this.frame % 2 ? 1 : -1;
+          this.setHidden(true);
+          this.intangible = true;
+          b.sfx('timeWarp', this, { vol: 0.5 });
+        }
+        if (fr > prep && fr < prep + gap && fr % 2 === 0 && t.alive) {
+          const p = dest();
+          b.vfx.ring(p.add(new V3(0, this.height * 0.55, 0)), 0.3 + (fr - prep) * 0.05, col, 0.12);
+        }
+        if (fr === prep + gap) {
+          this.setHidden(false);
+          this.intangible = false;
+          if (t.alive && !t.hidden) {
+            const p = dest();
+            this.setPosition(p);
+            this.prevPos.copy(p);
+            this.yaw = this.prevYaw = Math.atan2(t.pos.x - p.x, t.pos.z - p.z);
+          }
+          this.anim.play(sp.poses.strike, 40, { restart: true });
+          b.vfx.ring(this.chest(), 0.6, col, 0.14);
+          if (t.alive && !t.hidden && !t.intangible && t.capsuleDistance(this.chest()) < (sp.reach || 1.6) * this.scale + t.radius) {
+            t.takeHit(this, { type: 'melee', damage: sp.damage, knock: sp.knock || 'crumple', knockSpeed: sp.knockSpeed || 8, hitstun: sp.hitstun || 30, impact: 3, dir: this.dirTo(t), point: t.chest(), pose: 'hitBody', sfx: 'punchHeavy', name: sp.name });
+          }
+          b.emit('timeSkipStrike', { fighter: this, victim: t });
+        }
+        if (fr === prep + gap + 10) this.anim.play(sp.poses.recover || 'idle', 10);
+        if (fr >= prep + gap + (sp.recovery || 20)) this.setState('free');
+      },
+    },
+    exits: {
+      timeSkip(f) {
+        if (f.hidden && f.alive) f.setHidden(false);
+        f.intangible = false;
+      },
+    },
+  });
+
+  /* ======================================================================
+   * BARRIER (Android 17, the Tournament of Power): a shell round him for a moment — a faint fill and a bright,
+   * readable outline, snapping open in a few frames (never a huge opaque sphere). Blasts burst on it; a fighter
+   * swinging into it is pushed off. He is untouchable inside it, and it costs him the slot's cooldown.
+   * spec: { radius, holdFrames, damage, knockSpeed, color, poses { hold } }
+   * ====================================================================== */
+  register('barrier', {
+    start(f, sp, slot, cost) {
+      if (!payFromSlot(f, sp, slot, cost)) return false;
+      const b = f.battle, r = (sp.radius || 1.7) * f.scale, col = sp.color || 0x8ad4ff;
+      const shell = new THREE.Group();
+      const fill = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.08, depthWrite: false, blending: THREE.AdditiveBlending }));
+      const edge = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.IcosahedronGeometry(1, 1)), new THREE.LineBasicMaterial({ color: col, transparent: true, opacity: 0.75, depthWrite: false }));
+      shell.add(fill, edge);
+      shell.scale.setScalar(r * 0.2);
+      shell.position.copy(f.chest());
+      b.scene.add(shell);
+      f.setState('barrier', { spec: sp, shell, r, pushed: new Set() });
+      f.anim.play(sp.poses.hold, 12);
+      b.sfx('kiUp', f, { pitch: 1.35, vol: 0.6 });
+      b.vfx.ring(f.chest(), r * 1.2, col, 0.2);
+      return true;
+    },
+    gravityExempt: ['barrier'],
+    states: {
+      barrier() {
+        const sd = this.sd, sp = sd.spec, fr = this.stateFrame, b = this.battle, r = sd.r, col = sp.color || 0x8ad4ff;
+        this.vel.multiplyScalar(0.7);
+        if (this.grounded) this.vel.y = 0;
+        const k = Math.min(1, fr / 6);
+        sd.shell.scale.setScalar(r * (0.2 + 0.8 * U.easeOutCubic(k)));
+        sd.shell.position.copy(this.chest());
+        sd.shell.rotation.y += 0.012;
+        this.invuln = 2;
+        const c = sd.shell.position;
+        for (const p of b.projectiles.list) {
+          if (!p.alive || p.team === this.team || p.pos.distanceTo(c) > r + (p.radius || 0.5)) continue;
+          b.projectiles._explode(p, true);
+          b.vfx.ring(p.pos.clone(), 0.9, col, 0.18);
+        }
+        for (const e of b.enemiesOf(this)) {
+          if (!e.alive || e.hidden || sd.pushed.has(e) || e.state !== 'attack' || e.capsuleDistance(c) > r) continue;
+          sd.pushed.add(e);
+          e.takeHit(this, { type: 'ki', damage: sp.damage || 300, knock: 'push', knockSpeed: sp.knockSpeed || 16, hitstun: 18, impact: 2, dir: e.chest().sub(c).setY(0).normalize(), point: e.chest(), sfx: 'block', name: sp.name });
+          b.vfx.ring(e.chest(), 1, col, 0.16);
+        }
+        if (fr >= (sp.holdFrames || 60)) this.setState('free');
+      },
+    },
+    exits: {
+      barrier(f, old) {
+        const sh = old && old.shell;
+        if (!sh) return;
+        if (sh.parent) sh.parent.remove(sh);
+        sh.traverse((o) => {
+          if (o.geometry) o.geometry.dispose();
+          if (o.material) o.material.dispose();
+        });
+      },
+    },
+  });
+
+  register('portalStrike', {
+    start(f, sp, slot, cost) {
+      const t = f.target;
+      if (!t || !t.alive || t.hidden) return false;
+      if (!payFromSlot(f, sp, slot, cost)) return false;
+      const b = f.battle;
+      // the exit opens BESIDE the target (readable from any camera), at chest height
+      const toF = f.pos.clone().sub(t.pos).setY(0);
+      if (toF.lengthSq() < 0.001) toF.set(0, 0, 1);
+      toF.normalize();
+      const side = new V3(toF.z, 0, -toF.x).multiplyScalar(f.frame % 2 ? 1 : -1);
+      const exit = t.chest().addScaledVector(side, (sp.reach || 1.4) * t.scale);
+      const aim = t.chest();
+      const entry = f.chest().addScaledVector(f.forward, f.radius + 0.4);
+      const inP = SL.Dimension.portal(b, entry, f.forward, { radius: 0.55 * f.scale, open: 6 });
+      const outP = SL.Dimension.portal(b, exit, aim.clone().sub(exit).normalize(), { radius: 0.6 * t.scale, open: 6, sfx: false });
+      f.setState('portalStrike', { spec: sp, exit, aim, inP, outP, victim: t });
+      f.anim.play(sp.poses.wind, 10);
+      b.emit('telegraph', { fighter: f, pos: new V3(aim.x, t.pos.y, aim.z), radius: (sp.radius || 1.2) * t.scale, frames: sp.windup });
+      b.emit('portalStrikeTell', { fighter: f, exit: exit.clone(), victim: t });
+      return true;
+    },
+    states: {
+      portalStrike(it) {
+        const sd = this.sd, sp = sd.spec, fr = this.stateFrame;
+        const b = this.battle;
+        this.vel.multiplyScalar(0.6);
+        if (this.grounded) this.vel.y = 0;
+        if (fr === sp.windup) {
+          this.anim.play(sp.poses.strike, 30, { restart: true });
+          b.sfx('punchHeavy', this, { pitch: 0.8 });
+          const dir = sd.aim.clone().sub(sd.exit).normalize();
+          b.vfx.slash(sd.exit.clone(), sd.exit.clone().addScaledVector(dir, 1.6), sp.color || 0xff5ad8, 0.2, 0.12);
+          for (const e of b.enemiesOf(this)) {
+            if (!e.alive || e.hidden || e.intangible) continue;
+            if (e.capsuleDistance(sd.aim) > (sp.radius || 1.2) * e.scale + e.radius) continue;
+            e.takeHit(this, { type: 'melee', damage: sp.damage, knock: 'heavy', knockSpeed: sp.knockSpeed, hitstun: sp.hitstun || 34, impact: 3, dir, point: sd.aim.clone(), pose: 'hitSideL', sfx: 'punchHeavy', name: sp.name });
+          }
+          b.emit('portalStrike', { fighter: this });
+        }
+        if (fr === sp.windup + 8) {
+          if (sd.inP) sd.inP.close();
+          if (sd.outP) sd.outP.close();
+        }
+        if (fr >= sp.windup + (sp.recovery || 20)) this.setState('free');
+      },
+    },
+    exits: {
+      portalStrike(f, old) {
+        const sd = old || {};
+        if (sd.inP) sd.inP.close();
+        if (sd.outP) sd.outP.close();
+      },
+    },
+  });
+
+  /* ======================================================================
+   * BEAM SURF (Ultra Instinct -Sign-, the owner's PDF "Surf" rush). Only while an enemy beam is coming at him: he
+   * rides along the top of it to the one firing it (the beam passes under him — intangible to it), flips over his
+   * head and fires a Kamehameha into his chest point blank, which ends the enemy's beam. If the beam stops while he
+   * rides, he carries on to the shooter. Cut off (a second enemy, a scene) he simply drops out of it.
+   * ====================================================================== */
+  /** The enemy beam he could ride now: aimed at him, still going, close to his body. */
+  function surfableBeam(f) {
+    const b = f.battle, c = f.chest();
+    for (const bm of b.projectiles.beams) {
+      if (bm.done || bm.team === f.team || bm.state === 'fade' || bm.state === 'clash' || !bm.owner.alive) continue;
+      const to = c.clone().sub(bm.origin);
+      const along = to.dot(bm.dir);
+      if (along <= 0) continue;
+      const off = to.clone().sub(bm.dir.clone().multiplyScalar(along)).length();
+      if (off < bm.radius + f.radius + 3) return bm;
+    }
+    return null;
+  }
+  register('beamSurf', {
+    lockedReason(f) {
+      return surfableBeam(f) ? null : 'Needs a beam coming at you';
+    },
+    start(f, sp, slot, cost) {
+      const bm = surfableBeam(f);
+      if (!bm || !payFromSlot(f, sp, slot, cost)) return false;
+      f.setState('beamSurf', { spec: sp, beam: bm, shooter: bm.owner, phase: 'ride', from: f.pos.clone(), at: 0, was: !!f.intangible });
+      f.intangible = true;
+      f.anim.play(sp.poses.ride, 12);
+      f.battle.sfx('dash', f, { vol: 1.2 });
+      return true;
+    },
+    gravityExempt: ['beamSurf'],
+    states: {
+      beamSurf() {
+        const sd = this.sd, sp = sd.spec, fr = this.stateFrame, b = this.battle, sh = sd.shooter;
+        this.vel.set(0, 0, 0);
+        this.grounded = false;
+        this.fallVel = 0;
+        if (sd.phase === 'ride') {
+          // along the top of the beam toward the hands that fire it (or straight at him, if the beam has stopped)
+          const k = Math.min(1, fr / sp.rideFrames);
+          const end = sh.chest().add(new V3(0, sh.height * 0.6 + 0.6, 0));
+          this.pos.lerpVectors(sd.from, end, U.easeInOutCubic(k));
+          this.pos.y += Math.sin(k * Math.PI) * (sd.beam.radius + 0.8);
+          this.yaw = Math.atan2(sh.pos.x - this.pos.x, sh.pos.z - this.pos.z);
+          if (fr % 2 === 0) b.vfx.trail(this.chest(), sp.color || 0xbfe6ff, 0.5, 0.3);
+          if (fr % 5 === 0) this.ghost(0.25, 0.4);
+          if (k >= 1 || !sh.alive) {
+            sd.phase = 'flip';
+            sd.at = fr;
+            this.anim.play(sp.poses.flip, 20, { restart: true });
+          }
+          return;
+        }
+        if (sd.phase === 'flip') {
+          // over his head, and down in front of his face
+          const k = Math.min(1, (fr - sd.at) / sp.flipFrames);
+          const over = sh.pos.clone().add(new V3(0, sh.height + 0.5 * this.scale, 0));
+          const front = sh.pos.clone().addScaledVector(sh.forward, 1.4 * Math.max(this.scale, sh.scale));
+          front.y = sh.pos.y;
+          this.pos.lerpVectors(over, front, k * k);
+          this.yaw = Math.atan2(sh.pos.x - this.pos.x, sh.pos.z - this.pos.z);
+          if (k >= 1) {
+            sd.phase = 'fire';
+            sd.at = fr;
+            this.anim.play(sp.poses.fire, 40, { restart: true });
+            if (sd.beam && !sd.beam.done) sd.beam.stop();
+            if (sh.alive) {
+              const hand = this.handPos('R').add(this.handPos('L')).multiplyScalar(0.5), c = sh.chest();
+              const dir = c.clone().sub(hand);
+              if (dir.lengthSq() < 0.01) dir.copy(this.forward);
+              dir.normalize();
+              sd.fx = { vis: b.vfx.createBeam(sp.color || 0x9ad8ff, 0xffffff, {}), dir, at: fr };
+              b.vfx.explosion(c, 1.2, sp.color || 0x9ad8ff, { smoke: false });
+              b.sfx('beamFire', this, { vol: 1 });
+              sh.takeHit(this, { type: 'ki', damage: sp.damage, knock: 'heavy', knockSpeed: 46, hitstun: 40, impact: 4, dir: dir.clone(), pose: 'hitHeavy', color: sp.color });
+            }
+            if (this.cine) this._cineEvent('finish');
+          }
+          return;
+        }
+        // the shot drawn on for a moment, then he lands back in the fight
+        const fx = sd.fx;
+        if (fx) {
+          const k = (fr - fx.at) / 30;
+          if (k >= 1) {
+            fx.vis.dispose();
+            sd.fx = null;
+          } else {
+            const o = this.handPos('R').add(this.handPos('L')).multiplyScalar(0.5);
+            fx.vis.update(o, o.clone().addScaledVector(fx.dir, 14 * Math.min(1, k * 5)), 0.9 * (1 - 0.4 * k), k < 0.6 ? 1 : (1 - k) / 0.4, fr / 60);
+          }
+        }
+        if (fr - sd.at === 6) this.intangible = sd.was;
+        if (fr - sd.at >= sp.recovery) this.setState('free');
+      },
+    },
+    exits: {
+      beamSurf(f, sd) {
+        f.intangible = !!sd.was;
+        if (sd.fx) sd.fx.vis.dispose();
       },
     },
   });

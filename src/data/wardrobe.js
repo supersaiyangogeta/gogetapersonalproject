@@ -7,7 +7,7 @@
  *   emblem   the marks on a gi (Goku's kanji), on an outfit that allows them (emblemOk)
  *   scouter  an accessory on the head
  *   tail     a Saiyan tail worn round the waist
- *   hair     a hairstyle from src/data/hair.js (slot ready; no alternates defined yet)
+ *   hair     a hairstyle from src/data/hair.js (Gohan's Ultimate hair, Videl's three cuts; an outfit may also bring its own `hair`)
  * plus a colour `palette` the outfit offers ('default' = as authored).
  * 'none' is a valid piece in every optional slot.
  *
@@ -22,7 +22,8 @@
  *   armors, emblemOk, defaults, palettes, face, body — unless it says otherwise), defaults (the
  *   armor / emblem / scouter / tail that come with an outfit), armorOk (takes the armor slot) or
  *   armors (the list of armors it may take; the first fitting fallback is its default), emblemOk,
- *   palettes, face (changes to the face that go with it), body ('adult' default, or 'young': the
+ *   palettes, face (changes to the face that go with it), hair (the hairstyle that goes with it), props (model props worn
+ *   with it, added to the character's own: 18's pearls and earrings), body ('adult' default, or 'young': the
  *   clothes of a younger body, which only a young body profile can wear), glb (production model
  *   data: { model, materials, attach } — see SL.Wardrobe.modelDef).
  *   An outfit whose look has its own `armor` (Yardrat's vest) keeps it: the armor slot only owns
@@ -63,6 +64,19 @@
     super: { name: 'Super Charcoal', look: { top: 0x3a3d48, pants: 0x3a3d48 } },
   };
   const WHITE = 0xf5f2e6, GOLD = 0xe2b84a;
+  // Android 18's pearl necklace (her Buu Saga look): beads round the base of the neck, dropping in a U onto the upper chest.
+  // Her right half in chest-joint space, laid on her built body's surface (measured in the viewer, 2026-10-16); her left
+  // half mirrors it
+  const A18_PEARL_HALF = [
+    [-0.008, 0.338, -0.062], [-0.025, 0.338, -0.058], [-0.039, 0.338, -0.048], [-0.051, 0.338, -0.037], [-0.058, 0.338, -0.022],
+    [-0.066, 0.338, -0.006], [-0.066, 0.338, 0.011], [-0.063, 0.338, 0.026], [-0.075, 0.336, 0.038], [-0.08, 0.33, 0.053],
+    [-0.082, 0.323, 0.068], [-0.082, 0.315, 0.083], [-0.082, 0.308, 0.098], [-0.081, 0.3, 0.113], [-0.077, 0.291, 0.126],
+    [-0.069, 0.282, 0.138], [-0.06, 0.272, 0.148], [-0.052, 0.267, 0.142], [-0.041, 0.256, 0.15], [-0.03, 0.245, 0.155],
+    [-0.018, 0.233, 0.158], [-0.006, 0.221, 0.16],
+  ];
+  const A18_PEARLS = A18_PEARL_HALF.flatMap((p, i) => [p, [-p[0], p[1], p[2]]].map((pos, k) => ({
+    id: 'pearl' + (k ? 'L' : 'R') + i, shape: 'ball', joint: 'chest', pos, size: [0.0085, 0.0085, 0.0085], color: 0xf4ecdc, outline: 0.3,
+  })));
 
   /*
    * CLOTHING DAMAGE, per outfit (Model.setDamage; levels 0 intact · 1 damaged · 2 heavily damaged ·
@@ -84,6 +98,24 @@
       { at: 'chest', y: 0.18, ang: -0.3, w: 0.6, h: 0.09, fill: 'skin', cloth: 0x16225a, level: 3 },
       { at: 'spine', y: 0.08, ang: 0.45, w: 0.55, h: 0.08, fill: 'skin', cloth: 0x16225a, level: 3 },
       { at: 'kneeR', t: 0.5, ang: -0.4, w: 1.1, h: 0.1, fill: 'skin', level: 3 },
+    ],
+  };
+  // Goku, Namek gi (the Frieza fight, Namek saga cinematic brief): dust first, then the orange splits over the
+  // navy undershirt at the chest and the back and the trousers go at the thigh and knee; the torso rips go with
+  // the gi when the 100% fight tears it off (setTorn), and the trousers keep theirs
+  const DAMAGE_GOKU_NAMEK = {
+    tearAt: 3,
+    rips: [
+      { at: 'chest', y: 0.21, ang: 0.55, w: 0.36, h: 0.06, fill: 'under', level: 1, until: 2 },
+      { at: 'spine', y: 0.12, ang: -2.8, w: 0.45, h: 0.07, fill: 'under', level: 1, until: 2 },
+      { at: 'thighR', t: 0.55, ang: 0.25, w: 0.7, h: 0.08, fill: 'skin', level: 1 },
+      { at: 'chest', y: 0.12, ang: -0.45, w: 0.48, h: 0.08, fill: 'under', level: 2, until: 2 },
+      { at: 'chest', y: 0.18, ang: 2.7, w: 0.5, h: 0.07, fill: 'under', level: 2, until: 2 },
+      { at: 'spine', y: 0.06, ang: 0.35, w: 0.42, h: 0.06, fill: 'under', level: 2, until: 2 },
+      { at: 'thighL', t: 0.4, ang: -0.5, w: 0.8, h: 0.09, fill: 'skin', level: 2 },
+      { at: 'kneeL', t: 0.3, ang: 0.15, w: 1.0, h: 0.09, fill: 'skin', level: 2 },
+      { at: 'kneeR', t: 0.55, ang: -0.4, w: 1.2, h: 0.1, fill: 'skin', level: 3 },
+      { at: 'thighR', t: 0.3, ang: 2.9, w: 0.9, h: 0.09, fill: 'skin', level: 3 },
     ],
   };
   // Vegeta, Buu Saga suit: there is no gi to lose — the fabric itself splits to the skin, a glove
@@ -111,6 +143,51 @@
       { at: 'thighL', t: 0.4, ang: 3.0, w: 1.0, h: 0.1, fill: 'skin', level: 3 },
     ],
   };
+
+  // Goku, Tournament of Power (the Whis gi; Tournament of power ui.docx and the owner's stills): Jiren's blows tear the
+  // orange top at the chest and the back; then the top is gone (the `torn` look) — the navy undershirt with holes in it,
+  // a ragged orange fringe left at the waist over the sash, the trousers holed at the thigh and in tatters at the knees;
+  // last (torn.strip, level 3: Mastered Ultra Instinct on) the undershirt goes too — bare to a ragged navy-and-orange
+  // band at the belt. The wristbands and the boots stay
+  const WAIST = [0, 1.57, 3.14, -1.57];
+  const DAMAGE_GOKU_TOP = {
+    tearAt: 2,
+    rips: [
+      { at: 'chest', y: 0.2, ang: 0.55, w: 0.42, h: 0.07, fill: 'under', level: 1, until: 1 },
+      { at: 'spine', y: 0.13, ang: -2.7, w: 0.5, h: 0.07, fill: 'under', level: 1, until: 1 },
+      { at: 'thighR', t: 0.45, ang: 0.3, w: 0.8, h: 0.09, fill: 'skin', level: 1 },
+      { at: 'chest', y: 0.17, ang: -0.4, w: 0.2, h: 0.045, fill: 'skin', cloth: 'under', level: 2, until: 2 },
+      { at: 'chest', y: 0.07, ang: 0.45, w: 0.16, h: 0.04, fill: 'skin', cloth: 'under', level: 2, until: 2 },
+      { at: 'chest', y: 0.2, ang: 2.6, w: 0.3, h: 0.05, fill: 'skin', cloth: 'under', level: 2, until: 2 },
+      ...WAIST.map((a, i) => ({ at: 'spine', y: 0.035, ang: a + 0.2, w: 1.75, h: 0.055, fill: 'top', cloth: 'under', level: 2, until: 2, seed: 40 + i })),
+      { at: 'thighL', t: 0.5, ang: -0.4, w: 0.9, h: 0.1, fill: 'skin', level: 2 },
+      { at: 'kneeL', t: 0.35, ang: 0.2, w: 1.0, h: 0.09, fill: 'skin', level: 2 },
+      { at: 'kneeR', t: 0.62, ang: -0.5, w: 1.3, h: 0.1, fill: 'skin', level: 2 },
+      { at: 'kneeL', t: 0.82, ang: 2.4, w: 1.6, h: 0.08, fill: 'skin', level: 2 },
+      ...WAIST.map((a, i) => ({ at: 'spine', y: 0.03, ang: a - 0.3, w: 1.8, h: 0.065, fill: 'under', cloth: 'top', level: 3, seed: 60 + i })),
+      { at: 'thighR', t: 0.3, ang: -2.8, w: 1.0, h: 0.1, fill: 'skin', level: 3 },
+      { at: 'kneeR', t: 0.3, ang: 0.6, w: 0.9, h: 0.09, fill: 'skin', level: 3 },
+    ],
+  };
+  const TORN_GOKU_TOP = { chest: 'under', trap: 'under', abs: 'under', keepSleeve: 'both', strip: { at: 3, chest: 'skin', trap: 'skin', abs: 'skin', keepSleeve: null } };
+  // Vegeta, Tournament of Power (the Super suit): Toppo's destruction and the Final Explosion. Rips to the skin first;
+  // then (torn, level 3) the armour and the whole upper suit are gone and so are the gloves — bare to a ragged band at
+  // the waist (the owner's stills: "I swear that Universe 7 is going to win", "I leave the rest to you"); boots stay
+  const DAMAGE_VEGETA_TOP = {
+    tearAt: 3,
+    rips: [
+      { at: 'chest', y: 0.21, ang: 0.6, w: 0.36, h: 0.06, fill: 'skin', level: 1, until: 2 },
+      { at: 'thighL', t: 0.5, ang: 0.4, w: 0.7, h: 0.08, fill: 'skin', level: 1 },
+      { at: 'spine', y: 0.12, ang: -0.5, w: 0.5, h: 0.08, fill: 'skin', level: 2, until: 2 },
+      { at: 'chest', y: 0.15, ang: 2.8, w: 0.6, h: 0.08, fill: 'skin', level: 2, until: 2 },
+      { at: 'kneeR', t: 0.4, ang: 0, w: 0.9, h: 0.08, fill: 'skin', level: 2 },
+      ...WAIST.map((a, i) => ({ at: 'spine', y: 0.06, ang: a + 0.5, w: 1.8, h: 0.075, fill: 'top', cloth: 'top', level: 3, seed: 80 + i })),
+      { at: 'thighR', t: 0.35, ang: -0.3, w: 1.1, h: 0.11, fill: 'skin', level: 3 },
+      { at: 'kneeL', t: 0.5, ang: 0.4, w: 1.1, h: 0.1, fill: 'skin', level: 3 },
+      { at: 'thighL', t: 0.3, ang: 2.9, w: 0.9, h: 0.1, fill: 'skin', level: 3 },
+    ],
+  };
+  const TORN_VEGETA_TOP = { chest: 'skin', trap: 'skin', abs: 'skin', gloves: 'off', armor: 'off' };
 
   // Gohan's Ultimate gi (the orange one): the orange tears to the navy undershirt, then the undershirt
   // itself; his own places, not his father's
@@ -161,15 +238,18 @@
 
   const pieces = {
     /* ================= GOKU: outfits ================= */
+    // KID GOKU (2026-10-16, the owner's collage: the boy with the four-star ball): both outfits bring the young body
+    // (profile goku, bodies.young: the boy's build and face, the Power Pole on his back) and the loose tail
     goku_early: {
-      slot: 'outfit', name: 'Early Adventure', chars: ['goku'], era: 'early', kind: 'canon', canon: true,
-      status: 'planned', needs: 'a young Goku body (Original Dragon Ball chronology pass)', body: 'young',
+      slot: 'outfit', name: 'Early Adventure (Kid)', chars: ['goku'], era: 'early', kind: 'canon', canon: true, accuracy: 'approximate',
+      status: 'prototype', body: 'young',
       look: { topStyle: 'gi', top: 0x2a4aa8, sleeves: 'none', pants: 0x2a4aa8, pantsStyle: 'gi', belt: 0xf2f0e8, wrist: 0xf2f0e8, boots: 0x5a3a28, bootStyle: 'shoe' },
+      defaults: { tail: 'tail_saiyan_free' },
     },
     goku_turtle_young: {
-      slot: 'outfit', name: 'Turtle School (Young)', chars: ['goku'], era: 'turtle', kind: 'canon', canon: true,
-      status: 'planned', needs: 'a young Goku body (Original Dragon Ball chronology pass)', body: 'young',
-      base: 'goku_saiyan', look: { under: null, sleeves: 'none', wrist: 0x1f3d9e }, defaults: { emblem: 'emblem_kame' },
+      slot: 'outfit', name: 'Turtle School (Kid)', chars: ['goku'], era: 'turtle', kind: 'canon', canon: true, accuracy: 'approximate',
+      status: 'prototype', body: 'young',
+      base: 'goku_saiyan', look: { under: null, sleeves: 'none', wrist: 0x1f3d9e }, defaults: { emblem: 'emblem_kame', tail: 'tail_saiyan_free' },
     },
     goku_tenkaichi23: {
       slot: 'outfit', name: 'Tournament Gi', chars: ['goku'], era: 'tenkaichi23', kind: 'canon', canon: true, accuracy: 'reference',
@@ -187,7 +267,7 @@
       slot: 'outfit', name: 'Namek Battle Gi', chars: ['goku'], era: 'namek', kind: 'canon', canon: true, accuracy: 'reference',
       status: 'prototype', unlock: { missionComplete: 'namek_aftermath' },
       // lighter orange, and when the fight takes the gi the blue undershirt is what is left
-      look: Object.assign({}, GI, GI_PALETTES.namek.look, { torn: { chest: 'skin', trap: 0x2a4aa8, abs: 0x2a4aa8, keepSleeve: 'L' } }),
+      look: Object.assign({}, GI, GI_PALETTES.namek.look, { damage: DAMAGE_GOKU_NAMEK, torn: { chest: 'skin', trap: 0x2a4aa8, abs: 0x2a4aa8, keepSleeve: 'L' } }),
       defaults: { emblem: 'emblem_go' }, emblemOk: true, palettes: GI_PALETTES,
     },
     goku_yardrat: {
@@ -237,7 +317,8 @@
       slot: 'outfit', name: 'Whis Gi', chars: ['goku'], era: 'super', kind: 'canon', canon: true, accuracy: 'reference',
       // provisional: no Super chapter exists yet, so it opens at the end of this build's story
       status: 'prototype', unlock: { missionComplete: 'buu_majin' },
-      base: 'goku_saiyan', look: Object.assign({}, GI_PALETTES.super.look, { boots: 0x1c3a9a }),
+      // torn in the Tournament of Power its own way (DAMAGE_GOKU_TOP): the orange top, then the undershirt
+      base: 'goku_saiyan', look: Object.assign({}, GI_PALETTES.super.look, { boots: 0x1c3a9a, damage: DAMAGE_GOKU_TOP, torn: TORN_GOKU_TOP }),
       defaults: { emblem: 'emblem_whis' }, emblemOk: true, palettes: GI_PALETTES,
     },
     goku_end_z: {
@@ -245,9 +326,68 @@
       status: 'prototype', unlock: { missionComplete: 'endz_village' },
       look: { topStyle: 'gi', top: 0x3ab0b0, under: 0x2a9090, sleeves: 'none', wrist: 0xe8b030, belt: 0xf2f0e8, pants: 0x1f4f4a, pantsStyle: 'gi', boots: 0xb0642a, bootStyle: 'gi' },
     },
+    // MOVIE 2 · Super Broly: the blue winter jacket with the pink "SAB" on the chest (the owner's collage), zipped
+    // over the Super gi; the gi's trousers and boots under it
     goku_broly_winter: {
-      slot: 'outfit', name: 'Winter Clothes (Movie)', chars: ['goku'], era: 'super', kind: 'movie', canon: true,
-      status: 'planned', needs: 'the movie chapter and a coat silhouette (movies are separate content)',
+      slot: 'outfit', name: 'Winter Clothes (Movie)', chars: ['goku'], era: 'super', kind: 'movie', canon: true, accuracy: 'reference',
+      status: 'prototype', unlock: { missionComplete: 'bb_clash' },
+      base: 'goku_saiyan',
+      look: Object.assign({}, GI_PALETTES.super.look, {
+        boots: 0x1c3a9a, sleeves: 'long', sleeveColor: 0x2a48c0, wrist: 0x2a48c0,
+        jacket: { color: 0x2a48c0, open: 0.18, collar: 0xeeeef4 },
+        emblem: { front: 'SAB', back: null, fg: '#ff4a9a', bg: 'rgba(0,0,0,0)' },
+      }),
+    },
+
+    /* ================= THE TOURNAMENT OF POWER: the supporting cast's looks (the owner's stills of the stands) ===== */
+    // their authored looks (the character files), so a mission can put them in the Tournament ones
+    tien_classic: { slot: 'outfit', name: 'Crane Gi', chars: ['tien'], era: 'saiyan', kind: 'canon', canon: true, accuracy: 'reference', status: 'prototype', own: true, look: {} },
+    a18_classic: { slot: 'outfit', name: 'Android Saga', chars: ['android_18'], era: 'android', kind: 'canon', canon: true, accuracy: 'reference', status: 'prototype', own: true, look: {} },
+    // Tien: the dark Chinese vest with the red 天 on the chest, cream sleeves, a white sash, dark red trousers
+    tien_top: {
+      slot: 'outfit', name: 'Tournament Vest', chars: ['tien'], era: 'super', kind: 'canon', canon: true, accuracy: 'reference',
+      status: 'prototype', unlock: { missionComplete: 'top_jiren' },
+      look: {
+        topStyle: 'shirt', top: 0x34363e, sleeves: 'long', sleeveColor: 0xeee2c4, arms: 0xeee2c4, sleeveBulk: 1.12, wrist: 0xeee2c4,
+        belt: 0xf2eee2, beltStyle: 'sash', pants: 0x6a1c24, pantsStyle: 'gi', boots: 0x18181c, bootStyle: 'shoe',
+        emblem: { front: '天', back: null, center: 0.075, fg: '#c0202a', bg: 'rgba(0,0,0,0)' },
+      },
+    },
+    // Android 18: the pink tracksuit, zipped to the collar, white trainers
+    a18_top: {
+      slot: 'outfit', name: 'Tournament Tracksuit', chars: ['android_18'], era: 'super', kind: 'canon', canon: true, accuracy: 'reference',
+      status: 'prototype', unlock: { missionComplete: 'top_jiren' },
+      look: {
+        topStyle: 'shirt', top: 0xe0588a, sleeves: 'long', sleeveColor: 0xe0588a, arms: 0xe0588a, wrist: 0xf4f2ee,
+        collar: 0xe0588a, collarStyle: 'turtle', bustSoft: true,
+        pants: 0xe0588a, pantsStyle: 'slacks', boots: 0xf4f2ee, bootStyle: 'shoe',
+      },
+    },
+
+    /* ================= ANDROID 18: her eras, on her authored Android Saga look (a18_classic, `own`) ================= */
+    // Buu Saga (the owner's reference, 2026-10-16): a cropped dark leather vest with a gold badge over a white T-shirt, a
+    // pearl necklace, small gold hoops, dark gloves, a gold bangle, a brown belt with a silver buckle and a gold wallet
+    // chain, teal capri jeans with rolled cuffs, orange slouch socks, black flat shoes; her hair a fuller bob tucked
+    // behind the left ear. The story's Super era wears it too (the party); the Tournament of Power puts her in a18_top
+    a18_buu: {
+      slot: 'outfit', name: 'Buu Saga', chars: ['android_18'], era: 'buu', kind: 'canon', canon: true, accuracy: 'reference',
+      status: 'prototype', unlock: { missionComplete: 'bog_party' }, base: 'a18_classic',
+      look: {
+        top: 0xf2eee8, sleeves: 'short', sleeveColor: 0xf2eee8, arms: null, stripes: null, hem: null,
+        jacket: { color: 0x2c2422, open: 0.62, short: true },
+        gloves: 0x3a2620, gloveLen: 0.24, belt: 0x7a4626, buckle: 0xc8ccd4,
+        pants: 0x3f8096, pantsStyle: 'tight', crop: 0.5, legs: 0xf4dcc0,
+        socks: 0xf0901e, socksH: 0.11, boots: 0x141418, bootStyle: 'shoe', bootTop: 0.05,
+      },
+      hair: { style: 'a18_buu' },
+      props: [
+        ...A18_PEARLS,
+        { id: 'earringL', shape: 'hoop', joint: 'head', pos: [0.132, 0.084, -0.004], radius: 0.01, color: GOLD },
+        { id: 'earringR', shape: 'hoop', joint: 'head', pos: [-0.132, 0.084, -0.004], radius: 0.01, color: GOLD },
+        { id: 'badge', shape: 'tri', joint: 'chest', pos: [0.075, 0.2, 0.162], rot: [-0.3, 0.45, 0], size: [0.017, 0.021, 0.005], color: GOLD },
+        { id: 'bangle', shape: 'cuff', joint: 'elbowL', pos: [0, -0.215, 0], radius: 0.05, length: 0.016, color: GOLD, outline: 0.4 },
+        { id: 'chain', shape: 'strip', joint: 'hips', path: [[-0.1, 0.05, 0.112], [-0.11, -0.009, 0.111], [-0.167, -0.065, 0.093], [-0.212, -0.104, 0.049], [-0.222, -0.122, -0.012], [-0.204, -0.118, -0.071], [-0.158, -0.092, -0.112], [-0.112, -0.051, -0.141], [-0.08, -0.01, -0.14]], width: 0.009, thick: 0.005, color: GOLD, outline: 0.2 },
+      ],
     },
 
     /* ================= VEGETA: outfits ================= */
@@ -295,12 +435,24 @@
       slot: 'outfit', name: 'Whis Armor', chars: ['vegeta'], era: 'super', kind: 'canon', canon: true, accuracy: 'reference',
       // provisional: no Super chapter exists yet, so it opens at the end of this build's story
       status: 'prototype', unlock: { missionComplete: 'buu_majin' },
-      look: Object.assign({}, SUIT, SUIT_PALETTES.super.look),
+      look: Object.assign({}, SUIT, SUIT_PALETTES.super.look, { damage: DAMAGE_VEGETA_TOP, torn: TORN_VEGETA_TOP }),
       defaults: { armor: 'armor_v_whis', emblem: 'emblem_whis' }, armorOk: true, emblemOk: true, palettes: SUIT_PALETTES,
     },
+    // MOVIE 2 · Super Broly: the armour he fights Broly in (the Super cut of the suit and the white armour)
     vegeta_broly: {
-      slot: 'outfit', name: 'Movie Armor (Broly)', chars: ['vegeta'], era: 'super', kind: 'movie', canon: true,
-      status: 'planned', needs: 'the movie chapter (movies are separate content)',
+      slot: 'outfit', name: 'Movie Armor (Broly)', chars: ['vegeta'], era: 'super', kind: 'movie', canon: true, accuracy: 'reference',
+      status: 'prototype', unlock: { missionComplete: 'bb_clash' },
+      look: Object.assign({}, SUIT, SUIT_PALETTES.super.look),
+      defaults: { armor: 'armor_v_whis' }, armorOk: true, emblemOk: true, palettes: SUIT_PALETTES,
+    },
+    // ...and the lime-green winter coat he arrives at the glacier in (the owner's collage: zipped, a darker collar)
+    vegeta_broly_winter: {
+      slot: 'outfit', name: 'Winter Coat (Movie)', chars: ['vegeta'], era: 'super', kind: 'movie', canon: true, accuracy: 'reference',
+      status: 'prototype', unlock: { missionComplete: 'bb_clash' },
+      look: Object.assign({}, SUIT, SUIT_PALETTES.super.look, {
+        topStyle: 'shirt', top: 0x9ad83a, sleeves: 'long', sleeveColor: 0x9ad83a, arms: 0x9ad83a, collar: 0x6aa82a, collarStyle: 'turtle',
+        jacket: { color: 0x9ad83a, open: 0.18, collar: 0x6aa82a },
+      }),
     },
     vegeta_gt: {
       slot: 'outfit', name: 'GT Clothes', chars: ['vegeta'], era: 'end_z', kind: 'gt', canon: false,
@@ -377,17 +529,42 @@
       status: 'prototype', unlock: { missionComplete: 'android_warning' },
       base: 'ft_capsule', look: { noSword: true },
     },
+    // the Cell Saga look (the owner's visual reference p.229): a blue bodysuit under white Saiyan armour with gold
+    // shoulder straps and a gold belly plate, white gloves, white boots; the sword stays on his back (its strap kept).
+    // His hair grown to the shoulders after the Time Chamber comes with the outfit (`hair`, 2026-10-15)
     ft_armor: {
-      slot: 'outfit', name: 'Saiyan Armor (Cell Saga)', chars: ['future_trunks'], era: 'android', kind: 'canon', canon: true,
-      status: 'planned', needs: 'the Cell Saga look: his hair grown out after the Time Chamber, and Capsule Corp armor fitted to him',
+      slot: 'outfit', name: 'Saiyan Armor (Cell Saga)', chars: ['future_trunks'], era: 'android', kind: 'canon', canon: true, accuracy: 'approximate',
+      status: 'prototype', unlock: { missionComplete: 'cell_chamber' },
+      hair: { style: 'trunks_long' },
+      look: {
+        topStyle: 'armor', top: 0x2a46b0, arms: 0x2a46b0, sleeves: 'long', sleeveColor: 0x2a46b0,
+        armor: { plate: 0xf2f0ea, belly: 0xe2b83a, pads: 0xe2b83a, padStyle: 'strap', trim: 0xe2b83a },
+        gloves: 0xf2f0ea, pants: 0x2a46b0, pantsStyle: 'tight',
+        boots: 0xf2f0ea, bootTip: 0xe2b83a, bootStyle: 'saiyan',
+        strap: { color: 0x3cb4c6, buckle: 0xf2f0ea, core: 0xd8342a, tilt: 0.62, length: 0.27 },
+      },
     },
     ft_bojack: {
       slot: 'outfit', name: 'Sleeveless Jacket (Movie)', chars: ['future_trunks'], era: 'android', kind: 'movie', canon: true,
       status: 'planned', needs: 'the movie chapter (movies are separate content)',
     },
+    // the Goku Black arc look (the owner's visual reference p.228, built 2026-10-15): a blue denim jacket over a black
+    // shirt, the red scarf round his neck, a red cape, the olive strap across the chest, dark baggy trousers, olive boots.
+    // The longer, fuller hair of that arc comes with the outfit (`hair`: its own style since 2026-10-15)
     ft_super: {
-      slot: 'outfit', name: 'Long Coat (Super)', chars: ['future_trunks'], era: 'super', kind: 'canon', canon: true,
-      status: 'planned', needs: 'the Future Trunks arc of Super: the long coat and the older hair',
+      slot: 'outfit', name: 'Denim Jacket and Cape (Super)', chars: ['future_trunks'], era: 'super', kind: 'canon', canon: true, accuracy: 'approximate',
+      status: 'prototype', unlock: { missionComplete: 'hit_contract' },
+      base: 'ft_capsule',
+      hair: { style: 'trunks_super' },
+      look: {
+        top: 0x22222a, jacket: { color: 0x5a86c4, collar: 0xb8202c }, sleeveColor: 0x5a86c4, sleeveBulk: 1.12, wrist: 0x4a72ae,
+        choker: 0xb8202c, chokerH: 0.05, chokerAt: 0.35,
+        pants: 0x34343c, belt: 0x5a5a62, buckle: 0xd0d0d8, buckleCore: 0x5a5a62,
+        boots: 0x8a8648, bootSole: 0x3a3428,
+        strap: { color: 0x5a6e34, buckle: 0xd0d0d8, core: 0x5a6e34, tilt: 0.62, length: 0.27 },
+        cape: 0xa8202a,
+        emblem: { front: null, back: null, sleeve: '@capsule', fg: '#262630', bg: '#e8e8f0' },
+      },
     },
 
     /* ================= ADULT GOHAN (Buu Saga): outfits (owner's reference sheet, 2026-09-25) ================= */
@@ -466,7 +643,7 @@
     // Super Broly: a blacker vest, the GOLD collar, a teal sash and teal wraps
     gogeta_broly: {
       slot: 'outfit', name: 'Super Broly', chars: ['gogeta'], era: 'super', kind: 'movie', canon: true, accuracy: 'reference',
-      status: 'prototype', unlock: { missionComplete: 'whatif_gogeta' }, base: 'gogeta_reborn',
+      status: 'prototype', unlock: { missionComplete: 'bb_gogeta' }, base: 'gogeta_reborn', // the film's own mission (it was the What-If's)
       look: { jacket: { color: 0x141418, open: 1.45 }, paddedCollar: { color: 0xf2c43a, size: 1.12 }, belt: 0x2a8a98, boots: 0x2a7f8a },
     },
     gogeta_gt: {
@@ -573,15 +750,74 @@
     // 'auto': the character's own tail colour (appearance.outfit.tail), else brown.
     // style 'wrapped' leaves the lower back and wraps round the waist; 'free' hangs and curls.
     tail_saiyan: {
-      slot: 'tail', name: 'Saiyan Tail', chars: ['vegeta', 'goku', 'bardock'], era: 'prologue', kind: 'canon', canon: true, status: 'prototype',
+      slot: 'tail', name: 'Saiyan Tail', chars: ['vegeta', 'goku', 'bardock', 'kid_gohan'], era: 'prologue', kind: 'canon', canon: true, status: 'prototype',
       look: { color: 'auto', style: 'wrapped' },
     },
     tail_saiyan_free: {
-      slot: 'tail', name: 'Saiyan Tail (Loose)', chars: ['vegeta', 'goku', 'bardock'], era: 'prologue', kind: 'canon', canon: true, status: 'prototype',
+      slot: 'tail', name: 'Saiyan Tail (Loose)', chars: ['vegeta', 'goku', 'bardock', 'kid_gohan'], era: 'prologue', kind: 'canon', canon: true, status: 'prototype',
       look: { color: 'auto', style: 'free' },
     },
 
+    /* ================= KID GOHAN (2026-10-16): Piccolo's gi, and the Raditz-arc clothes ================= */
+    // his authored look: Piccolo's purple gi from the training on (no hat any more — that went with the tunic)
+    kg_training: {
+      slot: 'outfit', name: 'Piccolo\'s Training Gi', chars: ['kid_gohan'], era: 'saiyan', kind: 'canon', canon: true, accuracy: 'reference',
+      status: 'prototype', own: true, look: {},
+    },
+    // at four, when Raditz takes him (the owner's collage): the yellow tunic with its standing collar nearly to the ankle, the
+    // green long sleeves, the red hat with the four-star Dragon Ball on top sitting back on his head, dark shoes. The
+    // Raditz missions dress him in it; story-wise nothing else changes (kit, forms, size)
+    kg_raditz: {
+      slot: 'outfit', name: 'Raditz Arc (Hat and Tunic)', chars: ['kid_gohan'], era: 'saiyan', kind: 'canon', canon: true, accuracy: 'approximate',
+      status: 'prototype',
+      look: {
+        topStyle: 'shirt', top: 0xf0c03a, collar: 0xf0c03a, collarStyle: 'turtle',
+        sleeves: 'long', sleeveColor: 0x3a9a4a, wrist: 0x2e8040,
+        hem: { color: 0xf0c03a, len: 0.52, flare: 1.3, arc: 2.7 },
+        pants: 0xa8742a, pantsStyle: 'gi', boots: 0x1e1a1e, bootStyle: 'shoe',
+        cap: 0xd8452a, capBall: 0xffa21a, capStars: 4, capTilt: 0.42,
+      },
+      defaults: { tail: 'tail_saiyan_free' },
+    },
+
+    /* ================= YOUNG CHI-CHI: two ages (the owner's correction of the board p.194, 2026-10-16) ================= */
+    // the child: the agreed covered version of the helmet armour (the character file holds the data)
+    cc_kid: {
+      slot: 'outfit', name: 'Helmet Armour (Child)', chars: ['young_chichi'], era: 'early', kind: 'canon', canon: true, accuracy: 'approximate',
+      status: 'prototype', own: true, look: {}, body: 'young',
+    },
+    // years later, the 23rd World Martial Arts Tournament: the blue sleeveless dress with its standing collar and red
+    // edging, open at the sides over full red trousers, the red sash and wristbands, white lower legs, pink shoes. It is
+    // made for her grown body (profile young_chichi, bodies.adult: her height then, the long straight hair, no helmet)
+    cc_tournament23: {
+      slot: 'outfit', name: '23rd World Tournament', chars: ['young_chichi'], era: 'tenkaichi23', kind: 'canon', canon: true, accuracy: 'approximate',
+      status: 'prototype',
+      look: {
+        topStyle: 'shirt', top: 0x2440b0, sleeves: 'none', arms: 0xf6d0b0, collar: 0x2440b0, collarStyle: 'turtle',
+        wrist: 0xd02a3a, belt: 0xd02a3a, beltStyle: 'sash', hem: { color: 0x2440b0, len: 0.52, flare: 1.32, arc: 2.3, trim: 0xd02a3a },
+        pants: 0xd02a3a, pantsStyle: 'harem', harem: { thigh: 1.25, balloon: 1.55, at: 0.32, cuff: 0.52 }, legs: 0xf2f0ea, boots: 0xe0506a, bootStyle: 'shoe',
+      },
+    },
+
     /* ================= test mannequin (developer only): the .glb route ================= */
+    /* ================= UNIVERSE 6: Caulifla and Kefla ================= */
+    // `own`: the outfit authored on the character (src/data/characters/caulifla_kefla.js) is the piece's look, so the
+    // wardrobe never copies it; palettes recolour only the clothes (the cuffs, boots and earrings keep their colours)
+    caulifla_default: {
+      slot: 'outfit', name: 'Bandeau & Harem Pants', chars: ['caulifla'], era: 'super', kind: 'canon', canon: true, accuracy: 'reference',
+      status: 'prototype', own: true, look: {},
+    },
+    kefla_default: {
+      slot: 'outfit', name: 'Crop Top & Leggings', chars: ['kefla'], era: 'super', kind: 'canon', canon: true, accuracy: 'reference',
+      status: 'prototype', own: true, look: {},
+      palettes: {
+        crimson: { name: 'Crimson', look: { top: 0xb01e2e, pants: 0xb01e2e } },
+        black: { name: 'Black', look: { top: 0x22202a, pants: 0x22202a } },
+        violet: { name: 'Royal Violet', look: { top: 0x4c2a7c, pants: 0x4c2a7c } },
+        teal: { name: 'Deep Teal', look: { top: 0x15585a, pants: 0x15585a } },
+        white: { name: 'White', look: { top: 0xe6e2da, pants: 0xe6e2da } },
+      },
+    },
     dummy_default: { slot: 'outfit', name: 'Mannequin', chars: ['test_dummy'], era: 'super', kind: 'event', status: 'prototype', look: {} },
     dummy_orange: {
       slot: 'outfit', name: 'Mannequin (Orange Body)', chars: ['test_dummy'], era: 'super', kind: 'event', status: 'prototype', look: {},
@@ -593,7 +829,28 @@
   const profiles = {
     goku: {
       default: { outfit: 'goku_saiyan', emblem: 'emblem_kame' },
+      // Kid Goku (the early adventure and the Turtle School outfits) is the young body: a boy's proportions (a big head
+      // and hands, short limbs, narrow shoulders), round eyes, the Power Pole across his back. `height` sizes the
+      // figure only: the fighter keeps Goku's size in play (hurt box, reach), as every outfit does
+      bodies: {
+        adult: {},
+        young: {
+          height: 0.76,
+          build: {
+            chestW: 0.165, chestD: 0.122, chestTop: 0.25, shoulderX: 0.162, shoulderY: 0.2, delt: 0.056, waistW: 0.13, waistD: 0.104, absLen: 0.17,
+            pelvisW: 0.138, pelvisD: 0.112, hipX: 0.08, upperArmLen: 0.22, foreArmLen: 0.2, upperArmR: 0.044, foreArmR: 0.04, fist: 0.05,
+            thighLen: 0.36, shinLen: 0.34, thighR: 0.07, shinR: 0.054, hipY: 0.84, neckR: 0.044, neckLen: 0.036, headR: 0.152, footLen: 0.95,
+          },
+          hair: { style: 'goku_kid', color: 0x16161c },
+          // the eyes set wider and opened rounder on the bigger head, the brows higher off them
+          face: { pupil: 0x1c1c26, eyeX: 0.05, eyeW: 1.38, eyeH: 1.5, browY: 0.006, browThick: 0.75, jaw: 0.86, jawW: 0.96, cheeks: 0.25, nose: 0.55 },
+          // the Power Pole: across his back from over the right shoulder down to the left hip
+          props: [{ id: 'powerPole', joint: 'chest', shape: 'cuff', pos: [-0.13, 0.4, -0.15], rot: [0.12, 0, 0.62], radius: 0.017, length: 0.74, color: 0xc8281e, outline: 0.5 }],
+        },
+      },
       canonByEra: {
+        early: { outfit: 'goku_early', tail: 'tail_saiyan_free' },
+        turtle: { outfit: 'goku_turtle_young', emblem: 'emblem_kame', tail: 'tail_saiyan_free' },
         saiyan: { outfit: 'goku_saiyan', emblem: 'emblem_kame' },
         saiyan_return: { outfit: 'goku_saiyan', emblem: 'emblem_kaio' },
         namek: { outfit: 'goku_namek', emblem: 'emblem_go' },
@@ -645,7 +902,57 @@
       default: { outfit: 'gogeta_reborn' },
       canonByEra: { buu: { outfit: 'gogeta_reborn' } },
     },
+    // Universe 6 (no story mission dresses them yet): their reference outfits
+    caulifla: { default: { outfit: 'caulifla_default' }, canonByEra: {} },
+    // Tien: his authored look; the Tournament of Power missions put him in tien_top (mission appearance)
+    tien: { default: { outfit: 'tien_classic' }, canonByEra: {} },
+    // Android 18: the Android Saga look until the Buu Saga's; the Super era (Bulma's party) keeps the Buu Saga's (the
+    // owner, 2026-10-16), and the Tournament of Power missions still put her in a18_top (mission appearance)
+    android_18: {
+      default: { outfit: 'a18_classic' },
+      canonByEra: { android: { outfit: 'a18_classic' }, buu: { outfit: 'a18_buu' }, super: { outfit: 'a18_buu' } },
+    },
+    // Kefla's body controls (SL.Wardrobe): [build path, value at -1, value at +1]; 0 is her authored build. The ranges
+    // stay inside natural, athletic proportions (checked by eye in the viewer at both ends)
+    kefla: {
+      default: { outfit: 'kefla_default' },
+      canonByEra: {},
+      bodyControls: [
+        { id: 'chest', name: 'Chest', keys: [['bustShape', 0.9, 2.0]] },
+        { id: 'waist', name: 'Waist', keys: [['waistW', 0.094, 0.116], ['waistD', 0.084, 0.098]] },
+        { id: 'hips', name: 'Hips', keys: [['pelvisW', 0.156, 0.182], ['pelvisD', 0.128, 0.146]] },
+        { id: 'thighs', name: 'Upper Thighs', keys: [['thighShape.top', 1.08, 1.3], ['thighShape.mid', 1.0, 1.1]] },
+      ],
+    },
     test_dummy: { default: { outfit: 'dummy_default' }, canonByEra: {}, devOnly: true },
+    // young Chi-Chi has two bodies: the child of the early adventure, and the young woman of the 23rd World Tournament.
+    // Each outfit is made for one of them and brings that body (SL.Wardrobe: profile.bodies) — the helmet armour never
+    // goes on the grown body, the tournament dress never on the child's
+    // Kid Gohan: Piccolo's gi by default and everywhere in the story, the Raditz missions excepted (their `appearance`);
+    // his loose tail through the tail slot, as his authored look has it
+    kid_gohan: {
+      default: { outfit: 'kg_training', tail: 'tail_saiyan_free' },
+      canonByEra: {},
+    },
+    young_chichi: {
+      default: { outfit: 'cc_kid' },
+      canonByEra: { early: { outfit: 'cc_kid' }, tenkaichi23: { outfit: 'cc_tournament23' } },
+      bodies: {
+        young: {},
+        adult: {
+          build: {
+            chestW: 0.174, chestD: 0.124, chestTop: 0.27, shoulderX: 0.174, shoulderY: 0.22, delt: 0.055, waistW: 0.11, waistD: 0.09, absLen: 0.19,
+            pelvisW: 0.146, pelvisH: 0.11, pelvisD: 0.118, hipX: 0.086, upperArmR: 0.04, foreArmR: 0.035, fist: 0.043, thighR: 0.076, shinR: 0.055,
+            neckR: 0.042, neckLen: 0.068, headR: 0.124, footLen: 0.85, bustShape: 1,
+          },
+          hair: { style: 'chichi_long', color: 0x141418 },
+          face: { pupil: 0x141414, eyeW: 1.08, eyeH: 1.12, lashWing: true, browThick: 0.75, jaw: 0.92, jawW: 0.9, cheeks: 0, nose: 0.7 },
+          headExtras: [],
+          // the dress's red-edged opening, from the collar across to her right (laid on the chest's surface)
+          props: [{ id: 'piping', joint: 'chest', shape: 'strip', path: [[0, 0.31, 0.099], [-0.035, 0.29, 0.119], [-0.07, 0.267, 0.126], [-0.1, 0.25, 0.122], [-0.125, 0.238, 0.106]], width: 0.012, thick: 0.005, color: 0xd02a3a, outline: 0.3 }],
+        },
+      },
+    },
   };
 
   SL.data.wardrobe = {

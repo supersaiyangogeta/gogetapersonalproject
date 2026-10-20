@@ -31,7 +31,7 @@
 (function () {
   'use strict';
 
-  const SKIN = 0x737882, RED = 0xc8322e, BLACK = 0x18181e, WHITE = 0xf2f0ea;
+  const SKIN = 0x9a9aac, RED = 0xc8322e, BLACK = 0x18181e, WHITE = 0xf2f0ea;
 
   // THE FOLD: his arms crossed high on the chest, forearms level — the pose he lives in
   const FOLD = { shoulderL: [-26, -62, 8], elbowL: [-104, 0, 0], shoulderR: [-28, 62, -8], elbowR: [-100, 0, 0] };
@@ -71,6 +71,14 @@
       shoulderL: [-84, 0, 24], elbowL: [-120, 0, 0], shoulderR: [-28, 62, -8], elbowR: [-100, 0, 0],
       thighL: [-14, 8, 12], kneeL: [18, 0, 0], thighR: [6, -6, -12], kneeR: [16, 0, 0],
       hands: ['fist', 'fist'],
+    },
+    // falling away on his back, the arms gone loose, the face turned up to the two who brought him down (the ToP's end)
+    jr_fallAccept: {
+      root: { y: 0.02, rx: -28 },
+      spine: [-8, 0, 0], chest: [-6, 0, 0], neck: [-10, 0, 0], head: [-18, 0, 0],
+      shoulderL: [-50, 0, 58], elbowL: [-24, 0, 0], shoulderR: [-46, 0, -62], elbowR: [-20, 0, 0],
+      thighL: [-24, 0, 8], kneeL: [34, 0, 0], footL: [20, 0, 0], thighR: [-10, 0, -8], kneeR: [24, 0, 0], footR: [20, 0, 0],
+      hands: ['open', 'open'],
     },
     jr_flyIdle: (t) => {
       const s = Math.sin(t * 1.6);
@@ -235,11 +243,26 @@
       ],
       face: { pupil: 0x1c1e26, sclera: 0x0c0c12, eyeW: 1.5, eyeH: 1.3, eyeX: 0.052, brow: 0x5e636c, browThick: 1.5, jaw: 1.1, jawW: 1.04, cheeks: 0.3, nose: 0.6 },
       outfit: {
-        // the Pride Trooper suit
-        topStyle: 'shirt', top: RED, abs: BLACK, sleeves: 'long', sleeveColor: BLACK,
+        // the Pride Trooper suit: red sleeves (the stands' Pride Troopers, the owner's stills), white gloves and boots
+        topStyle: 'shirt', top: RED, abs: BLACK, sleeves: 'long', sleeveColor: RED,
+        // (2026-10-15 Pride Trooper pass, the board's Dyspo p.58: the suit is black down the middle from the collar and
+        // the red comes to a point on the black belly — it was a plain red top over black)
+        vee: { chest: { color: BLACK, at: 0.19, slope: 2.4 }, abs: { color: RED, at: 0.05, slope: 1.0 } },
         gloves: WHITE,
         pants: BLACK, pantsStyle: 'tight',
-        boots: RED, bootStyle: 'saiyan', bootTip: BLACK,
+        boots: WHITE, bootStyle: 'saiyan', bootTip: null,
+        // full power against Mastered Ultra Instinct, and the finale: the suit torn away to the waist — bare to a
+        // ragged red band over the black trousers (the gloves and boots stay)
+        damage: {
+          tearAt: 2,
+          rips: [
+            { at: 'chest', y: 0.2, ang: 0.5, w: 0.4, h: 0.06, fill: 'skin', level: 1, until: 1 },
+            { at: 'thighR', t: 0.4, ang: 0.3, w: 0.7, h: 0.08, fill: 'skin', level: 1 },
+            ...[0, 1.57, 3.14, -1.57].map((a, i) => ({ at: 'spine', y: 0.06, ang: a + 0.3, w: 1.8, h: 0.08, fill: 'top', cloth: 'top', level: 2, seed: 120 + i })),
+            { at: 'thighL', t: 0.55, ang: -0.3, w: 0.6, h: 0.08, fill: 'skin', level: 2 },
+          ],
+        },
+        torn: { chest: 'skin', trap: 'skin', abs: 'skin', sleeves: 'skin' },
       },
       portraitColor: '#c8322e',
     },
@@ -254,7 +277,8 @@
       {
         id: 'full', name: 'Full Power', short: 'FULL POWER', kiCost: 60, style: 'full',
         mult: { damage: 1.4, speed: 1.18, defense: 1.3, kiRegen: 1.8, chargeRate: 1.3, accel: 1.3 },
-        aura: { color: 0xff3a2a, core: 0xffb0a0, particles: 0xff6a4a, idle: 0.55, speed: 1.4, sharp: 0.35, sparks: 0xffa080 },
+        // red and dark: a deep core under the bright outer light, streaks when he moves — the skin is not tinted
+        aura: { color: 0xff3a2a, core: 0xffb0a0, particles: 0xff6a4a, idle: 0.55, speed: 1.4, sharp: 0.45, sparks: 0xffa080, inner: { color: 0x7a0a10, core: 0xff3a2a, scale: 0.74, alpha: 0.9, sharp: 0.3 }, trail: 0xff3a2a },
         look: { bulk: 1.06, muscle: 1.1 },
         poses: { idle: poses.jr_stance, run: poses.jr_walk },
         intro: { pose: 'jr_stance', expression: 'serious' },
@@ -342,4 +366,12 @@
     victory: { poses: ['jr_victory'], expression: 'calm' },
     defeat: { pose: 'jr_defeat', expression: 'exhausted' },
   };
+  // FULL POWER is a change in how he fights, not a bigger health bar: the same economical blows come out sooner and
+  // drive further, and the waiting stops (form.ai). In his base state he walks in and waits for you (def.ai rhythm).
+  {
+    const J = SL.data.characters.jiren, full = J.forms.find((f) => f.id === 'full');
+    full.moves = {
+      light: J.moves.light.map((m) => Object.assign({}, m, { startup: Math.max(3, m.startup - 2), recovery: Math.max(6, m.recovery - 3), lunge: (m.lunge || 0) * 1.25, knockSpeed: m.knockSpeed && m.knockSpeed * 1.2 })),
+    };
+  }
 })();

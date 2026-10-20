@@ -156,6 +156,32 @@
   }
 
   /**
+   * ONE HUNDRED PERCENT COSTS HIM (Namek saga brief, phase nine): the longer he holds it, the longer he needs
+   * between bursts (his AI rhythm's rest grows from `from` to `to` frames over `seconds`), and now and then,
+   * when he has room, he stops to breathe — shoulders heaving, steam coming off him — before he goes again.
+   * Shown in how he moves, never as a timer. Returns a tick hook.
+   */
+  function burnOut(m, fz, g, from, to, seconds, pantEvery) {
+    const b = m.battle;
+    let t = 0, pant = 0, next = pantEvery;
+    return () => {
+      if (b.inputLocked) return;
+      t += 1 / 60;
+      if (fz.aiRhythm) fz.aiRhythm.rest = Math.round(U.lerp(from, to, U.clamp01(t / seconds)));
+      if (pant > 0) {
+        if (--pant === 0 && fz.state === 'scripted') fz.setState('free');
+        else if (b.frame % 9 === 0) b.vfx.smoke.emit(fz.chest().x, fz.chest().y + 0.2, fz.chest().z, 0, 1.6, 0, 0.85, 0.82, 0.9, 0.3, 0.2, 0.7, { grow: 1.4, drag: 1 });
+        return;
+      }
+      if (pantEvery && t >= next && fz.state === 'free' && fz.alive && fz.distTo(g) > 4) {
+        next = t + pantEvery * U.rand(0.8, 1.2);
+        pant = 48;
+        fz.setState('scripted', { pose: 'exhausted', expression: 'hurt' });
+      }
+    };
+  }
+
+  /**
    * One eruption: a warning ring, then a column that hurts whoever is standing
    * in it — the player and Frieza alike. Returns a tick hook.
    */
@@ -223,7 +249,8 @@
     goku.formCaps = { kaioken: 4 }; // by now the Kaioken has nothing left to hold back
     const ssj = goku.def.forms.findIndex((f) => f.id === 'ssj');
     if (ssj > 0) goku.applyForm(ssj);
-    // the gi is still on him: the 100% fight is what tears it (see P.full)
+    // the gi is still on him, holed and dirty from the whole fight: the 100% fight is what tears it off (see P.full)
+    goku.setDamage(2);
     goku.hp = Math.round(goku.hpMax * 0.6);
     const gohan = b.spawn({ charId: 'kid_gohan', team: 0, pos: ground(b, FIELD.clone().add(new V3(-9, 0, 14))), startKi: 40 });
     gohan.controller = scripted();
@@ -249,7 +276,7 @@
     vegeta.cannotDie = true;
     vegeta.setHidden(true);
     if (vegeta.setDamage) vegeta.setDamage(1);
-    b.story = { goku, gohan, frieza, vegeta, grave: makeGrave(b, ground(b, GRAVE_AT)) };
+    b.story = { goku, gohan, frieza, vegeta, grave: makeGrave(b, ground(b, GRAVE_AT)), field: { pos: FIELD.clone() } };
   }
 
   /** The grave Goku dug: a low mound and a standing stone. break() throws it open. */
@@ -409,12 +436,18 @@
       });
       const erupt = eruptions(m, { every: 150, radius: 3.4, damage: 800 });
       m.tickHooks.push(erupt);
-      let t = 0, tear = false;
+      const burn = burnOut(m, fz, g, 45, 80, FULL_SECONDS, 0);
+      m.tickHooks.push(burn);
+      let t = 0, tear = false, noticed = false;
       const clock = () => {
         if (b.inputLocked) return;
         t += 1 / 60;
         m.progress('full', Math.min(FULL_SECONDS, Math.floor(t)));
         if (!m.flags.giTorn && t >= TEAR_AT.minSeconds && (g.hpFrac <= TEAR_AT.hpFrac || t >= TEAR_AT.seconds)) tear = true;
+        if (!noticed && t >= FULL_SECONDS * 0.7) {
+          noticed = true;
+          m.say('goku', 'He\'s burning through it... He can\'t keep this up.', 2.8, { style: 'quiet' });
+        }
       };
       m.tickHooks.push(clock);
       // THE GI: a beat of its own, in the middle of the fight
@@ -422,7 +455,7 @@
       if (!g.alive) return;
       yield* tearGi(m, S);
       yield () => t >= FULL_SECONDS || !g.alive;
-      for (const h of [erupt, clock]) {
+      for (const h of [erupt, clock, burn]) {
         const i = m.tickHooks.indexOf(h);
         if (i >= 0) m.tickHooks.splice(i, 1);
       }
@@ -544,6 +577,9 @@
       // the ground keeps opening while it happens: the planet does not wait
       const erupt = eruptions(m, { every: 190, radius: 3.6, damage: 700 });
       m.tickHooks.push(erupt);
+      fz.aiRhythm = { burst: 3, rest: 85 };
+      const burn = burnOut(m, fz, g, 85, 140, 40, 7);
+      m.tickHooks.push(burn);
       const start = fz.hp, floor = fz.hpMax * 0.12;
       const hook = () => {
         if (b.inputLocked) return;
@@ -551,7 +587,7 @@
       };
       m.tickHooks.push(hook);
       yield () => fz.hp <= floor || !g.alive;
-      for (const h of [erupt, hook]) {
+      for (const h of [erupt, hook, burn]) {
         const i = m.tickHooks.indexOf(h);
         if (i >= 0) m.tickHooks.splice(i, 1);
       }
@@ -582,6 +618,16 @@
       superSaiyan(g);
       g.setTorn(true);
       m.flags.giTorn = true;
+      fullPower(fz);
+      // GOKU DECIDES TO STOP (scene `goku_its_over`): he tells Frieza it is over and turns to go, and the
+      // saucer comes up behind him — the phase starts where that leaves Goku: in the air, facing it
+      for (const f of [g, fz]) f.controller = scripted();
+      place(g, ground(b, FIELD.clone().add(new V3(0, 0, 0))), Math.PI);
+      place(fz, ground(b, FIELD.clone().add(new V3(0, 0, -8))), 0);
+      faceTo(g, fz.pos);
+      faceTo(fz, g.pos);
+      yield* SL.Cinema.play(m, 'goku_its_over');
+      m.lock(true);
       place(g, ground(b, FIELD.clone().add(new V3(0, 0, 10)), 2), Math.PI);
       place(fz, ground(b, FIELD.clone().add(new V3(0, 0, -8))), 0);
       g.hp = Math.max(g.hp, Math.round(g.hpMax * 0.5));
@@ -844,9 +890,9 @@
       b.cameraTraumaAt(onFrieza(), 0.05);
     };
     m.tickHooks.push(hold);
-    m.shot((t, out) => {
+    m.shot((t, out, el) => {
       const mid = gChest().lerp(fz.chest(), 0.5);
-      camAt(out, mid.clone().addScaledVector(side(), U.lerp(11, 8.5, t)).add(new V3(0, 2.2, 0)), mid, U.lerp(48, 44, t));
+      camAt(out, mid.clone().addScaledVector(side(), U.lerp(11, 8.5, Math.min(1, el / 4))).add(new V3(0, 2.2, 0)), mid, U.lerp(48, 44, Math.min(1, el / 4)));
     }, 999, { hold: true, cut: true, blendIn: 0 });
     const res = yield* m.struggle({
       start: 0.55,
@@ -952,15 +998,17 @@
       m.tickHooks.push(hold);
       // the camera stays on him while it lands: the struggle is the point, not a white screen
       const sideOf = () => new V3(-(g.pos.z - fz.pos.z), 0, g.pos.x - fz.pos.x).normalize();
-      m.shot((t, out) => {
+      m.shot((t, out, el) => {
         const c = fz.chest();
-        camAt(out, c.clone().addScaledVector(sideOf(), U.lerp(9, 7.5, t)).add(new V3(0, 1.1, 0)), c, 42);
+        camAt(out, c.clone().addScaledVector(sideOf(), U.lerp(9, 7.5, Math.min(1, el / 1.4))).add(new V3(0, 0.5, 0)), c, 44);
+        // low and tilted as it lands (Roadmap Three, CS-P3-03: a research draft, not checked against the footage)
+        out.roll = 0.2;
       }, 999, { hold: true, cut: true, blendIn: 0 });
       yield* m.cine(1.4);
       // in on him: the player has to see what it is doing to him, not a white screen
-      m.shot((t, out) => {
+      m.shot((t, out, el) => {
         const c = fz.chest().add(new V3(0, 0.25, 0));
-        camAt(out, c.clone().addScaledVector(sideOf(), U.lerp(4.4, 3.4, t)).add(new V3(0, 0.45, 0)), c, 38);
+        camAt(out, c.clone().addScaledVector(sideOf(), U.lerp(4.4, 3.4, Math.min(1, el / 4))).add(new V3(0, 0.45, 0)), c, 38);
       }, 999, { hold: true, cut: true, blendIn: 0.4 });
       const res = yield* m.struggle({
         start: 0.55,
@@ -1019,6 +1067,8 @@
       g.setState('free');
       g.target = null;
       b.stage.setMood(0.34, 0x5a1c10, 1.6);
+      // the departure (Roadmap Three, B-PH3-05): a breath, a look up, and straight up off the ground — then it is played
+      yield* SL.Cinema.play(m, 'goku_departs');
       m.lock(false);
       b.aiLocked = false;
       m.music('desperate', 6);

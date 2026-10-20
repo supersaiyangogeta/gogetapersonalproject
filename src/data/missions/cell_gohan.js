@@ -246,6 +246,11 @@
         j.target = null;
         j.setState('free');
       });
+      // the attack is staged first (scene `gh_juniors_go`): one Junior after each of them, Gohan watching,
+      // Cell watching Gohan; then the fight is handed over from where the scene leaves everybody
+      yield* SL.Cinema.play(m, 'gh_juniors_go');
+      for (const f of allies.concat(juniors)) if (!f.hidden) f.setState('free');
+      gh.setState('free');
       gh.target = juniors[0];
       CK.goFight(m, ['battle', 6]);
       m.objective('stand', 'Stand with them', { icon: 'fist', target: 6 });

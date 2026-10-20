@@ -6,9 +6,10 @@
  *   spots     the arena as the reference has it: the 16x16 ring, the high ridge the Z Fighters watch
  *             from (Goku lies down up there after the forfeit), the World Champion's crew by their van
  *   cast      everybody spawned once per mission (CK.cast), and the world a checkpoint expects (CK.restore)
- *   deaths    shown, not cut away from: CK.split clones a body into two clipped pieces that move on
- *             their own (a head off, a body in halves); CK.burst for what is left (a Junior's blue
- *             liquid and smoke, an android's sparks and gears, Cell's green vapour)
+ *   deaths    non-graphic (owner's choice, 2026-10-14): the decisive blow lands on camera and the body goes
+ *             in light at that instant (CK.burst 'energy'), or the camera cuts to the faces watching; no
+ *             body in pieces. CK.split remains only to lift Android 16's head off as one piece (he speaks
+ *             to Gohan after the blast). CK.burst also has an android's sparks and Cell's green vapour
  *   pieces    Cell Junior eggs, Android 16's head (a piece of his own model), the Senzu Bean, the rock
  *             Goku leans on, Gregory (King Kai's cricket), Cell swelling up like a balloon
  *   poses     the Cell Games' own acting, on any rig (SL.data.poses)
@@ -519,6 +520,14 @@
         b.vfx.dust(pos, 1.6 * size, 22, 0x6a7ab8);
         b.vfx.debrisBurst(pos, 22, 0x3a5ad0, 6 * size, 0.06);
         b.vfx.sparks(pos, 0x9ab4ff, 16, 6, 0.06);
+      } else if (kind === 'energy') {
+        // gone in light, nothing left behind (owner, 2026-10-14: the Cell Games are non-graphic) — a white-blue
+        // flash and a ring at the moment of the blow, sparks thinning out, a breath of dust
+        b.vfx.flash(pos, 2.2 * size, 0xe8f2ff, 0.28, SL.Toon.tex.glow);
+        b.vfx.ring(pos, 2.6 * size, 0xbfd8ff, 0.35);
+        b.vfx.sparks(pos, 0x9ab4ff, 22, 9 * size, 0.1);
+        b.vfx.dust(pos, 1 * size, 8, 0x8a9ad8);
+        b.sfx('explosionSmall', null, { at: pos, pitch: 1.5, vol: 0.8 });
       }
       b.cameraTraumaAt(pos, 0.3 * size + (n % 2) * 0.01);
     },

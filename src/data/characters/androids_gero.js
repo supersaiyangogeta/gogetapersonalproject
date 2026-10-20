@@ -78,7 +78,7 @@
     assetLevel: 1,
     name: 'Android 19',
     era: 'Android Saga',
-    playable: false,
+    playable: true, // Free Battle after "Ten in the Morning" (unlocks.js)
     prototype: true,
     style: 'Absorption',
     blurb: 'Pale, patient, and delighted every time somebody throws ki at him.',
@@ -90,11 +90,17 @@
       height: 0.86,
       skin: 0xf4efe6,
       build: { chestW: 0.29, chestD: 0.22, shoulderX: 0.27, waistW: 0.27, waistD: 0.23, upperArmR: 0.085, foreArmR: 0.075, fist: 0.075, thighR: 0.125, shinR: 0.095, headR: 0.15, neckLen: 0.04 },
-      hair: { style: 'soldier_crest', color: 0xe86a2a },
-      face: { pupil: 0x101010, sclera: 0xffffff, eyeW: 1.15, brow: 0xe86a2a },
+      // the reference pass (owner's visual reference p.30): the black cap with the orange point on top, blue eyes in
+      // the white doll's face; a yellow waistcoat over a black high collar, black puffed shoulders, a red sash, orange
+      // baggy trousers over yellow shins, white gloves, white-and-black pointed shoes (he wore black, yellow and a crest)
+      hair: { style: 'skullcap', color: 0x1c1c22 },
+      headExtras: [{ a: [0, 1, 0], d: [0, 1, 0], l: 0.09, r: 0.035, color: 0xe8822a, depth: 1.02, outline: 0.5 }],
+      face: { pupil: 0x3a9ad8, sclera: 0xffffff, eyeW: 1.15, brow: 0x9a9aa0 },
       outfit: {
-        topStyle: 'gi', top: 0x2a2a33, sleeves: 'long', sleeveColor: 0x2a2a33, wrist: 0xf4efe6,
-        belt: 0xe8c840, pants: 0xe8a84a, pantsStyle: 'tight', boots: 0x2a2a33, bootStyle: 'gi',
+        topStyle: 'shirt', top: 0xf2c43a, sleeves: 'long', sleeveColor: 0xf2c43a, arms: 0xf2c43a, collar: 0x1c1c22, collarStyle: 'turtle',
+        armor: { plate: 0xf2c43a, belly: 0xf2c43a, pads: 0x1c1c22, padStyle: 'down' },
+        gloves: 0xf4f2ee, belt: 0xd8281e, beltStyle: 'sash', pants: 0xe8742a, pantsStyle: 'gi', legs: 0xf2c43a,
+        boots: 0xf4f2ee, bootTip: 0x1c1c22, bootPoint: true, bootStyle: 'shoe',
       },
       portraitColor: '#e8a84a',
     },
@@ -159,7 +165,7 @@
     name: 'Dr. Gero',
     fullName: 'Android 20 (Dr. Gero)',
     era: 'Android Saga',
-    playable: false,
+    playable: true, // Free Battle after "The Laboratory Door" (unlocks.js)
     prototype: true,
     style: 'Absorption',
     blurb: 'He built all of them, and he would rather watch than fight.',
@@ -171,11 +177,24 @@
       height: 0.9,
       skin: 0xe8dcc8,
       build: { chestW: 0.225, chestD: 0.16, shoulderX: 0.225, waistW: 0.18, upperArmR: 0.062, foreArmR: 0.054, fist: 0.058, thighR: 0.092, shinR: 0.072, headR: 0.145, neckLen: 0.05 },
+      // the reference pass (owner's visual reference p.32): Dr. Gero's tall black hat with the Red Ribbon band, white
+      // hair at the sides, the long white moustache and beard, blue eyes; a black waistcoat over an orange quilted
+      // shirt with puffed sleeves, pale under-sleeves, a red sash, brown baggy trousers, pale shins, white pointed shoes
+      // (he wore a plain grey suit and a soldier's haircut)
       hair: { style: 'soldier_hair', color: 0xe8e4dc },
-      face: { pupil: 0x101010, sclera: 0xffffff, eyeW: 0.9, brow: 0xe8e4dc },
+      headExtras: [
+        { shape: 'cyl', a: [0, 1, 0.05], d: [0, 1, -0.05], l: 0.15, r: 0.125, color: 0x16161c, depth: 0.86, flat: 1, outline: 0.6 },
+        { shape: 'cyl', a: [0, 1, 0.05], d: [0, 1, -0.05], l: 0.035, r: 0.128, color: 0xd8281e, depth: 0.95, flat: 1, outline: 0.3 },
+        { shape: 'ball', a: [0, -0.55, 0.78], d: [0, -1, 0.3], l: 0.13, r: 0.07, color: 0xf2f0ea, depth: 0.98, flat: 0.55, outline: 0.5 },
+        { shape: 'ball', a: [0.24, -0.28, 0.92], d: [1, -0.5, 0.1], l: 0.07, r: 0.035, color: 0xf2f0ea, depth: 1.02, flat: 0.6, outline: 0.4 },
+        { shape: 'ball', a: [-0.24, -0.28, 0.92], d: [-1, -0.5, 0.1], l: 0.07, r: 0.035, color: 0xf2f0ea, depth: 1.02, flat: 0.6, outline: 0.4 },
+      ],
+      face: { pupil: 0x3a8ad8, sclera: 0xffffff, eyeW: 0.85, eyeH: 0.75, brow: 0xe8e4dc, browThick: 1.4, jaw: 1.06 },
       outfit: {
-        topStyle: 'gi', top: 0x3a3a46, sleeves: 'long', sleeveColor: 0x3a3a46, wrist: 0xd8d2c4,
-        belt: 0x2a2a33, pants: 0x6a6a76, pantsStyle: 'tight', boots: 0x2a2a33, bootStyle: 'gi',
+        topStyle: 'shirt', top: 0xd8862a, sleeves: 'long', sleeveColor: 0xd8862a, arms: 0xead6a0, sleeveBulk: 1.3,
+        jacket: { color: 0x1c1c22, open: 0.3, short: true },
+        belt: 0xc8281e, beltStyle: 'sash', pants: 0x5a3018, pantsStyle: 'gi', legs: 0xead6a0,
+        boots: 0xf4f2ee, bootTip: 0x1c1c22, bootPoint: true, bootStyle: 'shoe',
       },
       portraitColor: '#8a8496',
     },

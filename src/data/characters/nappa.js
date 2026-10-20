@@ -1,6 +1,6 @@
 /*
  * NAPPA (Saiyan Saga) — Vegeta's hulking, sadistic partner.
- * ENEMY / BOSS (not playable). Identity: huge, slow to start, devastating once
+ * ENEMY / BOSS (playable in Free Battle after "Nappa Attacks"). Identity: huge, slow to start, devastating once
  * he gets going; laughs off light hits (poise), wrecks the terrain.
  * BOSS DESIGN (not balanced by a huge health bar):
  *   POISE — light and medium hits don't make him flinch; every hit wears his
@@ -93,7 +93,7 @@
     name: 'Nappa',
     fullName: 'Nappa, Saiyan Elite',
     era: 'Saiyan Saga',
-    playable: false,
+    playable: true, // Free Battle after "Nappa Attacks" (unlocks.js); the story still owns his boss phases
     boss: true,
     poise: { max: 100, regen: 11, regenDelay: 110, armor: 2, cost: { 1: 5, 2: 9, 3: 16, 4: 28 }, beamMul: 1.4, beamArmor: true, breakFrames: 170, vulnerable: 1.35 },
     style: 'Juggernaut',

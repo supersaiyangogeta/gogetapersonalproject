@@ -105,6 +105,8 @@
           for (let i = 0; i < 5; i++) ctx.streaks.push({ from: c.clone().add(new V3(-70 + i * 6, 60 + i * 3, -60)), to: c.clone().add(new V3(20 + i * 8, 25, -140)) });
         },
         sfx: { name: 'scouter', vol: 1 },
+        // the elite announce themselves: their theme comes in with the five lights (soundtrack PDF p.95)
+        music: { song: 'ginyu_force', level: 2 },
         pose: [{ who: 'vegeta', pose: 'v_scouterTap', face: 'angry' }],
         cam: { from: { at: 'vegeta', local: [-1.2, -0.3, -2] }, look: { at: 'vegeta', local: [0, 14, 30] }, fov: 58 },
         tick: (ctx, t) => {

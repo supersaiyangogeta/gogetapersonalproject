@@ -68,6 +68,9 @@
     /* ---------------- choices ---------------- */
     const def = () => SL.data.characters[st.charId];
     const offered = (slot) => W().options(st.charId, slot, st.sel).filter((o) => !o.locked && !o.planned).map((o) => [o.id, o.name]);
+    // what the story still holds back in a slot (locked, not planned): the row says so, so a missing piece reads as "not yet"
+    const lockedIn = (slot) => W().options(st.charId, slot, st.sel).filter((o) => o.locked && !o.planned).length;
+    const lockNote = (slot) => (lockedIn(slot) ? lockedIn(slot) + ' to unlock' : '');
 
     /**
      * Puts a new selection on, saved at once. A new outfit brings its own armor, marks and colours;
@@ -77,7 +80,8 @@
      */
     const change = (slot, value) => {
       let next;
-      if (slot === 'outfit') next = W().complete(st.charId, { outfit: value, scouter: st.sel.scouter, tail: st.sel.tail, hair: st.sel.hair });
+      // a new outfit keeps the accessories and the body (the body belongs to the character, not to the clothes)
+      if (slot === 'outfit') next = W().complete(st.charId, { outfit: value, scouter: st.sel.scouter, tail: st.sel.tail, hair: st.sel.hair, body: st.sel.body });
       else next = Object.assign({}, st.sel, { [slot]: value });
       next = W().sanitize(st.charId, next, { checkUnlock: true }).selection;
       const r = W().select(st.charId, next);
@@ -150,8 +154,26 @@
           values: () => offered(slot),
           get: () => (slot === 'palette' ? st.sel.palette : st.sel[slot]),
           set: (v) => change(slot, v),
-          sub: slot === 'outfit' ? () => W().eraLabel(W().piece(st.sel.outfit).era) : null,
+          sub: slot === 'outfit' ? () => [W().eraLabel(W().piece(st.sel.outfit).era), lockNote(slot)].filter(Boolean).join(' · ') : () => lockNote(slot),
         });
+      }
+      // body controls (a profile that offers them: Kefla): bounded steps either side of her authored build
+      const ctl = W().bodyControls(st.charId);
+      if (ctl) {
+        heading('Body');
+        const steps = [];
+        for (let v = -1; v <= 1.0001; v += W().BODY_STEP) {
+          const n = Math.round(v / W().BODY_STEP);
+          steps.push([Math.round(v * 100) / 100, n === 0 ? 'Default' : (n > 0 ? '+' : '−') + Math.abs(n)]);
+        }
+        for (const c of ctl) {
+          row({
+            key: 'body:' + c.id, label: c.name, icon: 'pose', small: true,
+            values: () => steps,
+            get: () => (st.sel.body && st.sel.body[c.id]) || 0,
+            set: (v) => change('body', Object.assign({}, st.sel.body, { [c.id]: v })),
+          });
+        }
       }
       heading('Preview');
       row({ key: 'view', label: 'View', icon: 'view', small: true, values: () => VIEWS, get: () => st.view, set: (v) => (st.view = v) });
@@ -162,9 +184,43 @@
       row({ key: 'wear', label: 'Damage', icon: 'wear', small: true, values: () => WEAR, get: () => st.wear, set: (v) => { st.wear = v; if (P.f) W().applyDamage(P.f, v); } });
       heading('Modes');
       row({ key: 'whatif', label: 'What If?', icon: 'emblem', small: true, values: () => [[false, 'Canon look'], [true, 'My look']], get: () => !!W().prefs().whatIfCustom, set: (v) => W().setPref('whatIfCustom', v) });
-      const restore = SL.UI.actionRow(s, 'Restore Canon Default', () => {
+      // every change above is saved as it is made; Save Look writes it again and says so
+      const save = SL.UI.actionRow(s, 'Save Look', () => {
+        const r = W().select(st.charId, st.sel);
+        st.notice = r.ok ? 'Look saved' : 'Not saved: ' + r.problems.join('; ');
+        renderTag();
+      }, 'wd-restore');
+      save.key = 'save';
+      rows.appendChild(save.node);
+      // presets: a look as a JSON file, to carry it between the game and the file-based viewer (tools/viewer.html)
+      const exp = SL.UI.actionRow(s, 'Export Look (JSON)', () => {
+        download(st.charId + '-look.json', W().exportPreset(st.charId, st.sel));
+        st.notice = 'Look exported';
+        renderTag();
+      }, 'wd-restore');
+      exp.key = 'export';
+      rows.appendChild(exp.node);
+      const imp = SL.UI.actionRow(s, 'Import Look (JSON)', () => pickFile((text) => {
+        const r = W().importPreset(text, { checkUnlock: true });
+        if (!r.ok) st.notice = 'Import refused: ' + r.problems.join('; ');
+        else if (!chars.includes(r.charId)) st.notice = 'Import refused: ' + r.charId + ' is not available here';
+        else {
+          if (r.charId !== st.charId) switchChar(r.charId);
+          const w = W().select(r.charId, r.selection);
+          st.sel = w.ok ? w.selection : st.sel;
+          st.notice = w.ok ? 'Look imported' + (r.problems.length ? ' (adjusted: ' + r.problems.join('; ') + ')' : '') : 'Import refused: ' + w.problems.join('; ');
+          build();
+          spawnPreview();
+        }
+        renderTag();
+      }), 'wd-restore');
+      imp.key = 'import';
+      rows.appendChild(imp.node);
+      const pr = W().profile(st.charId);
+      const canon = pr && Object.keys(pr.canonByEra || {}).length;
+      const restore = SL.UI.actionRow(s, canon ? 'Restore Canon Default' : 'Restore Default', () => {
         st.sel = W().restoreDefault(st.charId);
-        st.notice = 'Canon default restored';
+        st.notice = canon ? 'Canon default restored' : 'Default restored';
         build();
         spawnPreview();
       }, 'wd-restore');
@@ -185,6 +241,13 @@
       badges.append(el('span', { class: 'b proto', text: 'PROTOTYPE', title: 'Built from procedural prototype parts (asset level 1–2). Not a production model.' }));
       if (o.accuracy === 'approximate') badges.append(el('span', { class: 'b approx', text: 'COLORS APPROX.', title: 'Colours are a best reading of the reference; not yet checked by the owner.' }));
       tag.append(el('div', { class: 'wd-era', text: W().eraLabel(o.era) }), el('div', { class: 'wd-title', text: o.name }), badges);
+      // where the story itself dresses them in it (canon missions never read the player's choice), and how much is owned
+      const pr = W().profile(st.charId);
+      // (two eras can share a label: the Saiyan Saga before and after King Kai)
+      const story = [...new Set(Object.entries((pr && pr.canonByEra) || {}).filter(([, e]) => e.outfit === o.id).map(([era]) => W().eraLabel(era)).filter(Boolean))];
+      if (story.length) tag.append(el('div', { class: 'wd-story', text: 'Story look · ' + story.join(', ') }));
+      const all = W().options(st.charId, 'outfit', st.sel).filter((x) => !x.planned);
+      if (all.length > 1) tag.append(el('div', { class: 'wd-story', text: all.filter((x) => !x.locked).length + ' of ' + all.length + ' outfits owned' }));
       if (st.notice) tag.append(el('div', { class: 'wd-notice', text: st.notice }));
     };
 
@@ -208,6 +271,29 @@
         });
         strip.appendChild(card);
       }
+    };
+
+    /** A text file for the player to keep (a look preset). */
+    const download = (name, text) => {
+      if (typeof document === 'undefined' || typeof Blob === 'undefined') return;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => (URL.revokeObjectURL(a.href), a.remove()), 0);
+    };
+    /** Asks the player for a file and hands its text over. */
+    const pickFile = (then) => {
+      if (typeof document === 'undefined') return;
+      const inp = document.createElement('input');
+      inp.type = 'file';
+      inp.accept = '.json,application/json';
+      inp.onchange = () => {
+        const f = inp.files && inp.files[0];
+        if (f) f.text().then(then);
+      };
+      inp.click();
     };
 
     const switchChar = (id) => {

@@ -147,9 +147,67 @@
         missions: ['bog_awaken', 'bog_kingkai', 'bog_party', 'bog_wrath', 'bog_ritual', 'bog_battle', 'bog_sphere'],
         blurb: 'A god wakes up after thirty-nine years with a dream about another god. He finds Goku on King Kai\'s planet, a party on Bulma\'s ship, a tray of pudding — and six Saiyans who can make a Super Saiyan God.',
       },
+      // Resurrection of F (Age 779): the invasion, then Goku vs Frieza — Golden Frieza and Goku's Blue.
+      // Then the finale (rof_finale): Vegeta's lasting main-story Blue, Earth destroyed, Whis' rewind, Goku's finish.
+      {
+        id: 'super_rof',
+        head: 'CHAPTER 17 · AGE 779',
+        title: 'Resurrection of F',
+        status: 'playable',
+        missions: ['rof_invasion', 'rof_goku', 'rof_finale'],
+        blurb: "Frieza's last soldiers gather the Dragon Balls and wish their emperor back to life. He has trained for the first time in his life — and he has brought a thousand soldiers to Earth.",
+      },
+      // Universe 6 (Age 780): Champa's tournament — the five early rounds, Vegeta vs Cabba, Vegeta vs Hit, and Goku vs
+      // Hit (Blue Kaioken; Goku steps out, Hit withdraws, Universe 7 wins, Zeno arrives)
+      {
+        id: 'super_u6',
+        head: 'CHAPTER 18 · AGE 780',
+        title: 'Universe 6',
+        status: 'playable',
+        // the early rounds in tournament order, then Vegeta vs Cabba and Vegeta vs Hit (cleared saves keep later cards open)
+        missions: ['u6_botamo', 'u6_frost_goku', 'u6_frost_piccolo', 'u6_frost_vegeta', 'u6_magetta', 'u6_cabba', 'u6_hit', 'u6_goku_hit'],
+        blurb: "Beerus' twin brother wants Earth's food, and the Super Dragon Balls to take it with. Five fighters a side on a nameless planet — and Universe 6 has Saiyans too.",
+      },
+      // The Future Trunks Saga (2026-10-17, the owner's moveset roadmap §8.18): Trunks' ruined future, Goku Black and
+      // Zamasu. Built mission by mission; the chapter grows as they are added
+      {
+        id: 'super_future',
+        head: 'CHAPTER 19 · AGE 780',
+        title: 'Future Trunks',
+        status: 'playable',
+        missions: ['ft_black', 'ft_rose', 'ft_hakai', 'ft_zero', 'ft_genuine', 'ft_scythe', 'ft_vegito', 'ft_hope'],
+        blurb: "In Trunks' ruined future a man with Goku's face is hunting the last of humanity — and Trunks has one tank of fuel left to reach the past.",
+      },
+      // The Assassin (Age 780, after the Future Trunks saga): Hit's contract on Goku
+      {
+        id: 'super_hit',
+        head: 'CHAPTER 20 · AGE 780',
+        title: 'The Assassin',
+        status: 'playable',
+        missions: ['hit_contract'],
+        blurb: "Someone has paid the universe's best assassin to kill Son Goku. Goku chooses where — and fires one blast into the night sky before it starts.",
+      },
+      // Universe Survival (Age 780): Zeno's tournament is announced; Goku builds a team of ten
+      {
+        id: 'super_survival',
+        head: 'CHAPTER 21 · AGE 780',
+        title: 'Universe Survival',
+        status: 'playable',
+        missions: ['us_ranger', 'us_gohan', 'us_frieza'],
+        blurb: 'Eight universes, ten fighters each, and the losers erased. Goku goes recruiting — a park ranger who will not leave his island, a son who has to show he can fight seriously again, and a tenth fighter back from Hell for one day.',
+      },
+      // The Tournament of Power (Age 780): eight universes on one platform in the void
+      {
+        id: 'super_top',
+        head: 'CHAPTER 22 · AGE 780',
+        title: 'The Tournament of Power',
+        status: 'playable',
+        missions: ['top_jiren', 'top_saiyans', 'top_kefla', 'top_toppo', 'top_vegeta', 'top_mui', 'top_finale'],
+        blurb: 'Eight universes, ten fighters each, one platform hanging in the void — and every universe that loses is erased. The strongest fighter there is a man called Jiren.',
+      },
       {
         id: 'endz',
-        head: 'CHAPTER 17 · AGE 784',
+        head: 'CHAPTER 23 · AGE 784',
         title: 'The End of Z',
         status: 'playable',
         missions: ['endz_village', 'endz_tournament'],
@@ -239,6 +297,125 @@
         secret: true,
       },
     ],
+
+    /**
+     * MOVIES & SPECIALS (MASTER_SPEC "Movies and specials are separate"): never in the canon order,
+     * never on the timeline as chronology. Each film is its own list with its own progress
+     * (SL.Save track 'movies'). `placedAfter` is the canon mission whose world the film assumes —
+     * it opens the film, and it is where the film's fighters stand for form locks and wardrobe eras.
+     * A mission opens when every mission in its `after` list is cleared (default: the one before it).
+     */
+    movies: [
+      {
+        id: 'fusion_reborn',
+        head: 'MOVIE 1 · NOT CANON',
+        title: 'Fusion Reborn',
+        subtitle: 'Janemba — The Collapse of Dimensions',
+        // the film's world: Goku back in the Other World with Super Saiyan 3, Vegeta dead since his
+        // sacrifice, the Fusion Dance already shown to the boys, Gohan and Videl together on Earth
+        placedAfter: 'buu_fusion',
+        unlock: { missionComplete: 'buu_fusion' },
+        hint: 'Clear Chapter 11: "Fusion"',
+        blurb: 'A young ogre forgets to watch a machine, and the evil it was cleaning out of a million souls becomes a child with the power to fold the afterlife in half. The dead walk on Earth — and two Saiyans who have never agreed on anything have to dance.',
+        missions: [
+          { id: 'fr_cleansing' },
+          { id: 'fr_janemba' },
+          // the two Earth missions open together, while the Other World is still falling apart
+          { id: 'fr_gohan', after: ['fr_janemba'] },
+          { id: 'fr_boys', after: ['fr_janemba'] },
+          { id: 'fr_vegeta', after: ['fr_gohan', 'fr_boys'] },
+          { id: 'fr_veku' },
+          { id: 'fr_gogeta' },
+        ],
+        // optional replay content, apart from the film itself
+        challenges: [
+          { id: 'fr_x_fat', after: ['fr_janemba'] },
+          { id: 'fr_x_earth', after: ['fr_gohan'] },
+          { id: 'fr_x_dance', after: ['fr_gogeta'] },
+          { id: 'fr_x_super', after: ['fr_gogeta'] },
+        ],
+      },
+      {
+        id: 'super_broly',
+        head: 'MOVIE 2 · MOVIE CONTINUITY',
+        title: 'Dragon Ball Super: Broly',
+        subtitle: 'The Legendary Super Saiyan',
+        // the film's world: after the Battle of Gods — Goku and Vegeta trained by Whis, the God forms known.
+        // Its forms arrive at the original film checkpoints, independently of canon progress
+        // (formGivenBy / formGivenByMovie: Mission._lockUnearnedForms).
+        placedAfter: 'bog_sphere',
+        unlock: { missionComplete: 'bog_sphere' },
+        hint: 'Clear Chapter 16: "My World"',
+        blurb: 'A boy exiled to a dead planet for being too strong, and the father who followed him there to make him a weapon. Forty years later Frieza finds them both — and brings them to a glacier on Earth, where two Saiyans who have been training with a god are waiting.',
+        // `title` on an entry: a mission of the film not built yet (an honest "in development" card on the Movies
+        // screen; the lock chain steps over it, see movieLocked). The film's nine parts, in its own order: part 3
+        // ("A Saiyan's Fury") is played in two missions, the first clash and the wrath.
+        missions: [
+          { id: 'bb_planet' },
+          { id: 'bb_vampa' },
+          { id: 'bb_clash' },
+          { id: 'bb_wrath' },
+          { id: 'bb_goku' },
+          { id: 'bb_legend' },
+          { id: 'bb_alliance' },
+          { id: 'bb_fusion' },
+          { id: 'bb_gogeta' },
+          { id: 'bb_epilogue' },
+        ],
+        challenges: [],
+      },
+      {
+        id: 'super_hero',
+        head: 'MOVIE 3 · MOVIE CONTINUITY',
+        title: 'Dragon Ball Super: Super Hero',
+        subtitle: 'The Red Ribbon\'s last weapon',
+        // (2026-10-17, the owner's moveset roadmap #63) the film after the Tournament of Power: built only as far as the
+        // Beast — one mission, Gohan against Cell Max; the rest of the film is not built
+        placedAfter: 'top_finale',
+        unlock: { missionComplete: 'top_finale' },
+        hint: 'Clear Chapter 22: "The Final Battle"',
+        blurb: 'The Red Ribbon Army is back with androids of its own and one weapon it should never have woken. Gohan has spent years as a scholar — until Piccolo goes down in front of him.',
+        missions: [{ id: 'sh_beast' }],
+        challenges: [],
+      },
+    ],
+  };
+
+  /** The film a movie mission (or challenge) belongs to, or null. */
+  SL.data.movieOf = function (id) {
+    for (const mv of SL.data.story.movies || []) if (mv.missions.some((e) => e.id === id) || (mv.challenges || []).some((e) => e.id === id)) return mv;
+    return null;
+  };
+
+  /** Every movie mission and challenge that exists in this build, film by film. */
+  SL.data.movieOrder = function () {
+    const out = [];
+    for (const mv of SL.data.story.movies || []) for (const e of mv.missions.concat(mv.challenges || [])) if (SL.data.missions[e.id]) out.push(e.id);
+    return out;
+  };
+
+  /**
+   * Is a movie mission locked? Closed while the film's canon gate is not cleared (gateOpen), then
+   * open once every mission in its `after` list is cleared (a mission without one follows the film
+   * mission before it). Cleared missions never lock. missionResult(id): SL.Save.missionResult.
+   */
+  SL.data.movieLocked = function (id, missionResult, gateOpen) {
+    if (SL.Dev && SL.Dev.unlockAll()) return false;
+    const mv = SL.data.movieOf(id);
+    if (!mv) return false;
+    const own = missionResult(id);
+    if (own && own.completed) return false;
+    if (!gateOpen) return true;
+    const i = mv.missions.findIndex((e) => e.id === id);
+    const entry = i >= 0 ? mv.missions[i] : mv.challenges.find((e) => e.id === id);
+    const after = entry.after || (i > 0 ? [SL.data.movieBefore(mv, i)].filter(Boolean) : []);
+    return after.some((a) => !(missionResult(a) && missionResult(a).completed));
+  };
+
+  /** The last mission before the i-th of a film that exists in this build (a film built out of order skips the rest). */
+  SL.data.movieBefore = function (mv, i) {
+    for (let k = i - 1; k >= 0; k--) if (SL.data.missions[mv.missions[k].id]) return mv.missions[k].id;
+    return null;
   };
 
   /**
@@ -271,8 +448,41 @@
     // Battle of Gods: the God form from the ritual, its power kept at the edge of space
     'goku:god': 'bog_ritual',
     'goku:godki': 'bog_sphere',
+    // Resurrection of F: the main story reveals Goku's Blue and Frieza's Golden form together.
+    'goku:blue': 'rof_goku',
+    'frieza:golden': 'rof_goku',
+    // ...and Vegeta's Blue in the finale, against Golden Frieza (the Broly film keeps its own reveal: formGivenByMovie)
+    'vegeta:blue': 'rof_finale',
     // Frieza's 100%: nothing before the dying planet can reach it
     'frieza:full': 'namek_end',
+    // MOVIE 2 · Super Broly: forms the FILM hands over (missions outside the canon order) — locked in the whole canon
+    // story, every What-If and every other film; inside the film, from the mission that gives them
+    'vegeta:god': 'bb_clash',
+    'broly:wrath': 'bb_wrath',
+    'broly:ssj': 'bb_legend',
+    'broly:full': 'bb_gogeta',
+    'gogeta:blue': 'bb_gogeta',
+    // THE TOURNAMENT OF POWER: Ultra Instinct (the Sign after the Spirit Bomb, the mastered form against Jiren),
+    // Vegeta's Blue Evolution against Toppo, Kefla's second level against Goku, Kale's berserk form
+    'goku:uiSign': 'top_jiren',
+    'goku:mui': 'top_mui',
+    'vegeta:blueEvo': 'top_toppo',
+    'kefla:ssj2': 'top_kefla',
+    'kale:berserk': 'top_saiyans',
+    'kale:controlled': 'top_saiyans',
+    'caulifla:ssj2': 'top_saiyans',
+    // Universe 6: Goku's Kaioken on top of Blue, against Hit
+    'goku:blueKaioken': 'u6_goku_hit',
+    // Universe 6: Cabba's first gold, found against Vegeta
+    'cabba:ssj': 'u6_cabba',
+  };
+
+  // Forms also acquired in a separate movie use that movie's own reveal while playing it.
+  // Canon and What-If missions still use formGivenBy; saved movie clears never advance their chronology.
+  SL.data.formGivenByMovie = {
+    'goku:blue': 'bb_legend',
+    'frieza:golden': 'bb_fusion',
+    'vegeta:blue': 'bb_wrath',
   };
 
   /**
@@ -306,7 +516,8 @@
     let i = order.indexOf(missionId);
     if (i < 0) {
       const w = SL.data.story.whatIf.find((x) => x.mission === missionId);
-      i = w ? order.indexOf(w.branchOf) : -1;
+      const mv = !w && SL.data.movieOf(missionId);
+      i = w ? order.indexOf(w.branchOf) : mv ? order.indexOf(mv.placedAfter) : -1;
     }
     if (i < 0) return null;
     let era = null;

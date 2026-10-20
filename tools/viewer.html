@@ -3,7 +3,13 @@
 <style>
   body{margin:0;background:#222;color:#eee;font:13px system-ui;overflow:hidden}
   #ui{position:fixed;left:8px;top:8px;background:rgba(0,0,0,.6);padding:8px;border-radius:6px;z-index:2}
-  select,button{font:13px system-ui}
+  select,button,textarea{font:13px system-ui}
+  #look{position:fixed;right:8px;top:8px;width:250px;background:rgba(0,0,0,.6);padding:8px;border-radius:6px;z-index:2;display:none}
+  #look label{display:flex;justify-content:space-between;align-items:center;margin:4px 0;gap:6px}
+  #look input[type=range]{width:120px}
+  #look .v{width:52px;text-align:right;opacity:.8}
+  #look textarea{width:100%;height:90px;box-sizing:border-box;margin-top:4px}
+  #look .msg{min-height:16px;color:#ffd27a;font-size:12px}
   canvas{display:block}
 </style></head>
 <body>
@@ -11,8 +17,20 @@
   <select id="char"></select>
   <select id="pose"></select>
   <select id="form"></select>
-  <select id="expr"><option>neutral</option><option>angry</option><option>shout</option><option>hurt</option><option>smirk</option><option>calm</option><option>ko</option></select>
-  <select id="view"><option value="front">front</option><option value="side">side</option><option value="back">back</option><option value="threeq">3/4</option><option value="face">face</option></select>
+  <select id="expr"></select>
+  <select id="view"><option value="front">front</option><option value="side">side</option><option value="back">back</option><option value="threeq">3/4</option><option value="face">face</option><option value="sheet">sheet</option></select>
+</div>
+<!-- appearance (characters with a wardrobe profile of their own outfit: Caulifla, Kefla) - the same
+     SL.Wardrobe.appearance path the game uses; presets carry a look to and from the game as JSON -->
+<div id="look">
+  <b>Appearance</b> <span id="lookChar"></span>
+  <label>Colours <select id="palette"></select></label>
+  <div id="bodyRows"></div>
+  <div><button id="resetLook">Restore Default</button> <button id="exportLook">Export JSON</button></div>
+  <div style="margin-top:4px"><input id="importFile" type="file" accept=".json,application/json"></div>
+  <textarea id="preset" placeholder="Preset JSON (exported here or from the game's Customization screen)"></textarea>
+  <div><button id="importText">Import from text</button></div>
+  <div class="msg" id="lookMsg"></div>
 </div>
 <script src="../vendor/three.min.js"></script>
 <script src="../src/core/namespace.js"></script>
@@ -47,6 +65,7 @@
 <script src="../src/data/characters/androids_pair.js"></script>
 <script src="../src/data/characters/cell.js"></script>
 <script src="../src/data/characters/cell_junior.js"></script>
+<script src="../src/data/characters/cell_games_cast.js"></script>
 <script src="../src/data/characters/chichi.js"></script>
 <script src="../src/data/characters/teen_gohan.js"></script>
 <script src="../src/data/characters/adult_gohan.js"></script>
@@ -71,6 +90,31 @@
 <script src="../src/data/characters/endz_cast.js"></script>
 <script src="../src/data/characters/ginyu_force.js"></script>
 <script src="../src/data/characters/test_dummy.js"></script>
+<script src="../src/data/characters/broly.js"></script>
+<script src="../src/data/characters/janemba.js"></script>
+<script src="../src/data/characters/fusion_reborn_cast.js"></script>
+<script src="../src/data/characters/super_broly_cast.js"></script>
+<script src="../src/data/characters/caulifla_kefla.js"></script>
+<script src="../src/data/characters/whis.js"></script>
+<script src="../src/data/characters/universe6_cast.js"></script>
+<script src="../src/data/characters/top_cast.js"></script>
+<script src="../src/data/characters/rof_cast.js"></script>
+<script src="../src/data/characters/cooler.js"></script>
+<script src="../src/data/characters/saiyan_squad.js"></script>
+<script src="../src/data/characters/goku_black.js"></script>
+<script src="../src/data/characters/broly_z.js"></script>
+<script src="../src/data/characters/movie_androids.js"></script>
+<script src="../src/data/characters/movie_villains.js"></script>
+<script src="../src/data/characters/movie_cast.js"></script>
+<script src="../src/data/characters/zamasu.js"></script>
+<script src="../src/data/characters/future_androids.js"></script>
+<script src="../src/data/characters/super_perfect_cell.js"></script>
+<script src="../src/data/characters/gt_cast.js"></script>
+<script src="../src/data/characters/dragon_ball_cast.js"></script>
+<script src="../src/data/characters/movie_henchmen.js"></script>
+<script src="../src/data/characters/dragon_ball_extras.js"></script>
+<script src="../src/data/wardrobe.js"></script>
+<script src="../src/game/wardrobe.js"></script>
 <script>
 SL.Toon.init();
 const renderer = new THREE.WebGLRenderer({antialias:true});
@@ -84,33 +128,136 @@ scene.add(new THREE.HemisphereLight(0xdfefff, 0x6a5a48, 0.75));
 const sun = new THREE.DirectionalLight(0xffffff, 0.85); sun.position.set(3,6,5); scene.add(sun);
 const ground = new THREE.Mesh(new THREE.CircleGeometry(3,32), SL.Toon.mat(0x9a8a70)); ground.rotation.x=-Math.PI/2; scene.add(ground);
 const cam = new THREE.PerspectiveCamera(35, innerWidth/innerHeight, 0.05, 100);
+// follow the window (a page opened while hidden used to keep a 0 x 0 canvas)
+addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); });
 let model=null, anim=null;
 const $ = id=>document.getElementById(id);
 const chars = Object.values(SL.data.characters);
 for (const c of chars) $('char').add(new Option(c.id, c.id));
-function load(){
-  const def = SL.data.characters[$('char').value];
+// every expression the model supports (Kefla's warm smile included)
+for (const k of Object.keys(SL.EXPRESSIONS)) $('expr').add(new Option(k, k));
+const W = SL.Wardrobe;
+SL.data.eras = SL.data.eras || []; // the story's eras are not loaded here (the wardrobe only sorts by them)
+// the viewer dresses only characters whose wardrobe outfit is their own authored one (Caulifla, Kefla); everybody
+// else builds straight from the definition, as before
+const dressed = (id) => { const pr = W.profile(id); return !!(pr && W.trait(W.piece(pr.default.outfit), 'own')); };
+let sel = null;
+function buildModel(){
+  const id = $('char').value, def = SL.data.characters[id];
   if (model) model.dispose();
-  model = SL.ModelBuilder.build(def);
+  model = SL.ModelBuilder.build(sel ? W.modelDef(def, sel) : def);
   scene.add(model.root);
   const poses = Object.assign({}, SL.data.poses, def.poses||{});
   anim = new SL.Animator(model, poses);
+  return poses;
+}
+function load(){
+  const id = $('char').value, def = SL.data.characters[id];
+  sel = dressed(id) ? W.complete(id, {}) : null;
+  const poses = buildModel();
   $('pose').innerHTML=''; for (const k of Object.keys(poses)) $('pose').add(new Option(k,k));
   $('pose').value = 'idle';
   $('form').innerHTML=''; (def.forms||[{id:'base'}]).forEach((f,i)=>$('form').add(new Option(f.id, i)));
+  if (def.forms && def.forms[0]) model.setForm(def.forms[0]); // as the game's applyForm(0): base-form decals show
   setPose();
+  model.setExpression($('expr').value || 'neutral');
+  lookPanel();
+}
+/** Rebuilds the figure for a changed look, keeping the pose, form, expression and view. */
+function rebuild(){
+  const pose = $('pose').value, form = $('form').value;
+  buildModel();
+  const def = SL.data.characters[$('char').value];
+  if (def.forms && def.forms[form]) model.setForm(def.forms[form]);
+  anim.play(pose, 14); anim.breathe = 0.6; anim.snap();
+  model.setExpression($('expr').value || 'neutral');
 }
 function setPose(){ anim.play($('pose').value, 14); anim.breathe = 0.6; }
 $('char').onchange=load; $('pose').onchange=setPose;
 $('form').onchange=()=>{ const def=SL.data.characters[$('char').value]; model.setForm(def.forms[$('form').value]); };
 $('expr').onchange=()=>model.setExpression($('expr').value);
+/* ---- the appearance panel ---- */
+const msg = (t) => ($('lookMsg').textContent = t || '');
+function apply(next){
+  const r = W.sanitize($('char').value, next);
+  sel = r.selection;
+  rebuild();
+  lookPanel(true);
+  msg(r.problems.length ? 'Adjusted: ' + r.problems.join('; ') : '');
+}
+function lookPanel(keepMsg){
+  const id = $('char').value;
+  $('look').style.display = sel ? 'block' : 'none';
+  if (!keepMsg) msg('');
+  if (!sel) return;
+  $('lookChar').textContent = SL.data.characters[id].name;
+  const pal = $('palette'); pal.innerHTML = '';
+  const opts = W.options(id, 'palette', sel);
+  for (const o of opts.length ? opts : [{ id: 'default', name: 'Default' }]) pal.add(new Option(o.name, o.id));
+  pal.value = sel.palette || 'default';
+  pal.disabled = opts.length < 2;
+  const box = $('bodyRows'); box.innerHTML = '';
+  for (const c of W.bodyControls(id) || []) {
+    const v = (sel.body && sel.body[c.id]) || 0;
+    const lab = document.createElement('label');
+    const n = Math.round(v / W.BODY_STEP);
+    lab.innerHTML = '<span>' + c.name + '</span><input type="range" min="-1" max="1" step="' + W.BODY_STEP + '" value="' + v + '"><span class="v">' + (n === 0 ? 'Default' : (n > 0 ? '+' : '−') + Math.abs(n)) + '</span>';
+    lab.querySelector('input').onchange = (e) => apply(Object.assign({}, sel, { body: Object.assign({}, sel.body, { [c.id]: Number(e.target.value) }) }));
+    box.appendChild(lab);
+  }
+}
+$('palette').onchange = () => apply(Object.assign({}, sel, { palette: $('palette').value }));
+$('resetLook').onclick = () => { sel = W.complete($('char').value, {}); rebuild(); lookPanel(); msg('Default restored'); };
+$('exportLook').onclick = () => {
+  const text = W.exportPreset($('char').value, sel);
+  $('preset').value = text;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  a.download = $('char').value + '-look.json';
+  document.body.appendChild(a); a.click(); setTimeout(() => (URL.revokeObjectURL(a.href), a.remove()), 0);
+  msg('Exported (file and text box)');
+};
+function importText(text){
+  const r = W.importPreset(text);
+  if (!r.ok) return msg('Import refused: ' + r.problems.join('; '));
+  if (!dressed(r.charId)) return msg('Import refused: ' + r.charId + ' has no appearance controls here');
+  if (r.charId !== $('char').value) { $('char').value = r.charId; load(); }
+  sel = r.selection;
+  rebuild(); lookPanel(true);
+  msg('Imported' + (r.problems.length ? ' (adjusted: ' + r.problems.join('; ') + ')' : ''));
+}
+$('importText').onclick = () => importText($('preset').value);
+$('importFile').onchange = (e) => { const f = e.target.files[0]; if (f) f.text().then((t) => { $('preset').value = t; importText(t); }); e.target.value = ''; };
 function place(){
-  const v=$('view').value; const h=1.0;
+  // framed to the character's own size (a giant like Toppo or a berserk form, a child like Zeno)
+  const v=$('view').value, def=SL.data.characters[$('char').value], fm=def && def.forms && def.forms[$('form').value];
+  const h=Math.max(0.5, ((def && def.appearance && def.appearance.height) || 1) * ((fm && fm.look && fm.look.scale) || 1));
   const P={front:[0,1.1,4.2], side:[4.2,1.1,0], back:[0,1.1,-4.2], threeq:[2.8,1.5,3.2], face:[0,1.65,0.9]}[v];
-  cam.position.set(...P); cam.lookAt(0, v==='face'?1.62:0.95, 0);
+  cam.position.set(P[0]*h, P[1]*h, P[2]*h); cam.lookAt(0, (v==='face'?1.62:0.95)*h, 0);
+}
+/** view "sheet": one frame with front, 3/4, side and back of the whole figure, and the face from the front and from
+ *  3/4 (a model review in one picture; the face cameras aim at the head joint, so they work for any size or form) */
+const sheetCam = new THREE.PerspectiveCamera(34, 1, 0.02, 100);
+function renderSheet(){
+  const def=SL.data.characters[$('char').value], fm=def && def.forms && def.forms[$('form').value];
+  const h=Math.max(0.5, ((def && def.appearance && def.appearance.height) || 1) * ((fm && fm.look && fm.look.scale) || 1));
+  const W=innerWidth, H=innerHeight, pw=Math.floor(W/6), fw=W-4*pw, fh=Math.floor(H/2);
+  const hp=new THREE.Vector3(); model.joints.head.getWorldPosition(hp); hp.y+=0.05*h;
+  renderer.setScissorTest(true);
+  [[0,1.1,4.2],[2.8,1.5,3.2],[4.2,1.1,0],[0,1.1,-4.2]].forEach((P,i)=>{
+    sheetCam.aspect=pw/H; sheetCam.fov=34; sheetCam.updateProjectionMatrix();
+    sheetCam.position.set(P[0]*h,P[1]*h,P[2]*h); sheetCam.lookAt(0,0.95*h,0);
+    renderer.setViewport(i*pw,0,pw,H); renderer.setScissor(i*pw,0,pw,H); renderer.render(scene,sheetCam);
+  });
+  [[0,0.03,1,fh],[0.72,0.05,0.72,0]].forEach(([x,y,z,top])=>{
+    sheetCam.aspect=fw/fh; sheetCam.fov=26; sheetCam.updateProjectionMatrix();
+    sheetCam.position.set(hp.x+x*h,hp.y+y*h,hp.z+z*h); sheetCam.lookAt(hp);
+    renderer.setViewport(4*pw,top,fw,fh); renderer.setScissor(4*pw,top,fw,fh); renderer.render(scene,sheetCam);
+  });
+  renderer.setScissorTest(false); renderer.setViewport(0,0,W,H);
 }
 const clock = new THREE.Clock();
-function frame(){ const dt=Math.min(0.05, clock.getDelta()); if(anim) anim.update(dt); place(); renderer.render(scene,cam); requestAnimationFrame(frame); }
+function frame(){ const dt=Math.min(0.05, clock.getDelta()); if(anim) anim.update(dt); if($('view').value==='sheet') renderSheet(); else { place(); renderer.render(scene,cam); } requestAnimationFrame(frame); }
 const params = new URLSearchParams(location.search);
 if (params.get('char')) $('char').value = params.get('char');
 load();
@@ -118,6 +265,6 @@ if (params.get('pose')) { $('pose').value = params.get('pose'); setPose(); }
 if (params.get('view')) $('view').value = params.get('view');
 if (params.get('form')) { $('form').value = params.get('form'); $('form').onchange(); }
 frame();
-window.viewer = { setPose:(p)=>{$('pose').value=p; setPose(); anim.snap();}, setView:(v)=>$('view').value=v, setChar:(c)=>{$('char').value=c; load();}, setForm:(i)=>{$('form').value=i; $('form').onchange();}, setExpr:(e)=>model.setExpression(e) };
+window.viewer = { setPose:(p)=>{$('pose').value=p; setPose(); anim.snap();}, setView:(v)=>$('view').value=v, setChar:(c)=>{$('char').value=c; load();}, setForm:(i)=>{$('form').value=i; $('form').onchange();}, setExpr:(e)=>{$('expr').value=e; model.setExpression(e);}, setLook:(s)=>apply(s), look:()=>sel, importText };
 </script>
 </body></html>

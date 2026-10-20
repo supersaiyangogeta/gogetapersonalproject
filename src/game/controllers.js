@@ -355,6 +355,23 @@
       return false;
     }
 
+    /**
+     * A wheel rush (def.extras, type 'rush') this fighter could use right now, from here — its form, its unlocks, the
+     * battle's ultimate rule, ki, cooldown, and inside what the rush's dash covers (2026-10-17: the roadmap's shared
+     * AI task — before this only hand-written brains ever used a wheel move). Outside the story only: story fights
+     * keep the kits they were tuned with (and freeOnly moves are hidden there anyway).
+     */
+    _wheelRush(f, dist) {
+      if (this.battle.mode === 'story') return null;
+      const ok = (f.def.extras || []).filter((x) => {
+        if (x.type !== 'rush' || f.extraLock(x)) return false;
+        const slot = 'x:' + x.id;
+        if ((f.lockedSlots && f.lockedSlots[slot]) || f.cooldowns[slot] > 0 || !R.canAfford(f, x.kiCost)) return false;
+        return dist > 3 && dist < (x.speed || 48) * ((x.dashFrames || 28) / 60) * 0.8;
+      });
+      return ok.length ? ok[Math.floor(Math.random() * ok.length)] : null;
+    }
+
     _beamSlot(f) {
       const sp = f.specials() || {};
       for (const slot of ['special1', 'special2']) if (sp[slot] && sp[slot].type === 'beam') return { slot, spec: sp[slot] };
@@ -419,6 +436,11 @@
         if (s2.type === 'teleport') v = (dist > 14 ? 0.7 : 0.15) + (this.memory.blast > 3 ? 0.6 : 0) + (seen && seen.state === 'guard' ? 0.4 : 0);
         if (s2.type === 'projectile') v = dist > 8 && dist < 45 ? 0.55 : 0.1;
         if (s2.type === 'rush') v = (dist > 5 && dist < 30 ? 0.45 : 0.05) + (tVulnerable ? 0.8 : 0);
+        // a ration (senzu type): eaten when hurt and out of reach, or thrown to an ally in trouble — never at full health
+        if (s2.type === 'senzu') {
+          const allyLow = battle.alliesOf(f).some((a) => a !== f && a.alive && !a.hidden && a.hpFrac < (s2.allyBelow || 0) && a.pos.distanceTo(f.pos) < (s2.tossRange || 0));
+          v = f.mech && f.mech.beans === 0 ? 0 : (hpF < 0.4 && dist > 6) || allyLow ? 1.6 : 0;
+        }
         scores.special2 = v * w.special2 * (0.6 + aggr * 0.5);
       }
       const s1 = sp.special1 && sp.special1.type !== 'beam' ? sp.special1 : null;
@@ -429,7 +451,9 @@
         if (ult.type === 'spiritBomb' && dist < 20) scores.ultimate *= 0.2;
       }
       const next = f.def.forms[f.formIndex + 1];
-      if (next && battle.rules.allowTransform && R.canAfford(f, next.kiCost) && (battle.rules.maxForm === undefined || f.formIndex + 1 <= battle.rules.maxForm)) {
+      // a boss's later shape that the story owns (form.storyBoss, locked in the story) is never bought by his AI there:
+      // before those shapes had a ki cost (for Free Battle) it could not afford them, and nothing else changes
+      if (next && battle.rules.allowTransform && R.canAfford(f, next.kiCost) && !(next.storyBoss && f.lockedForms && f.lockedForms[next.id]) && (battle.rules.maxForm === undefined || f.formIndex + 1 <= battle.rules.maxForm)) {
         scores.transform = (hpF < p.transformHp ? 2.2 : 0) + (this.frame < this.formReactUntil ? 1.8 : 0) + (battle.fightTime > 20 && d.aggression >= 1 ? 0.4 : 0);
         if (dist < 5) scores.transform *= 0.3;
       }
@@ -439,6 +463,9 @@
       scores.wait = (d.mistake * 1.6 + 0.08) * w.wait;
       scores.retreat = (hpF < 0.25 && p.defense > 0.5 ? 0.8 : 0) + (p.personality === 'gunner' && dist < 8 ? 1.4 : 0);
       scores.throw = seen && seen.state === 'guard' && dist < 5 ? 1.2 * aggr * w.throwBias : this.memory.guard > 4 && dist < 5 ? 0.5 * w.throwBias : 0;
+      // a wheel rush it has earned (see _wheelRush): now and then, more when the target is open
+      this.wheelPick = this._wheelRush(f, dist);
+      if (this.wheelPick) scores.wheelRush = (0.6 + (tVulnerable ? 0.8 : 0)) * (w.special2 || 0.6) * (0.6 + aggr * 0.5);
 
       const hooks = this.hooks();
       if (hooks && hooks.scores) hooks.scores(this, f, t, dist, seen, scores, tVulnerable);
@@ -450,16 +477,16 @@
       //      AI stops trying and braces or resets the spacing instead of mashing into armour.
       const tBusy = ['charge', 'beamCharge', 'spiritBomb', 'scatter', 'rush'].includes(t.state);
       if (tBusy && t.stateFrame <= d.reaction) {
-        for (const k of ['melee', 'blast', 'beam', 'special1', 'special2', 'ultimate']) if (scores[k]) scores[k] *= 0.5;
+        for (const k of ['melee', 'blast', 'beam', 'special1', 'special2', 'ultimate', 'wheelRush']) if (scores[k]) scores[k] *= 0.5;
       }
       if (t.committedUltimate && t.committedUltimate()) {
-        for (const k of ['melee', 'blast', 'beam', 'special1', 'special2', 'throw']) if (scores[k]) scores[k] *= 0.35;
+        for (const k of ['melee', 'blast', 'beam', 'special1', 'special2', 'throw', 'wheelRush']) if (scores[k]) scores[k] *= 0.35;
         scores.retreat = (scores.retreat || 0) + 0.6;
         scores.strafe = (scores.strafe || 0) + 0.5;
       }
       // the breath between bursts: he closes, circles or watches, and the player gets a turn
       if (this.resting()) {
-        for (const k of ['melee', 'blast', 'beam', 'special1', 'special2', 'ultimate', 'throw']) if (scores[k]) scores[k] *= 0.12;
+        for (const k of ['melee', 'blast', 'beam', 'special1', 'special2', 'ultimate', 'throw', 'wheelRush']) if (scores[k]) scores[k] *= 0.12;
         for (const k of Object.keys(scores)) if (k.startsWith('p_')) scores[k] *= 0.12;
         scores.strafe = (scores.strafe || 0) + 1.2;
         scores.wait = (scores.wait || 0) + 0.8;
@@ -523,6 +550,8 @@
             this.bombHold = U.randInt(ul.chargeMin, dist > 40 ? ul.chargeFrames : Math.round((ul.chargeMin + ul.chargeFrames) / 2));
           }
           return { type, frames: 12, pressed: false };
+        case 'wheelRush':
+          return { type, id: this.wheelPick ? this.wheelPick.id : null, frames: 12, pressed: false };
         case 'transform':
           return { type, frames: 10, pressed: false };
         case 'charge':
@@ -681,6 +710,14 @@
           } else if (pl.pressed && f.state === 'free') pl.done = true;
           break;
         }
+        case 'wheelRush':
+          if (!pl.id) pl.done = true;
+          else if (!pl.pressed && f.state === 'free') {
+            it.extra = pl.id;
+            it.extraHeld = true;
+            pl.pressed = true;
+          } else if (pl.pressed && f.state === 'free') pl.done = true;
+          break;
         case 'transform':
           if (!pl.pressed && f.state === 'free') {
             it.transform = true;
@@ -1008,6 +1045,113 @@
    * himself and an aggressor, steps in to protect a struggling ally, and only
    * commits to the Special Beam Cannon when the target is far and busy.
    */
+  /**
+   * Hit: punishes the predictable. The time-skip comes when the target commits — mid-swing, charging, firing —
+   * or from just outside his reach; never point-blank, where his jabs already are.
+   */
+  AIHooks.hit = {
+    scores(ai, f, t, dist, seen, scores) {
+      const s1 = f.specials().special1;
+      if (!s1 || s1.type !== 'timeSkip' || f.cooldowns.special1 > 0 || !R.canAfford(f, s1.kiCost)) return;
+      const committed = ['attack', 'beamCharge', 'beam', 'charge', 'specialThrow', 'rush'].includes(t.state);
+      scores.special1 = dist > 2.2 && dist < 14 ? (committed ? 1.9 : 0.45) : 0;
+    },
+  };
+
+  /**
+   * Android 17 (the park ranger): economical. The barrier goes up for a blast on its way in or a rush at close
+   * range — never for nothing.
+   */
+  AIHooks.android_17 = {
+    scores(ai, f, t, dist, seen, scores) {
+      const s2 = f.specials().special2;
+      if (!s2 || s2.type !== 'barrier') return;
+      delete scores.special2;
+      if (f.cooldowns.special2 > 0 || !R.canAfford(f, s2.kiCost)) return;
+      const incoming = ai.battle.projectiles.list.some((p) => p.alive && p.team !== f.team && p.pos.distanceTo(f.chest()) < 9);
+      if (incoming || (dist < 3 && ['attack', 'rush'].includes(t.state))) scores.special2 = 2.2;
+    },
+  };
+
+  /**
+   * Magetta: a walking furnace that pushes. With the target near the drop and himself on the inside he walks in and
+   * shoves instead of circling; at middle range in the open he can throw his whole body (special1, a telegraphed
+   * crash). He never backs off.
+   */
+  AIHooks.magetta = {
+    scores(ai, f, t, dist, seen, scores) {
+      if (scores.retreat) scores.retreat *= 0.15;
+      const A = ai.battle.stage.arena;
+      if (A) {
+        const out = (p) => Math.max(Math.abs(p.x), Math.abs(p.z));
+        if (A.half - out(t.pos) < 7 && out(f.pos) < out(t.pos)) {
+          scores.melee = (scores.melee || 0) + 1.4;
+          if (scores.strafe) scores.strafe *= 0.3;
+        }
+      }
+      const s1 = f.specials().special1;
+      if (s1 && s1.type === 'groundSlam') {
+        delete scores.special1;
+        if (!(f.cooldowns.special1 > 0) && R.canAfford(f, s1.kiCost) && dist > 3.5 && dist < 14) scores.special1 = dist > 5 ? 1.4 : 0.8;
+      }
+      // Magma Spit (Free Battle's special2): something who keeps out of his reach, or stops to charge, gets the furnace
+      // (the generic score only looked past eight metres, which a walking wall almost never sees)
+      const s2 = f.specials().special2;
+      if (s2 && s2.id === 'mgSpit') {
+        delete scores.special2;
+        const charging = ['charge', 'beamCharge', 'spiritBomb'].includes(t.state);
+        if (!(f.cooldowns.special2 > 0) && R.canAfford(f, s2.kiCost) && dist > 4.5 && dist < 20) scores.special2 = 0.6 + (charging ? 1.2 : 0) + (dist > 9 ? 0.4 : 0);
+      }
+    },
+  };
+
+  /**
+   * Tagoma (Free Battle): Playing Dead is a trick, not an opener — he drops only when it can fool someone: hurt, with the
+   * target walking in close. The generic rush score had him dropping every few seconds from anywhere (2026-10-15 audit:
+   * 18 feints in four one-minute fights). In the story his special2 is the elite soldier's and this does nothing.
+   */
+  AIHooks.tagoma = {
+    scores(ai, f, t, dist, seen, scores) {
+      const s2 = f.specials().special2;
+      if (!s2 || s2.id !== 'tgFeint') return;
+      delete scores.special2;
+      if (f.cooldowns.special2 > 0 || !R.canAfford(f, s2.kiCost)) return;
+      if (f.hpFrac < 0.6 && dist < 5.5 && ['free', 'dash', 'attack'].includes(t.state)) scores.special2 = 1.2;
+    },
+  };
+
+  /**
+   * Frost: polite, patient — and then the needle. The hidden needle (special2) is his cheap shot: thrown when you
+   * commit or turtle at middle range, never as an opener from across the ring.
+   */
+  AIHooks.frost = {
+    scores(ai, f, t, dist, seen, scores) {
+      const s2 = f.specials().special2;
+      if (!s2 || s2.id !== 'frNeedle') return;
+      delete scores.special2;
+      if (f.cooldowns.special2 > 0 || !R.canAfford(f, s2.kiCost)) return;
+      const open = ['guard', 'attack', 'charge', 'beamCharge', 'recover'].includes(t.state);
+      if (dist > 2.4 && dist < 10) scores.special2 = open ? 1.7 : 0.25;
+    },
+  };
+
+  /**
+   * Android 18: quick counters and the edge always in mind. A target that has just thrown something and missed is
+   * punished at once; with her own back to the drop she circles back toward the middle instead of trading there.
+   */
+  AIHooks.android_18 = {
+    scores(ai, f, t, dist, seen, scores) {
+      if (dist < 3.2 && ['recover', 'attack'].includes(t.state) && t.sd && t.sd.move && !t.sd.hit) scores.melee = (scores.melee || 0) + 1.3;
+      const A = ai.battle.stage.arena;
+      if (!A) return;
+      const out = (p) => Math.max(Math.abs(p.x), Math.abs(p.z));
+      if (A.half - out(f.pos) < 6 && out(f.pos) > out(t.pos)) {
+        scores.strafe = (scores.strafe || 0) + 0.9;
+        if (scores.melee) scores.melee *= 0.6;
+      }
+    },
+  };
+
   AIHooks.piccolo = {
     pre(ai, f, t, dist, seen, it) {
       if (f.state !== 'free') return false;
@@ -1062,6 +1206,10 @@
       if (pl.frames <= 0) pl.done = true;
     },
   };
+
+  // Adult Gohan (ToP refinement brief §24): clear target selection and team support — he goes after whoever is on a
+  // reeling ally, the way Piccolo taught him
+  AIHooks.adult_gohan = { pre: AIHooks.piccolo.pre };
 
   /**
    * Vegeta: proud and relentless. Almost never waits or backs off, cashes in a
@@ -1795,6 +1943,98 @@
         b.vfx.flash(f.chest(), 1.2, 0xff70b8, 0.3, SL.Toon.tex.glow);
         b.sfx('saibaScreech', f, { pitch: 1.9, vol: 0.8 });
         b.emit('kidBuuTell', { fighter: f, trick: k.trick });
+        return true;
+      }
+      return AIHooks.boss.pre(ai, f, t, dist, seen, it);
+    },
+  });
+
+  /**
+   * FAT JANEMBA (Fusion Reborn): a child's timing. His doors, spheres and the punch through a portal
+   * are boss patterns (def.boss); this adds the unpredictability — he stops to giggle in the middle
+   * of an approach (a free opening, of uneven length), and sometimes bounces off sideways instead of
+   * coming straight at you. The lengths come from a fixed sequence (never Math.random), so the rhythm
+   * changes every time without being a coin toss the tests cannot repeat.
+   */
+  const JB_PAUSE = [20, 44, 14, 32, 52, 24];
+  AIHooks.janemba = Object.assign(Object.create(AIHooks.boss), {
+    pre(ai, f, t, dist, seen, it) {
+      const b = ai.battle;
+      const j = (ai.jb = ai.jb || { next: ai.frame + 140, until: 0, n: 0 });
+      if (j.until) {
+        if (ai.frame < j.until && f.state === 'scripted') return true;
+        j.until = 0;
+        if (f.state === 'scripted') f.setState('free');
+      }
+      if (f.state === 'free' && t && t.alive && !b.inputLocked && ai.frame >= j.next && dist < 9) {
+        j.n++;
+        j.next = ai.frame + 150 + JB_PAUSE[j.n % JB_PAUSE.length] * 3;
+        if (j.n % 3 === 2) {
+          // the sideways bounce
+          const to = t.pos.clone().sub(f.pos).setY(0).normalize();
+          const side = new THREE.Vector3(to.z, 0, -to.x).multiplyScalar(j.n % 2 ? 1 : -1);
+          f.vel.addScaledVector(side, 14);
+          if (f.grounded) f.vel.y = Math.max(f.vel.y, 7);
+          f.grounded = false;
+          f.anim.squash = 0.45;
+          b.sfx('stretch', f, { pitch: 0.8, vol: 0.6 });
+          b.emit('janembaBounce', { fighter: f });
+          return true;
+        }
+        f.setState('scripted', { pose: j.n % 2 ? 'jb_giggle' : 'jb_clap', expression: 'grin' });
+        j.until = ai.frame + JB_PAUSE[j.n % JB_PAUSE.length];
+        b.sfx('giggle', f, { pitch: 0.9 + (j.n % 3) * 0.1 });
+        b.emit('janembaGiggle', { fighter: f, frames: JB_PAUSE[j.n % JB_PAUSE.length] });
+        return true;
+      }
+      return AIHooks.boss.pre(ai, f, t, dist, seen, it);
+    },
+  });
+
+  /**
+   * SUPER JANEMBA: controlled, fast, precise. The punishing lives in the mechanic (a pattern read →
+   * Phantom Shift behind you); here he follows it through at once — he arrives already swinging —
+   * and he never lets a free target stand still at range (the dimensional slash).
+   */
+  AIHooks.super_janemba = Object.assign(Object.create(AIHooks.boss), {
+    pre(ai, f, t, dist, seen, it) {
+      const me = f.mech || {};
+      if (me.punish && f.state === 'free' && t && t.alive) {
+        me.punish = null;
+        f.faceTarget(100);
+        if (dist < 3.2) it.heavy = true;
+        else it.light = true;
+        return true;
+      }
+      return AIHooks.boss.pre(ai, f, t, dist, seen, it);
+    },
+  });
+
+  /**
+   * BROLY (Movie 2 · Super Broly): the legendary mechanic reads you; this makes the read hurt. Right after a
+   * CATCH (the mechanic's Perfect Guard opened his counter window) he holds the fist for a beat — so it is
+   * seen — and answers: the gut punch while he still has you, or the headbutt (moves.counter). Everything
+   * else is the boss hook: the patterns of the phase his FORM is in (controlled, wrathful, legendary, full).
+   */
+  AIHooks.broly = Object.assign(Object.create(AIHooks.boss), {
+    pre(ai, f, t, dist, seen, it) {
+      const me = f.mech || {};
+      if (me.punish) {
+        if (f.counterFrames > 0 && (f.state === 'free' || f.state === 'guard') && t && t.alive) {
+          if (ai.battle.frame - me.catchAt < 10) return true;
+          me.punish = null;
+          f.faceTarget(100);
+          if (me.reads % 2) it.heavy = true;
+          else it.light = true;
+          return true;
+        }
+        if (f.counterFrames <= 0) me.punish = null;
+      }
+      // far off on foot: he does not float over to you, he comes running across the ice (the generic approach only
+      // boosts at range, which moves a flier and leaves a grounded fighter standing)
+      if (f.grounded && f.state === 'free' && t && t.alive && dist > 14 && !ai.resting() && ai.plan && ai.plan.type === 'melee') {
+        it.my = 1;
+        it.boost = true;
         return true;
       }
       return AIHooks.boss.pre(ai, f, t, dist, seen, it);

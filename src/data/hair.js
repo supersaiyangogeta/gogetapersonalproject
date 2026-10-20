@@ -61,10 +61,13 @@
     ],
   };
 
+  // the visual pass (2026-10-14): the hairline goes back up off a high forehead to the sharp widow's peak — the old
+  // cap came down flat to the brows like a helmet and hid them. Every Vegeta style scaled from this one (Super Saiyan,
+  // 2, God, Blue, King Vegeta) shares the cap, so they all get the forehead
   H.vegeta = {
-    cap: { tilt: -0.28, sy: 1.08 },
+    cap: { tilt: -0.66, sy: 1.08 },
     spikes: [
-      { a: [0, 0.62, 0.78], d: [0, -1, 0.3], l: 0.065, r: 0.05, depth: 0.98, flat: 0.45 },
+      { a: [0, 0.76, 0.65], d: [0, -1, 0.42], l: 0.075, r: 0.05, depth: 0.99, flat: 0.45 },
       { a: [0, 1, -0.1], d: [0, 1, -0.08], l: 0.33, r: 0.07 },
       { a: [0, 0.85, -0.5], d: [0, 1, -0.35], l: 0.28, r: 0.075 },
       { a: [0, 0.5, -0.85], d: [0, 0.8, -0.6], l: 0.2, r: 0.075 },
@@ -102,12 +105,50 @@
     return v;
   })();
 
+  // Tarble (the board p.5): his brother's upswept hair, but softer — shorter, splayed wider, and a fringe of points over
+  // the forehead instead of the widow's peak
+  H.tarble = (() => {
+    const v = scaled(H.vegeta, 0.8, 1.55);
+    v.spikes = v.spikes.slice(1).concat([
+      { a: [0, 0.74, 0.66], d: [0, -0.7, 0.7], l: 0.08, r: 0.045, depth: 0.99, flat: 0.5 },
+    ]);
+    v.mirror = v.mirror.concat([
+      { a: [0.3, 0.7, 0.62], d: [0.35, -0.8, 0.6], l: 0.075, r: 0.04, depth: 0.99, flat: 0.5 },
+      { a: [0.78, 0.4, 0.3], d: [0.8, -0.4, 0.2], l: 0.09, r: 0.045 },
+    ]);
+    v.cap = { ...v.cap, tilt: -0.45 };
+    return v;
+  })();
+
+  // Baby Vegeta (GT, the board p.81): the prince's hair taken over and swept up and BACK into a wide mane, longer and
+  // fuller than Vegeta's flame, the widow's peak kept
+  H.baby_vegeta = (() => {
+    const back = (s, i) => (i === 0 ? s : { ...s, l: s.l * 1.3, r: s.r * 1.12, d: [s.d[0] * 1.5, s.d[1] * 0.7, s.d[2] - 0.95] });
+    return { cap: H.vegeta.cap, spikes: H.vegeta.spikes.map(back), mirror: H.vegeta.mirror.map((s) => back(s, 1)) };
+  })();
+
   // Majin Vegeta: the Super Saiyan 2 hair swept up off a high forehead, with a sharp widow's peak
   // that stops above the M (the plain style's hairline sits on the brows and would hide the mark)
   H.vegeta_majin = (() => {
     const v = { ...H.vegeta_ssj2, spikes: H.vegeta_ssj2.spikes.slice() };
     v.cap = { ...v.cap, tilt: -0.74 };
     v.spikes[0] = { ...v.spikes[0], a: [0, 0.74, 0.67], d: [0, -1, 0.4], l: 0.02, r: 0.022, depth: 1 };
+    return v;
+  })();
+
+  // Super Saiyan 4 Vegeta (GT, the board p.78): the upright flame of his own hair, and under it a mane of long spikes
+  // down the back to the shoulder blades, with a lock framing each side of the face
+  H.vegeta_ssj4 = (() => {
+    const v = scaled(H.vegeta, 1.06, 1.15);
+    v.spikes = v.spikes.concat([
+      { a: [0, 0.2, -1], d: [0, -1, -0.35], l: 0.42, r: 0.12 },
+      { a: [0, -0.15, -1], d: [0, -1, -0.25], l: 0.46, r: 0.11 },
+    ]);
+    v.mirror = v.mirror.concat([
+      { a: [0.5, 0.25, -0.8], d: [0.35, -1, -0.35], l: 0.4, r: 0.11 },
+      { a: [0.85, 0.05, -0.45], d: [0.45, -1, -0.15], l: 0.34, r: 0.09 },
+      { a: [0.92, 0.1, 0.25], d: [0.3, -1, 0.1], l: 0.2, r: 0.05 },
+    ]);
     return v;
   })();
 
@@ -263,6 +304,10 @@
 
   // Frieza race head dome (drawn as a cap in the dome color)
   H.frieza_dome = { cap: { tilt: -0.15, sx: 1.04, sy: 1.12, sz: 1.06 }, spikes: [] };
+  // Frieza's own shell (Frieza, Mecha Frieza, Frost — the visual pass, 2026-10-14): the front edge sits higher, so the
+  // forehead and brow ridge show under it, and it stands a little further off the skull — the low, tight dome let the
+  // white skull show through at its front edge as ragged white flames (the soldiers keep frieza_dome)
+  H.frieza_shell = { cap: { tilt: -0.4, sx: 1.07, sy: 1.14, sz: 1.1 }, spikes: [] };
 
   // Frieza Force soldier head variants
   H.soldier_crest = {
@@ -291,17 +336,50 @@
     ],
   };
   // a long white mane swept straight back off the face
+  // Jeice (the reference pass, 2026-10-14, owner's visual reference p.17): a full white mane, swept back off the brow
+  // and falling thick over the shoulders and down the back (it was a crown of thin swept spikes)
   H.jeice = {
-    cap: { tilt: -0.26, sy: 1.02, sz: 1.08 },
+    cap: { tilt: -0.3, sx: 1.06, sy: 1.06, sz: 1.1 },
     spikes: [
-      { a: [0, 0.85, -0.35], d: [0, 0.25, -1], l: 0.24, r: 0.05, flat: 0.55 },
-      { a: [0, 0.55, -0.8], d: [0, -0.35, -1], l: 0.3, r: 0.048, flat: 0.55 },
-      { a: [0, 0.2, -0.95], d: [0, -0.8, -0.7], l: 0.26, r: 0.042, flat: 0.55 },
+      { a: [0, 0.85, -0.35], d: [0, 0.2, -1], l: 0.24, r: 0.07, flat: 0.55 },
+      { a: [0, 0.55, -0.8], d: [0, -0.5, -0.9], l: 0.34, r: 0.08, flat: 0.5 },
+      { a: [0, 0.2, -0.95], d: [0, -0.9, -0.5], l: 0.36, r: 0.075, flat: 0.5 },
+      { a: [0, 0.95, 0.25], d: [0, 0.7, -0.6], l: 0.12, r: 0.06, flat: 0.5 },
     ],
     mirror: [
-      { a: [0.5, 0.75, -0.45], d: [0.45, 0.15, -1], l: 0.26, r: 0.045, flat: 0.5 },
-      { a: [0.7, 0.35, -0.5], d: [0.7, -0.4, -0.9], l: 0.28, r: 0.04, flat: 0.5 },
-      { a: [0.85, 0, -0.3], d: [0.8, -0.9, -0.4], l: 0.22, r: 0.036, flat: 0.5 },
+      { a: [0.5, 0.75, -0.45], d: [0.5, 0, -1], l: 0.28, r: 0.065, flat: 0.5 },
+      { a: [0.7, 0.35, -0.5], d: [0.55, -0.7, -0.6], l: 0.34, r: 0.065, flat: 0.5 },
+      { a: [0.85, 0.05, -0.3], d: [0.45, -1, -0.25], l: 0.32, r: 0.06, flat: 0.5 },
+      { a: [0.9, 0.4, 0.05], d: [0.55, -0.8, 0.1], l: 0.22, r: 0.05, flat: 0.5 },
+      { a: [0.35, 0.85, 0.35], d: [0.6, 0.3, -0.5], l: 0.14, r: 0.05, flat: 0.5 },
+    ],
+  };
+
+  // Zangya (2026-10-15, the board p.217): only the close cap and two curled locks sweeping up off the hairline — the
+  // cloud of curls, the mane and the ringlets are her own head extras (movie_villains.js). She wore Jeice's straight
+  // strands under round puffs
+  H.zangya = {
+    cap: { tilt: -0.3, sx: 1.08, sy: 1.08, sz: 1.1 },
+    spikes: [
+      { a: [0.22, 0.9, 0.45], d: [0.25, 1, 0.35], l: 0.15, r: 0.05, bend: 2.2, curl: true, toward: [0, 0, -1] },
+      { a: [-0.3, 0.86, 0.42], d: [-0.3, 1, 0.3], l: 0.12, r: 0.042, bend: 2.4, curl: true, toward: [0, 0, -1] },
+    ],
+  };
+
+  // Recoome (the reference pass, visual reference p.13): a thick red-orange mop, a heavy fringe falling over the brow,
+  // short at the back (he wore a soldier's little crest)
+  H.recoome = {
+    cap: { tilt: -0.42, sx: 1.08, sy: 1.12, sz: 1.08 },
+    spikes: [
+      { a: [0, 0.98, 0.1], d: [0.1, 1, 0.2], l: 0.1, r: 0.07, flat: 0.6 },
+      { a: [0, 0.7, -0.7], d: [0, -0.3, -1], l: 0.12, r: 0.075, flat: 0.55 },
+      { a: [-0.1, 0.78, 0.6], d: [-0.2, -0.8, 0.55], l: 0.12, r: 0.055, depth: 1, flat: 0.6 },
+    ],
+    mirror: [
+      { a: [0.35, 0.82, 0.5], d: [0.4, -0.6, 0.65], l: 0.12, r: 0.055, depth: 1, flat: 0.6 },
+      { a: [0.6, 0.75, 0.2], d: [0.9, 0.3, 0.3], l: 0.1, r: 0.06, flat: 0.55 },
+      { a: [0.75, 0.45, -0.35], d: [0.9, -0.2, -0.4], l: 0.1, r: 0.06, flat: 0.55 },
+      { a: [0.45, 0.85, -0.25], d: [0.5, 0.8, -0.4], l: 0.1, r: 0.065, flat: 0.55 },
     ],
   };
 
@@ -320,7 +398,8 @@
   };
   // Future Trunks: a straight lavender bob that stops at the jaw, with a heavy fringe
   H.trunks = {
-    cap: { tilt: -0.35, sx: 1.04, sy: 1.04, sz: 1.04 },
+    // (2026-10-16: a size up at the front — on Bulma's head the skull showed between the fringe's points in white streaks)
+    cap: { tilt: -0.35, sx: 1.06, sy: 1.1, sz: 1.09 },
     spikes: [
       { a: [0, 0.9, 0.35], d: [0, 0.4, 0.7], l: 0.07, r: 0.055, flat: 0.7 },
       { a: [0, 0.45, -0.9], d: [0, -1, -0.45], l: 0.2, r: 0.075, flat: 0.55 },
@@ -334,9 +413,102 @@
     ],
   };
 
+  // Future Trunks after the Room of Spirit and Time, and in the Goku Black arc (the board p.228–229): the same cut grown
+  // out to the shoulders — the back and side strands longer, two more falling behind (worn through an outfit's `hair`)
+  H.trunks_long = {
+    cap: H.trunks.cap,
+    spikes: H.trunks.spikes.map((s, i) => (i === 1 ? { ...s, l: s.l * 1.7 } : s)).concat([{ a: [0, 0.05, -0.98], d: [0, -1, -0.2], l: 0.3, r: 0.07, flat: 0.55 }]),
+    mirror: H.trunks.mirror.map((s, i) => (i === 1 || i === 2 ? { ...s, l: s.l * 1.6, d: [s.d[0] * 0.7, s.d[1], s.d[2]] } : s)).concat([{ a: [0.4, -0.05, -0.9], d: [0.2, -1, -0.25], l: 0.3, r: 0.06, flat: 0.55 }]),
+  };
+
+  // Android 18 in the Buu Saga (the owner's reference, 2026-10-16): a full, blunt bob to the jaw, parted on her right; the
+  // fringe sweeps across the brow to her left, where the side is tucked behind the ear (her earring shows); her right side
+  // hangs straight past the cheek (worn through her outfit's `hair`)
+  H.a18_buu = {
+    cap: { tilt: -0.35, sx: 1.07, sy: 1.1, sz: 1.1 },
+    spikes: [
+      // the crown, and the full back cut blunt at the nape (cylinders: square ends, not points)
+      { a: [0, 0.9, 0.35], d: [0.1, 0.4, 0.7], l: 0.07, r: 0.055, flat: 0.7 },
+      { a: [0, 0.6, -0.8], d: [0, -1, -0.3], l: 0.19, r: 0.07, flat: 0.5, shape: 'cyl' },
+      { a: [0.32, 0.5, -0.8], d: [0.12, -1, -0.3], l: 0.19, r: 0.065, flat: 0.5, shape: 'cyl' },
+      { a: [-0.32, 0.5, -0.8], d: [-0.12, -1, -0.3], l: 0.19, r: 0.065, flat: 0.5, shape: 'cyl' },
+      { a: [0.62, 0.35, -0.7], d: [0.3, -1, -0.3], l: 0.19, r: 0.06, flat: 0.5, shape: 'cyl' },
+      { a: [-0.62, 0.35, -0.7], d: [-0.3, -1, -0.3], l: 0.19, r: 0.06, flat: 0.5, shape: 'cyl' },
+      // the fringe from the parting on her right, swept down across the brow toward her left
+      { a: [-0.12, 0.74, 0.66], d: [0.45, -1, 0.35], l: 0.14, r: 0.05, depth: 1, flat: 0.6 },
+      // her right: the upper side, the side hanging straight over the ear (cut blunt), and the front lock to the jaw
+      { a: [-0.5, 0.8, 0.3], d: [-0.35, -0.2, 0.6], l: 0.1, r: 0.05, flat: 0.7 },
+      { a: [-0.82, 0.45, -0.12], d: [-0.22, -1, -0.05], l: 0.19, r: 0.075, flat: 0.45, shape: 'cyl' },
+      { a: [-0.5, 0.66, 0.55], d: [-0.25, -1, 0.3], l: 0.16, r: 0.047, depth: 1, flat: 0.6 },
+      // her left: the fringe's end at the temple, the upper side swept back, the side tucked behind the ear
+      { a: [0.38, 0.74, 0.56], d: [0.5, -0.85, 0.15], l: 0.1, r: 0.045, depth: 1, flat: 0.6 },
+      { a: [0.5, 0.8, 0.3], d: [0.45, -0.4, 0.3], l: 0.08, r: 0.05, flat: 0.7 },
+      { a: [0.8, 0.3, -0.5], d: [0.3, -1, -0.5], l: 0.2, r: 0.058, flat: 0.55 },
+    ],
+  };
+
+  // Future Trunks in the Goku Black arc (2026-10-15, from memory: the board has no picture of it): longer and fuller than
+  // the Cell Saga's — the back past the shoulders, the sides lower, the bangs hanging longer over the brow
+  H.trunks_super = {
+    cap: { tilt: -0.35, sx: 1.08, sy: 1.06, sz: 1.08 },
+    spikes: H.trunks_long.spikes.map((s, i) => (i === 1 || i === 3 ? { ...s, l: s.l * 1.25 } : i === 2 ? { ...s, l: s.l * 1.35 } : s)),
+    mirror: H.trunks_long.mirror.map((s, i) => (i === 1 || i === 2 || i === 4 ? { ...s, l: s.l * 1.2 } : i === 3 ? { ...s, l: s.l * 1.3 } : s)),
+  };
+
+  // Launch (2026-10-15, the board p.190): full wavy hair to the shoulders, puffed out at the sides and flipping outward
+  // at the ends, side-swept bangs — the same cut blue or blonde (she wore Videl's short cut, and Jeice's mane when blonde)
+  H.launch = {
+    cap: { tilt: -0.3, sx: 1.12, sy: 1.1, sz: 1.12 },
+    spikes: [
+      { a: [0, 0.3, -0.95], d: [0, -1, -0.4], l: 0.3, r: 0.11, flat: 0.6, bend: 0.8, toward: [0, -0.3, -1] },
+      { a: [0, -0.2, -0.95], d: [0, -1, -0.25], l: 0.27, r: 0.095, flat: 0.6, bend: 0.9, toward: [0, 0, -1] },
+      { a: [-0.15, 0.82, 0.55], d: [0.5, -0.6, 0.6], l: 0.11, r: 0.055, flat: 0.5, bend: 0.6, toward: [0.3, -1, 0.3], depth: 0.98 },
+    ],
+    mirror: [
+      { a: [0.85, 0.3, -0.2], d: [0.5, -1, -0.15], l: 0.27, r: 0.09, flat: 0.6, bend: 1.1, toward: [1, -0.2, 0] },
+      { a: [0.65, 0.1, -0.7], d: [0.45, -1, -0.45], l: 0.29, r: 0.09, flat: 0.6, bend: 1.0, toward: [0.6, 0, -0.8] },
+      { a: [0.92, 0.62, 0.1], d: [0.7, -0.3, 0.1], l: 0.15, r: 0.075, flat: 0.6, bend: 0.8, toward: [1, -0.6, 0] },
+      { a: [0.55, 0.78, 0.5], d: [0.35, -0.7, 0.5], l: 0.12, r: 0.05, flat: 0.5, bend: 0.5, toward: [0.3, -1, 0.4], depth: 0.98 },
+    ],
+  };
+
+  // Android 17 (the visual pass, 2026-10-14): straight black hair to the jaw and the shoulders, parted in the middle
+  // (he wore Yamcha's short cut)
+  H.a17 = {
+    // (2026-10-16: a size up at the front — the skull showed between the fringe's points in white streaks)
+    cap: { tilt: -0.4, sx: 1.06, sy: 1.1, sz: 1.09 },
+    spikes: [
+      { a: [0, 0.4, -0.92], d: [0, -1, -0.3], l: 0.26, r: 0.085, flat: 0.5 },
+      { a: [0, 0.85, -0.45], d: [0, -1, -0.5], l: 0.2, r: 0.08, flat: 0.5 },
+    ],
+    mirror: [
+      { a: [0.16, 0.8, 0.58], d: [0.5, -0.9, 0.4], l: 0.13, r: 0.048, depth: 1, flat: 0.55 },
+      { a: [0.48, 0.74, 0.4], d: [0.45, -1, 0.3], l: 0.17, r: 0.055, flat: 0.6 },
+      { a: [0.88, 0.32, 0.05], d: [0.3, -1, 0.05], l: 0.27, r: 0.065, flat: 0.55 },
+      { a: [0.78, 0.25, -0.55], d: [0.3, -1, -0.3], l: 0.28, r: 0.07, flat: 0.55 },
+      { a: [0.4, 0.3, -0.85], d: [0.15, -1, -0.35], l: 0.27, r: 0.07, flat: 0.55 },
+    ],
+  };
+
+  // Super 17 (GT, the board p.82): 17's parting grown out — long strands down the back to the waist and two long locks
+  // falling in front of the shoulders
+  H.super17 = {
+    cap: H.a17.cap,
+    spikes: H.a17.spikes.concat([
+      { a: [0, 0.2, -0.98], d: [0, -1, -0.22], l: 0.62, r: 0.09, flat: 0.45 },
+      { a: [0, -0.2, -0.95], d: [0, -1, -0.12], l: 0.66, r: 0.08, flat: 0.45 },
+    ]),
+    mirror: H.a17.mirror.concat([
+      // the lock in front falls clear of the chest (its tip used to sink in and show as a dark mark on each pec)
+      { a: [0.92, 0.2, 0.25], d: [0.12, -1, 0.75], l: 0.44, r: 0.05, flat: 0.5 },
+      { a: [0.6, 0.15, -0.75], d: [0.25, -1, -0.2], l: 0.58, r: 0.075, flat: 0.5 },
+    ]),
+  };
+
   // ...and the same hair standing straight up when he turns it gold
   H.trunks_ssj = {
-    cap: { tilt: -0.5, sx: 1.05, sy: 1.1, sz: 1.05 },
+    // (2026-10-16: a size up at the front, the rim a little lower — the skull showed between the front spikes' roots)
+    cap: { tilt: -0.45, sx: 1.06, sy: 1.12, sz: 1.09 },
     spikes: [
       { a: [0, 1, 0.05], d: [0, 1, -0.15], l: 0.26, r: 0.075 },
       { a: [0, 0.55, -0.85], d: [0, 0.5, -1], l: 0.2, r: 0.065 },
@@ -351,7 +523,8 @@
   };
   // Chi-Chi: hair drawn back tight into a bun, with two locks framing the face
   H.chichi = {
-    cap: { tilt: -0.35, sx: 1.03, sy: 1.02, sz: 1.05 },
+    // (2026-10-16: the cap a size up — the skull showed through it in white streaks over the brow)
+    cap: { tilt: -0.35, sx: 1.06, sy: 1.08, sz: 1.08 },
     spikes: [
       // the bun: two short thick shapes on the crown at the back, so it reads round
       { a: [0, 0.7, -0.72], d: [0, 0.55, -1], l: 0.1, r: 0.085, flat: 1 },
@@ -362,6 +535,58 @@
       // a parted fringe
       { a: [0.3, 0.8, 0.52], d: [0.7, -0.4, 0.5], l: 0.09, r: 0.036, depth: 1 },
       { a: [-0.3, 0.8, 0.52], d: [-0.7, -0.4, 0.5], l: 0.09, r: 0.036, depth: 1 },
+    ],
+  };
+  // young Chi-Chi under her helmet (the board p.194, right): blunt bangs below the rim, long straight hair down the back
+  // and a lock by each cheek to the shoulder; nothing on top, where the helmet is
+  H.chichi_kid = {
+    cap: { tilt: -0.5, sx: 1.04, sy: 1.05, sz: 1.06 },
+    spikes: [
+      { a: [0, 0.6, 0.8], d: [0, -1, 0.3], l: 0.07, r: 0.075, depth: 0.99, flat: 0.35 },
+      { a: [0, 0.3, -0.95], d: [0, -1, -0.12], l: 0.42, r: 0.12, flat: 0.4 },
+    ],
+    mirror: [
+      { a: [0.3, 0.58, 0.76], d: [0.04, -1, 0.3], l: 0.07, r: 0.07, depth: 0.99, flat: 0.35 },
+      { a: [0.58, 0.5, 0.62], d: [0.1, -1, 0.25], l: 0.075, r: 0.06, depth: 0.99, flat: 0.4 },
+      { a: [0.86, 0.32, 0.3], d: [0.1, -1, 0.1], l: 0.24, r: 0.045, depth: 0.99, flat: 0.55 },
+      { a: [0.86, 0.3, -0.3], d: [0.2, -1, -0.12], l: 0.36, r: 0.085, flat: 0.45 },
+      { a: [0.55, 0.3, -0.8], d: [0.12, -1, -0.15], l: 0.4, r: 0.1, flat: 0.4 },
+    ],
+  };
+  // Chi-Chi at the 23rd World Tournament (the board p.194, left): long straight black hair, blunt bangs, a long lock by
+  // each side of the face to the chest, the rest gathered low at the back
+  H.chichi_long = {
+    cap: { tilt: -0.3, sx: 1.06, sy: 1.08, sz: 1.08 },
+    spikes: [
+      { a: [0, 0.82, 0.56], d: [0, -1, 0.26], l: 0.095, r: 0.054, depth: 0.99, flat: 0.45 },
+      { a: [0, 0.25, -0.97], d: [0, -1, -0.25], l: 0.14, r: 0.085, flat: 0.7 },
+      // the tail, low at the nape
+      { a: [0, -0.25, -0.95], d: [0, -1, -0.3], l: 0.3, r: 0.068, depth: 1.04, flat: 0.75 },
+    ],
+    mirror: [
+      { a: [0.28, 0.8, 0.54], d: [0.06, -1, 0.28], l: 0.09, r: 0.048, depth: 0.99, flat: 0.45 },
+      { a: [0.55, 0.72, 0.45], d: [0.12, -1, 0.25], l: 0.1, r: 0.044, depth: 0.99, flat: 0.5 },
+      { a: [0.86, 0.3, 0.22], d: [0.1, -1, 0.15], l: 0.33, r: 0.05, depth: 0.99, flat: 0.55 },
+      { a: [0.7, 0.2, -0.6], d: [0.25, -1, -0.3], l: 0.15, r: 0.07, flat: 0.7 },
+    ],
+  };
+  // Chi-Chi as Goku's wife (the owner's collage, 2026-10-16: her with Goku at home): the hair drawn back tight into a
+  // bun high on the back of the head (the bun and its band are head extras on the character), parted in the middle,
+  // the fringe falling to each side of the brow and a long lock by each cheek to the jaw. The old `chichi` (a ragged
+  // cap edge that let the forehead show through in white streaks) stays with Uub's mother
+  H.chichi_bun = {
+    // her younger self's cap and fringe (chichi_long): a smaller cap let the skull show through between the bangs
+    cap: H.chichi_long.cap,
+    spikes: [
+      { a: [0, 0.82, 0.56], d: [0, -1, 0.26], l: 0.095, r: 0.054, depth: 0.99, flat: 0.45 },
+      { a: [0, 0.2, -0.98], d: [0, -1, -0.2], l: 0.07, r: 0.08, flat: 0.6 },
+    ],
+    mirror: [
+      { a: [0.28, 0.8, 0.54], d: [0.06, -1, 0.28], l: 0.09, r: 0.048, depth: 0.99, flat: 0.45 },
+      { a: [0.55, 0.72, 0.45], d: [0.14, -1, 0.25], l: 0.1, r: 0.046, depth: 0.99, flat: 0.5 },
+      // the long lock in front of the ear, down to the jaw
+      { a: [0.84, 0.36, 0.3], d: [0.06, -1, 0.1], l: 0.24, r: 0.042, depth: 0.99, flat: 0.5 },
+      { a: [0.72, 0.3, -0.58], d: [0.15, -1, -0.2], l: 0.09, r: 0.07, flat: 0.62 },
     ],
   };
 
@@ -386,7 +611,8 @@
   // bit better"): the boy's own shape, gold, lifted a little and a little sharper — still the fringe
   // over the brow, nothing like the canopy of Super Saiyan 2
   H.gohan_teen_ssj = {
-    cap: { tilt: -0.52, sy: 1.02 },
+    // (2026-10-16: a size up at the front — the skull showed between the fringe's roots)
+    cap: { tilt: -0.5, sx: 1.06, sy: 1.1, sz: 1.09 },
     glow: 0x3a2800,
     spikes: [
       { a: [0.15, 1, 0.1], d: [0.2, 1, -0.12], l: 0.2, r: 0.06 },
@@ -424,8 +650,9 @@
       { a: [0, 0.3, -0.98], d: [0, 0.7, -1], l: 0.22, r: 0.056 },
       { a: [0.6, 0.2, -0.75], d: [0.66, 0.6, -0.8], l: 0.18, r: 0.05 },
       { a: [-0.6, 0.2, -0.75], d: [-0.68, 0.6, -0.8], l: 0.18, r: 0.05 },
-      // the one strand that falls over his forehead: the most recognisable line of the shape
-      { a: [0.1, 0.8, 0.6], d: [0.12, -0.88, 0.46], l: 0.16, r: 0.03, depth: 1 },
+      // the one strand that falls over his forehead: the most recognisable line of the shape (2026-10-16, the owner's
+      // collage: it ran so steeply down that it sank into the forehead and never showed — now it stands off the brow)
+      { a: [0.1, 0.8, 0.6], d: [0.14, -0.76, 0.66], l: 0.17, r: 0.032, depth: 1.02 },
     ],
   };
 
@@ -435,13 +662,15 @@
   // spiky, the crown pushed up and to the sides, a few points at the back, and the one strand that
   // falls on his forehead — not his father's head of hair and not the boy's bowl
   H.gohan_adult = {
-    cap: { tilt: -0.5, sx: 1.05, sy: 1.1, sz: 1.06 },
+    // (2026-10-16: the cap's front rim sat high and the skull showed through between the front points in white,
+    // rim-lit streaks over the brow — the cap a size up and its rim brought down to the hairline)
+    cap: { tilt: -0.42, sx: 1.07, sy: 1.12, sz: 1.1 },
     spikes: [
       { a: [0.05, 1, 0.12], d: [0.15, 1, -0.2], l: 0.14, r: 0.058 },
       { a: [0, 0.55, -0.85], d: [0, 0.25, -1], l: 0.12, r: 0.06 },
       { a: [0, 0.18, -1], d: [0, -0.45, -1], l: 0.09, r: 0.055 },
-      // the strand on the forehead
-      { a: [0.08, 0.8, 0.58], d: [0.12, -0.88, 0.46], l: 0.11, r: 0.028, depth: 1 },
+      // the strand on the forehead (standing off the brow: it ran down into the forehead and hardly showed)
+      { a: [0.08, 0.8, 0.58], d: [0.14, -0.76, 0.66], l: 0.12, r: 0.03, depth: 1.02 },
       { a: [-0.2, 0.84, 0.5], d: [-0.35, 0.3, 0.9], l: 0.07, r: 0.036, depth: 0.98 },
     ],
     mirror: [
@@ -486,16 +715,26 @@
     spikes: H.gohan_adult_ssj2.spikes.map((x, i) => (i === 3 ? x : { ...x, l: x.l * 0.78 })),
     mirror: H.gohan_adult_ssj2.mirror.map((x) => ({ ...x, l: x.l * 0.78, d: [x.d[0] * 1.15, x.d[1] * 0.85, x.d[2]] })),
   };
+  // Gohan Beast (Super Hero; the owner's moveset roadmap #63, 2026-10-17): the Super Saiyan 2 shape pushed far past
+  // itself — a towering mane swept up and back, nearly twice the length; the one strand on the forehead stays
+  H.gohan_beast = {
+    cap: { tilt: -0.5, sx: 1.08, sy: 1.14, sz: 1.1 },
+    glow: 0x2a2a3a,
+    spikes: H.gohan_adult_ssj2.spikes.map((x, i) => (i === 3 ? x : { ...x, l: x.l * 1.9, r: x.r * 1.12, d: [x.d[0] * 0.85, Math.max(0.6, x.d[1]) + 0.25, x.d[2] - 0.25] })),
+    mirror: H.gohan_adult_ssj2.mirror.map((x) => ({ ...x, l: x.l * 1.85, r: x.r * 1.1, d: [x.d[0] * 0.9, Math.max(0.55, x.d[1]) + 0.3, x.d[2] - 0.3] })),
+  };
 
   // VEGITO (the Potara, from the owner's reference sheet): Vegeta's hairline — the widow's peak and
   // the flame swept up off the forehead — shorter and raked back, with Goku's two front bangs
   // hanging over the forehead either side of the peak. Neither father's head of hair.
   const VEGITO_BANGS = [
-    { a: [0.2, 0.7, 0.68], d: [0.24, -0.86, 0.46], l: 0.125, r: 0.034, depth: 1.0 },
-    { a: [-0.16, 0.73, 0.66], d: [-0.22, -0.88, 0.44], l: 0.14, r: 0.037, depth: 1.0 },
+    // (2026-10-15: shorter and splayed a little outward, so they frame the eyes instead of crossing them)
+    { a: [0.2, 0.7, 0.68], d: [0.36, -0.84, 0.46], l: 0.105, r: 0.034, depth: 1.0 },
+    { a: [-0.16, 0.73, 0.66], d: [-0.34, -0.86, 0.44], l: 0.118, r: 0.037, depth: 1.0 },
   ];
   H.vegito = {
-    cap: { tilt: -0.3, sy: 1.08, sx: 1.03 },
+    // the cap rides up to Vegeta's high forehead (2026-10-15 visual pass: at -0.3 it came down over the brows and eyes)
+    cap: { tilt: -0.6, sy: 1.08, sx: 1.03 },
     spikes: H.vegeta.spikes
       .map((s, i) => (i === 0 ? s : { ...s, l: s.l * 0.86, d: [s.d[0], s.d[1] * 0.86, s.d[2] - 0.28] }))
       .concat(VEGITO_BANGS)
@@ -504,7 +743,7 @@
   };
   // ...Super Vegito: the flame stands straight up, gold, taller and wider — and the two bangs stay
   H.vegito_ssj = {
-    cap: { tilt: -0.3, sy: 1.1, sx: 1.05 },
+    cap: { tilt: -0.6, sy: 1.1, sx: 1.05 },
     glow: 0x4a3400,
     spikes: H.vegeta.spikes
       .map((s, i) => (i === 0 ? s : { ...s, l: s.l * 1.14, r: s.r * 0.94, d: [s.d[0] * 1.3, s.d[1], s.d[2] - 0.08] }))
@@ -576,6 +815,20 @@
       { a: [0.92, 0.05, -0.2], d: [1, 0.2, -0.3], l: 0.13, r: 0.05 },
     ],
   };
+  // Super Saiyan 4 Gogeta (GT, the board p.80): the gold form's spires in crimson with no glow, and a wild mane down
+  // over the back and the shoulders
+  H.gogeta_ssj4 = {
+    cap: H.gogeta_ssj.cap,
+    spikes: H.gogeta_ssj.spikes.concat([
+      { a: [0, 0.15, -1], d: [0, -1, -0.4], l: 0.44, r: 0.12 },
+      { a: [0, -0.2, -1], d: [0, -1, -0.28], l: 0.5, r: 0.11 },
+    ]),
+    mirror: H.gogeta_ssj.mirror.concat([
+      { a: [0.5, 0.2, -0.82], d: [0.4, -1, -0.38], l: 0.44, r: 0.11 },
+      { a: [0.85, 0.1, -0.45], d: [0.55, -1, -0.2], l: 0.36, r: 0.1 },
+      { a: [0.9, 0.2, 0.2], d: [0.45, -1, 0.12], l: 0.22, r: 0.055 },
+    ]),
+  };
 
   // THE END OF Z (Age 784). Pan at four: a short, round black cut, three short locks over the brow,
   // the back cut to the nape (her bandana sits over it — outfit.headband)
@@ -599,7 +852,8 @@
   };
   // Trunks at nineteen: the lavender hair parted down the middle and falling to the jaw at the sides
   H.trunks_teen = {
-    cap: { tilt: -0.35, sx: 1.04, sy: 1.04, sz: 1.04 },
+    // (2026-10-16: a size up at the front, as his older self's)
+    cap: { tilt: -0.35, sx: 1.06, sy: 1.1, sz: 1.09 },
     spikes: [
       { a: [0, 0.9, 0.35], d: [0, 0.4, 0.7], l: 0.06, r: 0.055, flat: 0.7 },
       { a: [0, 0.45, -0.9], d: [0, -1, -0.45], l: 0.17, r: 0.075, flat: 0.55 },
@@ -647,17 +901,19 @@
   };
 
   // Kid Trunks: his mother's colour, cut in a straight fringe.
+  // (2026-10-16: the fringe's pieces wider and flatter so they close, the cap a size up at the front — the skull showed
+  // between them in white, rim-lit streaks)
   H.trunks_kid = {
-    cap: { tilt: -0.3, sx: 1.05, sy: 1.02, sz: 1.06 },
+    cap: { tilt: -0.3, sx: 1.06, sy: 1.06, sz: 1.09 },
     spikes: [
       { a: [0, 0.92, 0.3], d: [0, 0.3, 0.75], l: 0.08, r: 0.055, flat: 0.75 },
       { a: [0, 0.4, -0.92], d: [0, -0.7, -0.7], l: 0.14, r: 0.062, flat: 0.6 },
-      { a: [-0.05, 0.74, 0.66], d: [-0.08, -1, 0.35], l: 0.12, r: 0.05, depth: 1, flat: 0.6 },
+      { a: [-0.05, 0.74, 0.66], d: [-0.08, -1, 0.35], l: 0.12, r: 0.06, depth: 1, flat: 0.45 },
     ],
     mirror: [
       { a: [0.5, 0.82, 0.28], d: [0.42, -0.3, 0.7], l: 0.1, r: 0.05, flat: 0.7 },
       { a: [0.88, 0.25, -0.15], d: [0.7, -0.85, -0.15], l: 0.14, r: 0.055, flat: 0.6 },
-      { a: [0.36, 0.72, 0.6], d: [0.34, -1, 0.42], l: 0.11, r: 0.045, depth: 1, flat: 0.6 },
+      { a: [0.36, 0.72, 0.6], d: [0.34, -1, 0.42], l: 0.11, r: 0.056, depth: 1, flat: 0.45 },
     ],
   };
 
@@ -706,7 +962,8 @@
   // brows, a lock down each side of the face, and two long tails tied low behind the ears (the ties
   // are gold) that hang over the shoulders to the chest
   H.videl = {
-    cap: { tilt: -0.28, sx: 1.05, sy: 1.1, sz: 1.06 },
+    // (2026-10-16: a size up at the front — the skull showed between the bangs in white, rim-lit streaks)
+    cap: { tilt: -0.28, sx: 1.06, sy: 1.12, sz: 1.09 },
     spikes: [
       // the bangs: straight, down to the brows
       { a: [0, 0.82, 0.56], d: [0, -1, 0.28], l: 0.095, r: 0.052, depth: 0.98, flat: 0.5 },
@@ -759,6 +1016,8 @@
 
   // hair kept flat under a helmet: only the skull cap, which sits inside the dome
   H.cropped = { cap: { tilt: -0.5, sx: 0.98, sy: 0.96, sz: 0.98 }, spikes: [] };
+  // a close cap over the whole crown (Android 19's black cap): it stands off the skull, so no white shows through its edge
+  H.skullcap = { cap: { tilt: -0.42, sx: 1.06, sy: 1.1, sz: 1.08 }, spikes: [] };
 
   /* ---- Buu saga, Milestone B ---- */
 
@@ -770,6 +1029,32 @@
       { a: [0, 1, 0.1], d: [0, 1, 0.1], l: 0.15, r: 0.056, flat: 0.45 },
       { a: [0, 0.92, -0.35], d: [0, 1, -0.35], l: 0.13, r: 0.052, flat: 0.45 },
       { a: [0, 0.6, -0.8], d: [0, 0.6, -0.9], l: 0.1, r: 0.048, flat: 0.45 },
+    ],
+  };
+
+  // Zamasu (2026-10-15 defects batch, the board p.234): his own hair, not the Kais' crest of spikes — one thick white
+  // swoop up off the front of the crown and back over it, a lower lock behind it, a lock falling at the side of the brow
+  // (curled locks keep their true curve: `curl`)
+  // (2026-10-15, the owner's reference: a narrow white strip from the brow to the nape, the sides bare, and ONE tall
+  // swoop rising off the front of it, leaning to his right and curling over at the tip — it was two thick curled locks
+  // heaped into a white bun)
+  H.zamasu = {
+    cap: { tilt: -0.2, sx: 0.46, sy: 1.03, sz: 1.03, partial: true },
+    spikes: [
+      { a: [0, 0.9, 0.44], d: [-0.05, 1, 0.02], l: 0.42, r: 0.072, bend: 1.15, curl: true, toward: [-1, 0, -0.25] },
+      { a: [0, 0.98, 0.05], d: [0, 0.6, -1], l: 0.16, r: 0.07, flat: 0.55, bend: 0.5, toward: [0, -1, 0] },
+    ],
+  };
+
+  // Android 16 (the visual pass, 2026-10-14): a low, broad red crest from the brow to the nape — he wore a Frieza
+  // soldier's little crest
+  H.a16 = {
+    cap: { tilt: -0.3, sx: 0.5, sy: 1.04, sz: 1.04, partial: true },
+    spikes: [
+      { a: [0, 0.98, 0.5], d: [0, 1, 0.5], l: 0.07, r: 0.06, flat: 0.5 },
+      { a: [0, 1, 0.15], d: [0, 1, 0.1], l: 0.085, r: 0.066, flat: 0.5 },
+      { a: [0, 0.95, -0.3], d: [0, 1, -0.3], l: 0.08, r: 0.066, flat: 0.5 },
+      { a: [0, 0.7, -0.7], d: [0, 0.7, -0.8], l: 0.07, r: 0.06, flat: 0.5 },
     ],
   };
 
@@ -798,34 +1083,237 @@
   };
 
   // Dabura: white hair swept straight back from a widow's peak.
+  // Dabura (the reference pass, 2026-10-14, owner's visual reference p.38): no mane — a narrow strip of black hair
+  // slicked from a peak on the brow over the crown, the red skull bare either side of it (it was a white swept mane)
   H.dabura = {
-    cap: { tilt: -0.5, sx: 1.02, sy: 1.0, sz: 1.04 },
+    cap: { tilt: -0.7, sx: 0.5, sy: 1.04, sz: 1.05, partial: true },
     spikes: [
-      { a: [0, 0.8, 0.5], d: [0, 0.35, -1], l: 0.14, r: 0.06, flat: 0.6 },
-      { a: [0, 0.6, -0.78], d: [0, -0.3, -1], l: 0.12, r: 0.06, flat: 0.6 },
-    ],
-    mirror: [
-      { a: [0.5, 0.75, 0.3], d: [0.35, 0.2, -1], l: 0.13, r: 0.055, flat: 0.6 },
-      { a: [0.85, 0.3, -0.3], d: [0.6, -0.4, -0.8], l: 0.11, r: 0.05, flat: 0.6 },
+      { a: [0, 0.78, 0.6], d: [0, -1, 0.45], l: 0.05, r: 0.035, depth: 1, flat: 0.45 },
     ],
   };
 
   // Mr. Satan: a big black afro.
+  // Mr. Satan's afro (the owner's collage, 2026-10-16: a great round mass wider than his face, over the crown and out
+  // round the back and sides) — round masses, not cones; it was a close bob of flat points. Gokule shares it
   H.satan = {
     cap: { tilt: -0.3, sx: 1.18, sy: 1.14, sz: 1.2 },
     spikes: [
-      { a: [0, 1, 0], d: [0, 1, 0], l: 0.08, r: 0.13, flat: 1 },
-      { a: [0, 0.5, -0.86], d: [0, 0.3, -1], l: 0.08, r: 0.12, flat: 1 },
+      { shape: 'ball', a: [0, 0.92, -0.2], d: [0, 1, 0], l: 0.15, r: 0.19, flat: 0.92, depth: 0.72 },
+      { shape: 'ball', a: [0, 0.42, -0.9], d: [0, 1, 0], l: 0.16, r: 0.17, flat: 0.8, depth: 0.78 },
     ],
     mirror: [
-      { a: [0.7, 0.7, 0], d: [0.8, 0.6, 0], l: 0.08, r: 0.12, flat: 1 },
-      { a: [0.5, 0.8, 0.4], d: [0.5, 0.8, 0.3], l: 0.07, r: 0.1, flat: 1 },
-      { a: [0.6, 0.6, -0.55], d: [0.6, 0.4, -0.7], l: 0.08, r: 0.11, flat: 1 },
+      { shape: 'ball', a: [0.82, 0.52, -0.2], d: [0, 1, 0], l: 0.14, r: 0.1, flat: 1.5, depth: 0.88 },
     ],
   };
+  // the same afro on Goku's smaller head (Gokule): the masses are sized in metres, so they shrink with the head
+  const shrunk = (sp) => ({ ...sp, l: sp.l * 0.8, r: sp.r * 0.8 });
+  H.satan_small = { cap: H.satan.cap, spikes: H.satan.spikes.map(shrunk), mirror: H.satan.mirror.map(shrunk) };
 
   // bald: nothing but the shape of the skull
   H.bald = { cap: { tilt: -0.5, sx: 0.001, sy: 0.001, sz: 0.001, partial: true }, spikes: [] };
+
+  /* ---------------- MOVIE 2 · SUPER BROLY (the owner's reference collages, 2026-10-10) ---------------- */
+  // BROLY: a wild, untamed black mane — a crown of thick spikes thrown up and back, ragged locks to the
+  // shoulder blades and over the ears, heavy strands hanging over the forehead. Never combed: every lock
+  // points a slightly different way. The long locks swing with the head (hair gravity).
+  // (2026-10-15 Broly pass: every lock CURVES now — `bend`, G.lock — and a second layer of thinner strands sits between
+  // the thick ones, so the mane reads as hair, not as a handful of solid cones; the silhouette is unchanged)
+  H.broly = {
+    cap: { tilt: -0.46, sx: 1.08, sy: 1.1, sz: 1.1 },
+    gravity: 0.35,
+    spikes: [
+      { a: [0.1, 1, 0.05], d: [0.18, 0.92, -0.42], l: 0.22, r: 0.078, bend: 0.45, toward: [0, 0, -1] },
+      { a: [-0.2, 1, 0], d: [-0.26, 0.86, -0.5], l: 0.24, r: 0.078, bend: 0.5, toward: [0, 0, -1] },
+      { a: [0.02, 0.88, 0.38], d: [0.06, 1, -0.05], l: 0.17, r: 0.064, depth: 0.96, bend: 0.4, toward: [0, 0, -1] },
+      // the mane down the back
+      { a: [0, 0.42, -0.9], d: [0.04, -0.88, -0.48], l: 0.4, r: 0.12, bend: 0.5 },
+      { a: [0, -0.05, -1], d: [-0.05, -1, -0.32], l: 0.44, r: 0.11, bend: 0.35 },
+      { a: [0.12, 0.2, -0.98], d: [0.1, -0.9, -0.5], l: 0.38, r: 0.05, flat: 0.5, bend: 0.8, toward: [0, -1, 0.3] },
+      // the strands over the forehead: uneven, one thick lock off the left brow
+      { a: [0.06, 0.72, 0.68], d: [0.12, -0.84, 0.52], l: 0.12, r: 0.042, depth: 1.0, bend: 0.7, toward: [0, -1, 0.6] },
+      { a: [-0.28, 0.68, 0.64], d: [-0.36, -0.8, 0.46], l: 0.13, r: 0.044, depth: 1.0, bend: 0.7, toward: [-0.3, -1, 0.5] },
+      { a: [0.36, 0.7, 0.58], d: [0.48, -0.72, 0.46], l: 0.1, r: 0.038, depth: 1.0, bend: 0.7, toward: [0.3, -1, 0.5] },
+    ],
+    mirror: [
+      { a: [0.46, 0.86, 0.1], d: [0.62, 0.74, -0.32], l: 0.21, r: 0.07, bend: 0.5, toward: [0.4, 0, -1] },
+      { a: [0.8, 0.5, -0.05], d: [0.96, 0.22, -0.36], l: 0.2, r: 0.066, bend: 0.55 },
+      // over the ears and hanging down the sides of the neck
+      { a: [0.92, 0.12, -0.28], d: [0.72, -0.8, -0.36], l: 0.31, r: 0.072, bend: 0.45 },
+      // the back locks
+      { a: [0.55, 0.36, -0.75], d: [0.46, -0.86, -0.46], l: 0.42, r: 0.1, bend: 0.5 },
+      { a: [0.8, -0.08, -0.55], d: [0.42, -1, -0.26], l: 0.36, r: 0.086, bend: 0.4 },
+      { a: [0.66, 0.66, -0.36], d: [0.86, 0.32, -0.52], l: 0.2, r: 0.064, bend: 0.6 },
+      { a: [0.3, 0.7, -0.62], d: [0.34, 0.5, -0.82], l: 0.19, r: 0.07, bend: 0.6 },
+      // the second layer: thin strands between the thick locks
+      { a: [0.32, 0.55, -0.8], d: [0.3, -0.7, -0.65], l: 0.4, r: 0.048, flat: 0.5, bend: 0.75, toward: [0.2, -1, 0.2] },
+      { a: [0.72, 0.32, -0.55], d: [0.62, -0.75, -0.4], l: 0.34, r: 0.044, flat: 0.5, bend: 0.7 },
+      { a: [0.6, 0.82, -0.1], d: [0.8, 0.6, -0.45], l: 0.18, r: 0.038, flat: 0.55, bend: 0.7, toward: [0.5, -0.3, -1] },
+    ],
+  };
+  // SUPER SAIYAN BROLY: the same mass driven UP — taller, harder spikes standing off the crown and sweeping
+  // back, the back locks lifted off the shoulders; golden-yellow (the form's look sets the colour)
+  H.broly_ssj = {
+    cap: { tilt: -0.42, sx: 1.08, sy: 1.12, sz: 1.1 },
+    glow: 0x3a3200,
+    spikes: [
+      { a: [0, 1, 0], d: [0.05, 1, -0.32], l: 0.36, r: 0.088, bend: 0.3, toward: [0, 0, -1] },
+      { a: [0, 0.66, -0.75], d: [0, 0.74, -0.92], l: 0.32, r: 0.094, bend: 0.3, toward: [0, 0, -1] },
+      { a: [0, 0.15, -1], d: [0, 0.28, -1], l: 0.26, r: 0.088, bend: 0.25 },
+      { a: [0.04, 0.76, 0.62], d: [0.1, -0.8, 0.55], l: 0.13, r: 0.042, depth: 1.0, bend: 0.5, toward: [0, -1, 0.6] },
+      { a: [-0.24, 0.72, 0.6], d: [-0.3, -0.78, 0.5], l: 0.12, r: 0.04, depth: 1.0, bend: 0.5, toward: [-0.3, -1, 0.5] },
+    ],
+    mirror: [
+      { a: [0.35, 0.95, 0], d: [0.38, 1, -0.32], l: 0.34, r: 0.08, bend: 0.3, toward: [0.3, 0, -1] },
+      { a: [0.66, 0.72, -0.05], d: [0.78, 0.78, -0.38], l: 0.31, r: 0.076, bend: 0.3, toward: [0.4, 0, -1] },
+      { a: [0.88, 0.35, -0.15], d: [1, 0.42, -0.48], l: 0.27, r: 0.07, bend: 0.25 },
+      { a: [0.46, 0.45, -0.75], d: [0.56, 0.52, -0.88], l: 0.3, r: 0.084, bend: 0.25 },
+      { a: [0.62, 0.08, -0.75], d: [0.72, 0.16, -0.92], l: 0.24, r: 0.072, bend: 0.25 },
+      { a: [0.9, -0.1, -0.4], d: [1, -0.05, -0.6], l: 0.2, r: 0.064, bend: 0.3 },
+      // thinner strands in between
+      { a: [0.2, 0.98, -0.25], d: [0.22, 0.95, -0.5], l: 0.3, r: 0.05, flat: 0.55, bend: 0.4, toward: [0, 0, -1] },
+      { a: [0.58, 0.6, -0.5], d: [0.65, 0.62, -0.7], l: 0.27, r: 0.046, flat: 0.55, bend: 0.4, toward: [0.3, 0, -1] },
+    ],
+  };
+  // FULL POWER: everything bigger and wilder — the spikes half as long again, flared wider, thicker at the
+  // root, and burning from inside (an electric lime-green in the form's look)
+  H.broly_full = (() => {
+    const k = 1.32, spread = 1.22;
+    const grow = (s) => ({ ...s, l: s.l * (s.depth === 1.0 ? 1.05 : k), r: s.r * (s.depth === 1.0 ? 1 : 1.12), d: [s.d[0] * (s.depth === 1.0 ? 1 : spread), s.d[1], s.d[2]] });
+    // ...and the Full Power mane also falls: long locks down the back under the risen crown (the Super film's look —
+    // the Z film's Legendary hair, broly_lssj below, is all thrown UP)
+    const fall = [
+      { a: [0.2, -0.1, -0.98], d: [0.15, -1, -0.45], l: 0.46, r: 0.09, bend: 0.4 },
+      { a: [0.55, 0.05, -0.8], d: [0.4, -1, -0.5], l: 0.42, r: 0.08, bend: 0.45 },
+      { a: [0.85, 0.05, -0.45], d: [0.55, -1, -0.3], l: 0.36, r: 0.07, bend: 0.4 },
+    ];
+    return { cap: { tilt: -0.42, sx: 1.1, sy: 1.14, sz: 1.12 }, glow: 0x0e3a04, gravity: 0.3, spikes: H.broly_ssj.spikes.map(grow), mirror: H.broly_ssj.mirror.map(grow).concat(fall) };
+  })();
+
+  /* ---------------- THE Z MOVIES' BROLY (broly_z.js, the board p.220–222): his OWN hair, never the Super film's ---------------- */
+  // BASE: a long, wild black mane under the gold circlet — a few thick locks thrown up off the crown and curving back,
+  // the mass falling down the back to the shoulder blades, locks over the ears, two short ones over the circlet
+  H.broly_z = {
+    cap: { tilt: -0.5, sx: 1.08, sy: 1.1, sz: 1.12 },
+    gravity: 0.35,
+    spikes: [
+      { a: [0, 1, 0.05], d: [0.05, 1, -0.35], l: 0.2, r: 0.075, bend: 0.55, toward: [0, 0, -1] },
+      { a: [0, 0.85, -0.45], d: [0, 0.7, -0.8], l: 0.22, r: 0.08, bend: 0.65 },
+      { a: [0, 0.35, -0.95], d: [0, -0.6, -0.8], l: 0.42, r: 0.11, bend: 0.6 },
+      { a: [0, -0.1, -1], d: [0, -0.9, -0.45], l: 0.48, r: 0.1, bend: 0.4 },
+      { a: [0.05, 0.72, 0.68], d: [0.1, -0.6, 0.8], l: 0.11, r: 0.04, depth: 1.0, bend: 0.8, toward: [0, -1, 0.4] },
+      { a: [-0.25, 0.7, 0.65], d: [-0.3, -0.5, 0.8], l: 0.1, r: 0.038, depth: 1.0, bend: 0.8, toward: [-0.3, -1, 0.4] },
+    ],
+    mirror: [
+      { a: [0.4, 0.9, 0.05], d: [0.5, 0.85, -0.3], l: 0.19, r: 0.068, bend: 0.55, toward: [0.3, 0, -1] },
+      { a: [0.78, 0.55, 0.05], d: [0.9, 0.4, -0.3], l: 0.17, r: 0.06, bend: 0.6 },
+      { a: [0.92, 0.15, -0.2], d: [0.65, -0.75, -0.3], l: 0.3, r: 0.07, bend: 0.5 },
+      { a: [0.5, 0.45, -0.75], d: [0.4, -0.6, -0.7], l: 0.44, r: 0.095, bend: 0.6 },
+      { a: [0.75, -0.05, -0.6], d: [0.45, -0.9, -0.35], l: 0.4, r: 0.085, bend: 0.45 },
+      // the second layer: thin strands
+      { a: [0.3, 0.6, -0.8], d: [0.25, -0.3, -0.95], l: 0.36, r: 0.05, flat: 0.5, bend: 0.9 },
+      { a: [0.62, 0.25, -0.72], d: [0.5, -0.55, -0.65], l: 0.32, r: 0.045, flat: 0.5, bend: 0.8 },
+      { a: [0.2, 0.95, -0.2], d: [0.25, 0.8, -0.6], l: 0.16, r: 0.04, flat: 0.6, bend: 0.7, toward: [0, -0.3, -1] },
+    ],
+  };
+  // SUPER SAIYAN (the restrained form the circlet holds): stiff and upright like any Super Saiyan's, shorter than his
+  // mane, the locks barely bending — controlled; the board's p.221 colours it blue-violet (the form's look)
+  H.broly_z_ssj = {
+    cap: { tilt: -0.46, sx: 1.07, sy: 1.12, sz: 1.08 },
+    spikes: [
+      { a: [0, 1, 0], d: [0.05, 1, -0.2], l: 0.3, r: 0.085, bend: 0.15, toward: [0, 0, -1] },
+      { a: [0, 0.66, -0.75], d: [0, 0.7, -0.8], l: 0.26, r: 0.088, bend: 0.15, toward: [0, 0, -1] },
+      { a: [0, 0.15, -1], d: [0, 0.15, -1], l: 0.2, r: 0.08, bend: 0.15, toward: [0, 1, 0] },
+      { a: [0.05, 0.74, 0.64], d: [0.1, -0.5, 0.85], l: 0.1, r: 0.04, depth: 1.0, bend: 0.5, toward: [0, -1, 0.3] },
+      { a: [-0.25, 0.72, 0.62], d: [-0.3, -0.45, 0.85], l: 0.09, r: 0.036, depth: 1.0, bend: 0.5, toward: [-0.3, -1, 0.3] },
+    ],
+    mirror: [
+      { a: [0.35, 0.95, 0], d: [0.35, 1, -0.2], l: 0.28, r: 0.078, bend: 0.15, toward: [0.3, 0, -1] },
+      { a: [0.68, 0.72, -0.05], d: [0.75, 0.8, -0.3], l: 0.24, r: 0.072, bend: 0.15 },
+      { a: [0.9, 0.35, -0.15], d: [1, 0.4, -0.45], l: 0.2, r: 0.066, bend: 0.15 },
+      { a: [0.5, 0.45, -0.75], d: [0.55, 0.55, -0.85], l: 0.24, r: 0.08, bend: 0.15 },
+      { a: [0.7, 0.05, -0.7], d: [0.75, 0.1, -0.9], l: 0.18, r: 0.07, bend: 0.15 },
+    ],
+  };
+  // LEGENDARY SUPER SAIYAN (the Z film): the whole mass thrown UP and back — the tallest, widest Saiyan hair in the game,
+  // a crown of long locks curving back over each other and the back locks curling up instead of falling, layered with
+  // thinner strands; green-gold and lit from inside (the form's look)
+  H.broly_lssj = {
+    cap: { tilt: -0.4, sx: 1.12, sy: 1.16, sz: 1.14 },
+    glow: 0x1a3a04,
+    spikes: [
+      { a: [0, 1, 0.1], d: [0.04, 1, -0.25], l: 0.5, r: 0.1, bend: 0.35, toward: [0, 0, -1] },
+      { a: [0, 0.8, -0.55], d: [0, 0.85, -0.75], l: 0.48, r: 0.11, bend: 0.3, toward: [0, 0, -1] },
+      { a: [0, 0.3, -0.95], d: [0, 0.45, -1], l: 0.42, r: 0.1, bend: 0.3, toward: [0, 1, -0.3] },
+      { a: [0, -0.15, -1], d: [0, 0.1, -1], l: 0.34, r: 0.09, bend: 0.3, toward: [0, 1, 0] },
+      { a: [0.05, 0.75, 0.65], d: [0.1, -0.7, 0.6], l: 0.12, r: 0.045, depth: 1.0, bend: 0.5, toward: [0, -1, 0.5] },
+      { a: [-0.22, 0.72, 0.62], d: [-0.3, -0.65, 0.6], l: 0.11, r: 0.042, depth: 1.0, bend: 0.5, toward: [-0.3, -1, 0.5] },
+    ],
+    mirror: [
+      { a: [0.35, 0.95, 0.05], d: [0.38, 1, -0.25], l: 0.48, r: 0.095, bend: 0.3, toward: [0.3, 0, -1] },
+      { a: [0.65, 0.75, 0], d: [0.78, 0.85, -0.3], l: 0.44, r: 0.09, bend: 0.35, toward: [0.5, 0, -1] },
+      { a: [0.9, 0.38, -0.12], d: [1, 0.55, -0.45], l: 0.38, r: 0.085, bend: 0.3, toward: [0, 1, 0] },
+      { a: [0.5, 0.48, -0.75], d: [0.55, 0.7, -0.85], l: 0.44, r: 0.1, bend: 0.3, toward: [0, 1, -0.2] },
+      { a: [0.7, 0.05, -0.7], d: [0.8, 0.25, -0.85], l: 0.36, r: 0.085, bend: 0.3, toward: [0, 1, 0] },
+      { a: [0.95, -0.1, -0.25], d: [1, 0.1, -0.4], l: 0.26, r: 0.07, bend: 0.3, toward: [0, 1, 0] },
+      // the second layer: thinner locks between the thick ones
+      { a: [0.22, 0.98, -0.25], d: [0.25, 0.95, -0.5], l: 0.42, r: 0.06, flat: 0.55, bend: 0.4, toward: [0, 0, -1] },
+      { a: [0.45, 0.75, -0.5], d: [0.5, 0.8, -0.75], l: 0.4, r: 0.055, flat: 0.55, bend: 0.4, toward: [0.2, 0, -1] },
+      { a: [0.8, 0.55, -0.4], d: [0.95, 0.65, -0.5], l: 0.34, r: 0.05, flat: 0.55, bend: 0.4, toward: [0, 1, 0] },
+    ],
+  };
+  // PARAGUS: an old Saiyan's spiky hair swept back off a high forehead (approximate): no fringe over the eyes,
+  // the spikes thrown back and out, a few down the nape
+  H.paragus = {
+    cap: { tilt: -0.78, sx: 1.06, sy: 1.06, sz: 1.08 },
+    spikes: [
+      { a: [0.05, 0.92, -0.3], d: [0.08, 0.6, -1], l: 0.2, r: 0.07 },
+      { a: [-0.15, 0.9, -0.35], d: [-0.2, 0.55, -1], l: 0.21, r: 0.07 },
+      { a: [0, 0.4, -0.95], d: [0, -0.2, -1], l: 0.18, r: 0.075 },
+      { a: [0, -0.1, -1], d: [0, -0.7, -0.7], l: 0.13, r: 0.06 },
+    ],
+    mirror: [
+      { a: [0.42, 0.8, -0.3], d: [0.55, 0.45, -0.85], l: 0.19, r: 0.064 },
+      { a: [0.75, 0.5, -0.35], d: [0.95, 0.2, -0.6], l: 0.17, r: 0.058 },
+      { a: [0.86, 0.15, -0.45], d: [0.8, -0.35, -0.6], l: 0.14, r: 0.052 },
+      { a: [0.45, 0.3, -0.85], d: [0.5, -0.1, -0.95], l: 0.16, r: 0.06 },
+    ],
+  };
+  // Vegeta, SUPER SAIYAN BLUE: the Super Saiyan shape, cyan, lit from inside
+  H.vegeta_blue = Object.assign({}, H.vegeta_ssj, { glow: 0x0a2a48 });
+  // ...and SUPER SAIYAN GOD: his own shape, a little slimmer and tighter (the leaner god body), ruby red
+  H.vegeta_god = scaled(H.vegeta, 0.97, 0.92);
+  H.vegeta_god.glow = 0x2a0408;
+  // Goku and Gogeta, SUPER SAIYAN BLUE: the Super Saiyan shapes in cyan, lit from inside (Movie 2)
+  H.goku_blue = Object.assign({}, H.goku_ssj, { glow: 0x0a2a48 });
+  // the Super film's Blue Gogeta (the owner's collage: him against Broly): not Fusion Reborn's gold spires in blue — the
+  // same locks swept back off the face and lying lower, sleeker; the peak and the bang stay
+  const sweptBack = (s) => (s === GOGETA_PEAK || s.d[1] < 0 ? s : { ...s, l: s.l * 0.94, d: [s.d[0] * 0.85, s.d[1] * 0.72, s.d[2] - 0.45] });
+  H.gogeta_blue = { cap: H.gogeta_ssj.cap, glow: 0x0a2a48, spikes: H.gogeta_ssj.spikes.map(sweptBack), mirror: H.gogeta_ssj.mirror.map(sweptBack) };
+  // GINE (Movie 2 prologue): Goku's mother — his spikes, short and soft, a woman's smaller crown (approximate)
+  H.gine = scaled(H.goku, 0.72, 0.62);
+  // Kid Goku (the owner's collage): the same shape on the boy's bigger head, and as big again on it as the man's is
+  H.goku_kid = scaled(H.goku, 1.22, 1.06);
+  /**
+   * Goku's god forms were his base hair in another colour (the owner's collage, 2026-10-16, shows them apart): the
+   * crown's spikes swept up and back instead of out to the sides by `k`, a little longer and thinner (`thin`); the
+   * nape stays down and the bangs shorten. Ultra Instinct the most lifted (the collage's Mastered form from behind),
+   * the Sign half-way, Super Saiyan God only a little and slimmer.
+   */
+  const lifted = (k, thin) => ({
+    cap: H.goku.cap,
+    spikes: H.goku.spikes.map((s, i) => {
+      if (i >= 11 && i <= 14) return { ...s, l: s.l * (1 - 0.25 * k), r: s.r * thin };
+      if (s.a[1] < 0.3) return { ...s, r: s.r * thin };
+      return { ...s, l: s.l * (1 + 0.1 * k), r: s.r * thin, d: [s.d[0] * (1 - 0.45 * k), s.d[1] + k * (1 - s.d[1]) * 0.85, s.d[2] * (1 - 0.2 * k)] };
+    }),
+  });
+  // ...and their material: Mastered's silver hair lit from inside (an emissive glow, as the golden forms have), the
+  // Sign's near-black hair with a cold blue sheen in it
+  H.goku_ui = Object.assign(lifted(1, 0.9), { glow: 0x232b44 });
+  H.goku_ui_sign = Object.assign(lifted(0.5, 0.96), { glow: 0x070b16 });
+  H.goku_god = lifted(0.3, 0.84);
+  // KING VEGETA: his son's flame, a little lower and wider (the beard is a head extra on the character)
+  H.king_vegeta = scaled(H.vegeta, 1.04, 0.94);
 
   /**
    * The Majin mark: Babidi's "M", painted on the forehead as four flat strokes.
@@ -852,8 +1340,10 @@
   SL.data.majinFace = function (color = 0x2a1a1a) {
     const s = { shape: 'line', r: 0.006, flat: 0.25, depth: 1.004, color };
     const out = [];
+    // (2026-10-16, the owner's collage: the creases run under each eye from beside the nose out to the cheekbone; they
+    // sat at the eyes' own height and hid behind the eye whites)
     for (const k of [1, -1]) {
-      out.push(Object.assign({ a: [k * 0.3, -0.1, 0.95], d: [k * 1, 0.28, 0.08], l: 0.032 }, s));
+      out.push(Object.assign({ a: [k * 0.2, -0.24, 0.95], d: [k * 1, 0.3, -0.1], l: 0.04 }, s));
     }
     return out;
   };

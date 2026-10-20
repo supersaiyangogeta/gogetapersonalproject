@@ -76,6 +76,9 @@
       }, ARMS);
     },
     // standing with the arms folded
+    // looking down from above (the Future Trunks Saga entrance, the owner's recollection 2026-10-19): floating upright,
+    // the arms folded, the chin down at whoever is below
+    vg_overlook: (t) => Object.assign({}, poses.vg_floatArms(t), { neck: [8, 0, 0], head: [20, -4, 0] }),
     vg_armsStand: (t) => {
       const b = Math.sin(t * 1.4);
       return Object.assign({
@@ -260,6 +263,27 @@
     vg_xKnee: Object.assign({ root: { y: 0.03, rx: 10 }, chest: [4, 0, 0], head: [8, 0, 0], thighL: [-118, 0, 6], kneeL: [140, 0, 0], thighR: [10, 0, -8], kneeR: [20, 0, 0], hands: ['fist', 'fist'] }, ARMS),
     vg_xAxeW: Object.assign({ root: { y: 0.04, rx: -14 }, spine: [-8, 0, 0], chest: [-12, 0, 0], head: [10, 0, 0], thighR: [-170, 0, -8], kneeR: [4, 0, 0], thighL: [8, 0, 6], kneeL: [16, 0, 0], hands: ['fist', 'fist'] }, ARMS),
     vg_xAxe: Object.assign({ root: { y: -0.06, rx: 12 }, spine: [10, 0, 0], chest: [8, 0, 0], head: [16, 0, 0], thighR: [-64, 0, -6], kneeR: [6, 0, 0], footR: [20, 0, 0], thighL: [4, 0, 6], kneeL: [34, 0, 0], hands: ['fist', 'fist'] }, ARMS),
+    // the feint (ft_vegito, the owner's Spirit Sword trap): flat on his back in the rubble, one arm over his eyes, the chest
+    // heaving as if he were spent — the right hand at his side, where the blade will come from
+    vg_feint: (t) => {
+      const b = Math.sin(t * 5.5);
+      return {
+        root: { y: -0.84 + b * 0.006, rx: -90 },
+        spine: [b * 1.5, 0, 0], chest: [b * 3, 0, 0], head: [-4, 22, 0],
+        shoulderL: [-150, 0, 34], elbowL: [-118, 0, 0], shoulderR: [-10, 0, -16], elbowR: [-14, 0, 0],
+        thighL: [-4, 0, 6], kneeL: [22, 0, 0], thighR: [0, 0, -6], kneeR: [6, 0, 0],
+        hands: ['open', 'open'],
+      };
+    },
+    // up on one knee, the right hand held up and forward, two fingers out, the blade running level-ish from the wrist through
+    // whoever is on it; the head tilted, mocking
+    vg_kneelRaise: {
+      root: { y: -0.44, rx: 2 },
+      spine: [-2, 6, 0], chest: [-6, 8, 0], head: [-12, -10, 10],
+      shoulderR: [-114, 0, -6], elbowR: [-4, 0, 0], handR: [-4, 0, 0], shoulderL: [-26, 0, 14], elbowL: [-56, 0, 0],
+      thighL: [-90, 4, 8], kneeL: [92, 0, 0], thighR: [14, 0, -8], kneeR: [112, 0, 0], footR: [38, 0, 0],
+      hands: ['open', 'point'],
+    },
     // Spirit Sword: the right hand out, flat, palm down — then the blade raised overhead with him on it
     vg_swordW: {
       root: { y: -0.04 }, hips: [0, -14, 0], spine: [2, 12, 0], chest: [0, 16, 0], head: [2, -12, 0],
@@ -332,6 +356,17 @@
     },
     // defeat (it does not happen in the story; Free Battle is another matter): one knee, a grin anyway
     vg_defeat: { root: { y: -0.4, rx: 8 }, spine: [14, 0, 0], chest: [8, 0, 0], head: [-6, 0, 0], shoulderL: [-20, 0, 14], elbowL: [-30, 0, 0], shoulderR: [-60, 0, -10], elbowR: [-80, 0, 0], thighL: [-90, 0, 8], kneeL: [90, 0, 0], thighR: [10, 0, -8], kneeR: [110, 0, 0], hands: ['open', 'fist'] },
+    // FINAL KAMEHAMEHA (2026-10-17, the owner's roadmap): the arms crossed in front of the chest, wrists locked, the
+    // blue-and-gold charge crackling between them, before the hands are thrown forward
+    vg_finalCross: (t) => {
+      const s = Math.sin(t * 34) * 1.4;
+      return {
+        root: { y: -0.12 }, spine: [6, 0, 0], chest: [8 + s * 0.3, 0, 0], neck: [4, 0, 0], head: [-6, 0, 0],
+        shoulderL: [-70, 0, -40 + s], elbowL: [-70, 0, 0], handL: [0, 0, -20], shoulderR: [-70, 0, 40 - s], elbowR: [-70, 0, 0], handR: [0, 0, 20],
+        thighL: [-30, 0, 24], kneeL: [44, 0, 0], thighR: [-30, 0, -24], kneeR: [44, 0, 0],
+        hands: ['open', 'open'],
+      };
+    },
     vg_kameCharge: (t) => {
       const s = Math.sin(t * 30) * 1.5;
       return {
@@ -413,7 +448,10 @@
         // The biggest transformation in the game: the power-up of the brief, beat by beat.
         id: 'ssj', name: 'Super Vegito', short: 'SUPER VEGITO', kiCost: 40, style: 'full',
         freeUnlock: 'buu_supervegito',
-        mult: { damage: 1.9, speed: 1.35, defense: 1.6, kiRegen: 2.4, chargeRate: 1.5, guardStamina: 0.7 },
+        // powerscaling (the records PDF, 2026-10-17, evidence in STATUS): was damage 1.9 / speed 1.35 / defense 1.6 —
+        // effective x3.6 damage, x2.4 defense, the strongest non-Blue form in the game; Super Vegito beat SSJ4 Gogeta in
+        // 40 of 40 CPU duels. Brought to Fusion Reborn Gogeta's Super Saiyan tier
+        mult: { damage: 1.55, speed: 1.28, defense: 1.3, kiRegen: 2.4, chargeRate: 1.5, guardStamina: 0.7 },
         aura: { color: 0xffd23a, core: 0xfff6c0, particles: 0xffe680, idle: 0.55, speed: 1.6, sharp: 0.5, sparks: 0x8ac8ff, lightning: true },
         look: { hair: { style: 'vegito_ssj', color: 0xffd83e }, pupil: 0x14b8a6, brow: 0xe8b830, bulk: 1.07, muscle: 1.08 },
         poses: { idle: poses.vg_fight, flyIdle: poses.vg_floatArms },
@@ -439,6 +477,32 @@
             // 17–19: the dust clears; he straightens; the smirk
             { at: 212, pose: 'vg_settle', speed: 4, expression: 'cocky', shot: 'face', lightning: true, mood: [0.05, 0x101020, 1.4] },
           ],
+        },
+      },
+      {
+        /*
+         * VEGITO BLUE (2026-10-17, the owner's roadmap: God Slicer and the Blue Final Kamehameha). The Future Trunks Saga
+         * appears in the story only in Chapter 19's "Vegito" (ft_vegito), where the Potara hands it over directly — no
+         * other story fight offers it (storyLocked). In Free Battle it opens after "Vegito" (or, for saves from before the
+         * chapter existed, after "The Final Battle", which comes later in canon). The look is Super Vegito's hair in Blue's colours with Blue's aura (no hair of its own yet).
+         */
+        id: 'blue', name: 'Super Saiyan Blue', short: 'VEGITO BLUE', kiCost: 80, style: 'full',
+        storyLocked: true, freeUnlock: ['ft_vegito', 'top_finale'],
+        mult: { damage: 2.2, speed: 1.4, defense: 1.75, kiRegen: 2.6, chargeRate: 1.6, guardStamina: 0.7 },
+        aura: { color: 0x1a5ae8, core: 0xd8f6ff, particles: 0x8ad8ff, idle: 0.5, speed: 1.4, sharp: 0.28, sparks: 0xbfe8ff, flame: [0x1438b8, 0x1a5ae8, 0x3a9aff, 0x8ae8ff] },
+        look: { hair: { style: 'vegito_ssj', color: 0x34c4ff }, pupil: 0x1a74e0, brow: 0x2aa0e8, bulk: 1.05, muscle: 1.06 },
+        poses: { idle: poses.vg_fight, flyIdle: poses.vg_floatArms },
+        intro: { pose: 'vg_smirk', expression: 'cocky' },
+        victory: { poses: ['vg_victory'], expression: 'cocky' },
+        ghost: 0x8ad8ff,
+        // GOD SLICER'S PARRIES (the PDF: "a condensed, flashing blade along the edge of his hand for lightning-fast
+        // parries"): a Perfect Guard, then Light — the hand-edge blade flashes out and cuts across him (behind him on
+        // Heavy). The engine's counter strike (moveSet.counter), the edge shown only for the strike (mv.blade)
+        moves: {
+          counter: {
+            light: { id: 'godSlicerParry', name: 'God Slicer Parry', startup: 2, active: 4, recovery: 14, damage: 820, reach: 1.3, radius: 0.95, lunge: 12, hitstun: 30, knock: 'heavy', knockSpeed: 24, impact: 3, pose: { wind: 'vg_palmW', strike: 'vg_palm' }, sfx: 'swordSlash', hitPose: 'hitBody', blade: { prop: 'spiritSword', fill: 0.35 } },
+            heavy: { id: 'godSlicerReverse', name: 'God Slicer Reverse', startup: 4, active: 4, recovery: 20, damage: 960, reach: 1.3, radius: 0.95, lunge: 10, hitstun: 40, knock: 'heavy', knockSpeed: 30, impact: 3, teleport: { to: 'behind', at: 2 }, pose: { wind: 'vg_palmW', strike: 'vg_swordUp' }, sfx: 'swordSlash', hitPose: 'hitBack', blade: { prop: 'spiritSword', fill: 0.35 } },
+          },
         },
       },
     ],
@@ -468,6 +532,8 @@
           { pose: 'vg_swordW', damage: 1400, frames: 10, sfx: 'swordSlash' },
           { pose: 'vg_swordUp', damage: 2600, frames: 18, sfx: 'swordSlash', knock: 'launch', knockSpeed: 28, impact: 4 },
         ],
+        // outside the story (2026-10-17): alongside on the way in, both through the cuts, the impact as it throws him up
+        cine: { steps: [{ on: 'release', shot: 'track', dur: 0.3 }, { on: 'connect', shot: 'wide', dur: 0.5 }, { on: 'finish', shot: 'impact', dur: 0.8, quake: 0.3 }] },
       },
       // not Instant Transmission: no fingers, no concentration — he is just somewhere else
       special2: {
@@ -481,8 +547,21 @@
       ultimate: {
         id: 'finalKame', name: 'Final Kamehameha', type: 'beam', kiCost: 100, icon: 'ultimate', ultimate: true,
         chargeMin: 56, chargeMax: 56, damage: [11000, 11000], radius: [2.1, 2.1], speed: 118, range: 190, sustain: 54,
-        color: 0x7ac8ff, core: 0xfffbe0, poses: { charge: 'vg_kameCharge', fire: 'vg_kameFire' }, recovery: 40, cinematic: true,
+        color: 0x7ac8ff, core: 0xfffbe0, poses: { charge: 'vg_finalCross', fire: 'vg_kameFire' }, recovery: 40, cinematic: true,
         callout: ['FINAL', 'KAMEHAME', 'HA!'],
+        // Vegito Blue's (the Future Trunks Saga's): deeper blue outside, gold inside, a wider wave
+        formVariants: { blue: { name: 'Final Kamehameha (Blue)', color: 0x2a8cff, core: 0xfff2b0, radiusMul: 1.15, damageMul: 1.15 } },
+        // outside the story (2026-10-17): round him with the arms crossed and blue and gold crackling, square in front as
+        // it peaks, then wide from the side as it crosses — not Final Flash's, not Goku's
+        cine: {
+          steps: [
+            { on: 'start', shot: 'orbit', dur: 0.8, flash: 1.4, flashColor: 0x7ac8ff },
+            { on: 'start', at: 18, flash: 1.6, flashColor: 0xffe27a },
+            { on: 'start', at: 34, flash: 1.8, flashColor: 0x7ac8ff },
+            { on: 'start', at: 44, shot: 'front', dur: 0.3, flash: 2, flashColor: 0xffe27a },
+            { on: 'release', shot: 'wide', dur: 1.4, quake: 0.4 },
+          ],
+        },
       },
     },
     extras: [
@@ -491,6 +570,68 @@
         id: 'banshee', name: 'Banshee Rapid Fire', type: 'projectile', kiCost: 30, icon: 'blast',
         startup: 12, recovery: 18, pose: { wind: 'vg_fingers', release: 'vg_fingers' },
         projectile: { kind: 'ball', count: 5, spread: 0.3, speed: 90, radius: 0.2, damage: 700, homing: 1.1, color: 0xffd84a, core: 0xffffff, explode: 1.2, knock: 'flinch', impact: 2, life: 1.6 },
+      },
+      // GOD SLICER (the PDF's, Vegito Blue): not the Spirit Sword — a short, condensed edge of divine ki along the hand
+      // (the same blade prop held to a third of its length), fast stabs and cuts from both sides of him, a clean cross
+      // cut to finish. Blue only; earned like the form. The PDF's parries are not built (a counter needs a trigger)
+      {
+        id: 'godSlicer', name: 'God Slicer', type: 'rush', kiCost: 50, icon: 'rush', prop: 'spiritSword', propMax: 0.35,
+        forms: ['blue'], freeUnlock: ['ft_vegito', 'top_finale'], freeOnly: true, // the story's "Vegito" opens it (openExtras)
+        startup: 8, dashFrames: 22, speed: 66, recovery: 26,
+        poses: { wind: 'vg_palmW', dash: 'vg_palmW' },
+        hits: [
+          { pose: 'vg_palm', damage: 400, frames: 7, sfx: 'swordSlash', hitPose: 'hitBody', slashes: 1, slashColor: 0x7ad8ff },
+          { pose: 'vg_swordDown', damage: 420, frames: 8, sfx: 'swordSlash', hitPose: 'hitBack', to: 'behind', slashes: 1, slashColor: 0x7ad8ff },
+          { pose: 'vg_palm', damage: 420, frames: 7, sfx: 'swordSlash', hitPose: 'hitSideR', to: 'front', slashes: 1, slashColor: 0x7ad8ff },
+          { pose: 'vg_swordUp', damage: 1700, frames: 22, sfx: 'swordSlash', knock: 'heavy', knockSpeed: 42, impact: 4, hitPose: 'hitHeavy', slashes: 3, slashColor: 0xbfefff },
+        ],
+        cine: { steps: [{ on: 'release', shot: 'track', dur: 0.3 }, { on: 'connect', shot: 'wide', dur: 0.5 }, { on: 'finish', shot: 'impact', dur: 0.8, quake: 0.3 }] },
+      },
+      // THE LONG RUSHES (the owner, 2026-10-17: rushes longer than four seconds and more visual, added beside the existing
+      // ones — plan 9.6; the owner's brief RUSH-VEG-01 / -02). Blue only, earned like God Slicer, Free Battle only.
+      // Longer, not stronger: each one's total stays at or under his Spirit Sword rush (5,520), spread over more blows.
+      // MULTI-IMAGE BLITZ: gone in a blue spark and at his left — a jab, then a palm to the jaw that launches him; above
+      // him — both fists down, driving him back toward the ground (an impact frame); under him before he lands — a cascade
+      // of twelve roundhouse, heel and snap kicks, each leaving a crescent of light in the air; the last one sends him away
+      {
+        id: 'multiImageBlitz', name: 'Multi-Image Blitz', type: 'rush', kiCost: 55, icon: 'rush',
+        forms: ['blue'], freeUnlock: ['ft_vegito', 'top_finale'], freeOnly: true,
+        startup: 8, dashFrames: 22, speed: 74, recovery: 30,
+        poses: { wind: 'vg_armsStand', dash: 'vg_flyForward' },
+        hits: [
+          { pose: 'vg_jabW', move: true, to: 'left', frames: 10, cue: 'blitz' },
+          { pose: 'vg_jab', damage: 300, frames: 12, sfx: 'punchLight', hitPose: 'hitSideR', ring: { color: 0xbfe8ff, size: 1 } },
+          { pose: 'vg_palm', damage: 600, frames: 24, sfx: 'punchHeavy', hitPose: 'hitHeavy', lift: 3.6, ring: { color: 0x2a8cff, size: 1.6 }, cue: 'launch' },
+          { pose: 'hammerWind', move: true, to: 'above', frames: 10, cue: 'spike' },
+          { pose: 'hammer', damage: 1000, frames: 22, sfx: 'punchHeavy', hitPose: 'hitBack', lift: -2.4, ring: { color: 0xffffff, size: 2.2 }, impactFrame: 5 },
+          { pose: 'vg_xRoundW', move: true, to: 'below', frames: 8, cue: 'cascade' },
+          ...[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((i) => ({
+            pose: ['vg_xRound', 'vg_hookKick', 'vg_xSnap'][i % 3], damage: 170, frames: 10, sfx: i % 3 === 1 ? 'punchHeavy' : 'punchLight',
+            hitPose: ['hitSideL', 'hitSideR', 'hitAirSpin'][i % 3], lift: 0.25, ring: { color: i % 2 ? 0xbfe8ff : 0x2a8cff, size: 1.3 },
+          })),
+          { pose: 'vg_xAxe', damage: 1400, frames: 30, sfx: 'punchHeavy', knock: 'launch', knockSpeed: 40, impact: 4, hitPose: 'hitAirSpin', ring: { color: 0xffffff, size: 2.6 }, impactFrame: 6 },
+        ],
+        cine: {
+          steps: [
+            { on: 'release', shot: 'track', dur: 0.3 }, { on: 'blitz', shot: 'wide', dur: 0.5 }, { on: 'launch', shot: 'pairLow', dur: 0.6 },
+            { on: 'spike', shot: 'pairHigh', dur: 0.8 }, { on: 'cascade', shot: 'pairLow', dur: 3.8 }, { on: 'finish', shot: 'wide', at: 1, dur: 1.3, quake: 0.35 },
+          ],
+        },
+      },
+      // SPIRIT SWORD DRAG: the blade drawn long into a sweeping whip of ki; the tip hooks him, one whole circle round
+      // Vegito drags him through whatever stands there (pillars, rock, walls go to pieces), and the blade flings him off
+      // across the sky — set up for the Final Kamehameha
+      {
+        id: 'spiritSwordDrag', name: 'Spirit Sword Drag', type: 'rush', kiCost: 55, icon: 'rush', prop: 'spiritSword',
+        forms: ['blue'], freeUnlock: ['ft_vegito', 'top_finale'], freeOnly: true,
+        startup: 10, dashFrames: 22, speed: 64, recovery: 30,
+        poses: { wind: 'vg_swordW', dash: 'vg_swordW' },
+        hits: [
+          { pose: 'vg_palm', damage: 900, frames: 34, sfx: 'swordSlash', hitPose: 'hitBody', ring: { color: 0xffd84a, size: 1.4 }, cue: 'hook' },
+          { pose: 'vg_swordW', damage: 1400, frames: 144, sfx: 'swordSlash', hitPose: 'tumble', swing: { radius: 4.8, turns: 1, scale: 2.2, lift: 0.4, color: 0xffe27a, smash: 3, whip: true }, cue: 'drag' },
+          { pose: 'vg_swordUp', damage: 2600, frames: 34, sfx: 'swordSlash', knock: 'launch', knockSpeed: 46, impact: 4, hitPose: 'hitAirSpin', ring: { color: 0xffd84a, size: 2.6 }, giantCut: { length: 3.4, color: 0xffe27a }, impactFrame: 6 },
+        ],
+        cine: { steps: [{ on: 'release', shot: 'track', dur: 0.35 }, { on: 'hook', shot: 'pairLow', dur: 0.75 }, { on: 'drag', shot: 'swing', dur: 2.9 }, { on: 'finish', shot: 'impact', dur: 1, quake: 0.35 }, { on: 'finish', shot: 'wide', at: 14, dur: 1.2 }] },
       },
     ],
     mechanic: { type: 'saiyanInstinct', name: 'Two Saiyans, One Pride', desc: 'Goku\'s instinct and Vegeta\'s pride in one body: vanishing and perfect guards cost almost nothing and sharpen the next strike.' },
@@ -528,7 +669,7 @@
     stats: Object.assign({}, GK.stats, { hp: 6000, power: 0.6, speed: 0.8 }),
     appearance: Object.assign({}, GK.appearance, {
       build: Object.assign({}, GK.appearance.build, { chestW: 0.25, chestD: 0.19, waistW: 0.2, waistD: 0.17 }),
-      hair: { style: 'satan', color: 0x16161c },
+      hair: { style: 'satan_small', color: 0x16161c },
       headExtras: [
         // Mr. Satan's moustache under Goku's nose
         { shape: 'ball', a: [0.2, -0.36, 0.93], d: [1, -0.25, 0.1], l: 0.05, r: 0.02, flat: 0.7, depth: 1.02, color: 0x16161c, outline: 0.4 },

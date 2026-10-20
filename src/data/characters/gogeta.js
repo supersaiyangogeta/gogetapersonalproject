@@ -317,6 +317,66 @@
         hands: ['fist', 'open'],
       };
     },
+    // the film's Stardust Breaker: standing his ground before it (the low-angle reveal)...
+    gg_breakerStand: (t) => {
+      const s = Math.sin(t * 2.2) * 0.8;
+      return {
+        root: { y: -0.02 }, hips: [0, -8, 0], spine: [-1 + s * 0.3, 4, 0], chest: [-2 + s * 0.4, 6, 0], head: [15, -18, 0],
+        shoulderL: [6, 0, 14], elbowL: [-20, 0, 0], shoulderR: [8, 0, -12], elbowR: [-14, 0, 0],
+        thighL: [-6, 8, 12], kneeL: [8, 0, 0], thighR: [4, -8, -10], kneeR: [4, 0, 0],
+        hands: ['fist', 'open'],
+      };
+    },
+    // ...then the right arm straight up and out from the head, palm to the sky under the orb; the
+    // body leaning a little away from it (the head and the halo clear of the sphere); the left fist
+    // low; the chest open; the chin a little down and turned a touch to his right, toward the low
+    // lenses on that side (the face reads from in front, not from under the chin)
+    gg_breakerRaise: (t) => {
+      const s = Math.sin(t * 2.4) * 1;
+      return {
+        root: { y: -0.03 }, hips: [0, -10, 0], spine: [-3, 6, -4], chest: [-6 + s * 0.4, 8, -6], neck: [2, 0, 0], head: [14, -13, -4],
+        shoulderR: [-164 + s, 8, -32], elbowR: [-10, 0, 0], handR: [-58, 0, 0],
+        shoulderL: [10, 0, 18], elbowL: [-26, 0, 0],
+        thighL: [-8, 8, 14], kneeL: [10, 0, 0], thighR: [6, -8, -12], kneeR: [6, 0, 0],
+        hands: ['fist', 'open'],
+      };
+    },
+    // the fist closes round the sphere and crushes it to glittering dust (the arm still up)
+    gg_breakerCrush: (t) => Object.assign({}, poses.gg_breakerRaise(t), { shoulderR: [-160, 8, -30], elbowR: [-24, 0, 0], handR: [-20, 0, 0], hands: ['fist', 'fist'] }),
+    // the casual flick: the right hand swung forward and low, palm up, fingers flicking the dust away;
+    // the left fist loose at his side; the weight hardly moves
+    gg_flick: {
+      root: { y: -0.02 }, hips: [0, 10, 0], spine: [2, -8, 0], chest: [2, -12, 0], head: [8, 10, 0],
+      shoulderR: [-62, 0, -12], elbowR: [-18, 0, 0], handR: [-34, 0, 0], shoulderL: [-4, 0, 12], elbowL: [-16, 0, 0],
+      thighL: [-6, 6, 10], kneeL: [8, 0, 0], thighR: [4, -6, -10], kneeR: [6, 0, 0],
+      hands: ['fist', 'open'],
+    },
+    /* ---------------- FUSION REBORN: the cold power, the counter-combo ---------------- */
+    // standing still, arms loose at his sides, the chin down: looking DOWN at Janemba, no feeling at all
+    gg_coldStand: (t) => {
+      const s = Math.sin(t * 1.6) * 0.6;
+      return {
+        root: { y: -0.01 }, hips: [0, -4, 0], spine: [-2 + s * 0.2, 2, 0], chest: [-4 + s * 0.3, 2, 0], head: [12, -4, 0],
+        shoulderL: [-4, 0, 10], elbowL: [-14, 0, 0], shoulderR: [-4, 0, -10], elbowR: [-14, 0, 0],
+        thighL: [-2, 4, 7], kneeL: [4, 0, 0], thighR: [2, -4, -7], kneeR: [4, 0, 0],
+        hands: ['fist', 'fist'],
+      };
+    },
+    // the glide: the same stillness, legs together and straight, the toes pointing just off the ground
+    gg_glide: {
+      root: { y: 0.05 }, spine: [-2, 0, 0], chest: [-4, 0, 0], head: [12, 0, 0],
+      shoulderL: [-6, 0, 9], elbowL: [-12, 0, 0], shoulderR: [-6, 0, -9], elbowR: [-12, 0, 0],
+      thighL: [-2, 0, 4], kneeL: [3, 0, 0], footL: [24, 0, 0], thighR: [-2, 0, -4], kneeR: [3, 0, 0], footR: [24, 0, 0],
+      hands: ['fist', 'fist'],
+    },
+    // the blade caught between two fingers — the head turned away from it: he did not even look
+    // (the arm out to his right and forward at head height, clear of the head and the hair, so the two fingers on
+    // the blade read from in front of him)
+    gg_catchBlind: (t) => Object.assign({}, poses.gg_twoFinger(t), { head: [6, 34, 0], shoulderR: [-108, 0, -42], elbowR: [-34, 0, 0], handR: [6, 0, 0] }),
+    // the back-turned reverse kick: the back to Janemba (the body turned round inside the frame, the
+    // fighter still facing him), bent forward, the heel driven back and up into his jaw
+    gg_backKickW: { root: { y: 0.1, ry: 150 }, spine: [10, 0, 0], chest: [8, 0, 0], head: [-10, 40, 0], shoulderL: [-40, 0, 40], elbowL: [-60, 0, 0], shoulderR: [-40, 0, -40], elbowR: [-60, 0, 0], thighR: [40, 0, -6], kneeR: [90, 0, 0], thighL: [-8, 0, 8], kneeL: [20, 0, 0], hands: ['fist', 'fist'] },
+    gg_backKick: { root: { y: 0.45, ry: 180, rx: 18 }, spine: [24, 0, 0], chest: [16, 0, 0], head: [-26, 30, 0], shoulderL: [-10, 0, 60], elbowL: [-20, 0, 0], shoulderR: [-10, 0, -60], elbowR: [-20, 0, 0], thighR: [118, 0, -4], kneeR: [6, 0, 0], footR: [-30, 0, 0], thighL: [-4, 0, 6], kneeL: [14, 0, 0], footL: [20, 0, 0], hands: ['fist', 'fist'] },
     gg_soulThrow: { root: { y: -0.08, rx: 12 }, hips: [0, 24, 0], spine: [10, 20, 0], chest: [8, 30, 0], head: [-6, -22, 0], shoulderR: [-80, 0, -4], elbowR: [-6, 0, 0], handR: [-50, 0, 0], shoulderL: [-20, 0, 40], elbowL: [-90, 0, 0], thighL: [-40, 10, 14], kneeL: [44, 0, 0], thighR: [22, -10, -12], kneeR: [14, 0, 0], hands: ['fist', 'open'] },
     /* ---------------- Stardust Fall ---------------- */
     gg_stardustW: { root: { rx: -10 }, spine: [-10, 0, 0], chest: [-14, 0, 0], head: [8, 0, 0], shoulderL: [40, 0, 30], elbowL: [-20, 0, 0], shoulderR: [40, 0, -30], elbowR: [-20, 0, 0], thighL: [-30, 0, 8], kneeL: [60, 0, 0], thighR: [-10, 0, -8], kneeR: [40, 0, 0], hands: ['open', 'open'] },
@@ -402,7 +462,7 @@
       // the hair starts to flicker between black and gold; the lightning
       { at: 82, hairFlicker: true, lightning: true, sfx: 'lightning', quake: 0.28, mood: [0.55, 0x060a18, 0.6] },
       // the scream — and his theme comes in under it
-      { at: 112, pose: 'gg_scream', speed: 8, expression: 'shout', skyBolt: true, quake: 0.42, song: 'gogeta_theme', songLevel: 2 },
+      { at: 112, pose: 'gg_scream', speed: 8, expression: 'shout', skyBolt: true, quake: 0.42, song: 'gogeta_z_arrival', songLevel: 2 },
       { at: 140, skyBolt: true, quake: 0.5, sfx: 'lightning' },
       // the burst: gold, the eyes teal, the crater
       { at: 160, burst: true, pose: 'gg_scream', speed: 14, expression: 'shout', sfx: 'transformBurst', mood: [0.2, 0x2a2410, 0.3], flash: 0.7, crater: 6, hairFlicker: false, rocks: false, music: 3 },
@@ -416,8 +476,12 @@
     id: 'gogeta',
     assetLevel: 1,
     name: 'Gogeta',
-    fullName: 'Gogeta (Goku + Vegeta, Fusion Dance)',
-    era: 'What If',
+    fullName: 'Gogeta (Fusion Reborn — Goku + Vegeta, Fusion Dance)',
+    // the Fusion Reborn Gogeta (base and Super Saiyan) is a movie fighter: the roster groups him with the films, beside
+    // the Super Broly film's Blue Gogeta (gogeta_blue) — GT's Super Saiyan 4 Gogeta stays in GT. He was filed under
+    // 'What If' (2026-10-15 fix, owner's correction): the What-If mission "The Ultimate Fusion" still uses him and
+    // still unlocks him, but he is not What-If content
+    era: 'Movie',
     playable: true,
     prototype: true,
     style: 'Fusion · Explosive Speed',
@@ -473,7 +537,38 @@
         music: 3,
         sequence: SSJ_SEQUENCE,
       },
-      // FORM EXPANSION POINT — Super Saiyan 4 goes here (forms[2]).
+      {
+        // SUPER SAIYAN BLUE (Movie 2 · Super Broly): the Super Saiyan shape in cyan, lit from inside; a deep cobalt
+        // inner flame under a pale blue edge, few particles — the hair and the eyes have to read against it.
+        // Handed over by the film ("The Ultimate Fusion", formGivenBy). storyOnly: the Super Broly film's missions use this
+        // fighter for their Gogeta, so the form stays here for them; outside the story the Blue Gogeta is his own roster
+        // entry (gogeta_blue), and this Fusion Reborn entry keeps to its own film's base and Super Saiyan
+        id: 'blue', name: 'Super Saiyan Blue', short: 'SUPER SAIYAN BLUE', kiCost: 80, style: 'full',
+        freeUnlock: 'bb_gogeta', storyOnly: true,
+        mult: { damage: 2.15, speed: 1.34, defense: 1.75, kiRegen: 2.6, chargeRate: 1.6, guardStamina: 0.7, accel: 1.55 },
+        aura: { color: 0x1a5ae8, core: 0xd8f6ff, particles: 0x8ad8ff, idle: 0.5, speed: 1.4, sharp: 0.28, sparks: 0xbfe8ff, flame: [0x1438b8, 0x1a5ae8, 0x3a9aff, 0x8ae8ff] },
+        look: { hair: { style: 'gogeta_blue', color: 0x34c4ff }, pupil: 0x1a74e0, brow: 0x2aa0e8, bulk: 1.04, muscle: 1.04 },
+        poses: { idle: poses.gg_lowStance, flyIdle: poses.gg_flyIdleSsj },
+        intro: { pose: 'gg_tfPose', expression: 'cocky' },
+        victory: { poses: ['gg_armsCrossed', 'gg_victory'], expression: 'cocky' },
+        ai: { aggression: 0.95, defense: 0.8, rhythm: { burst: 6, rest: 30 } },
+        ghost: 0x8ad8ff,
+        line: 'gogeta_blue',
+        music: 4,
+        sequence: {
+          length: 200,
+          applyAt: 136,
+          steps: [
+            { at: 0, pose: 'gg_tfPose', speed: 5, expression: 'calm', aura: 0.3, auraColor: 0xffd23a, mood: [0.3, 0x0a1428, 0.9], shot: 'orbit', music: 0, sfx: 'kiUp' },
+            { at: 40, auraColor: 0xff6ab8, aura: 0.55, sfx: 'ssjRise', quake: 0.2 },
+            { at: 80, auraColor: 0x4ab8ff, aura: 0.8, expression: 'shout', quake: 0.35 },
+            { at: 136, burst: true, pose: 'gg_tfPose', speed: 12, expression: 'shout', sfx: 'transformBurst', mood: [0.15, 0x0a1a30, 0.3], flash: 0.3, crater: 4 },
+            { at: 156, shot: 'pull' },
+            { at: 176, pose: 'gg_lowStance', speed: 4, expression: 'cocky', mood: [0.03, 0x101020, 1.4] },
+          ],
+        },
+      },
+      // FORM EXPANSION POINT — Super Saiyan 4 goes here (forms[3]).
     ],
     poses: Object.assign({ idle: poses.gg_fight, run: poses.gg_run, flyIdle: poses.gg_flyIdle, flyForward: poses.gg_flyForward, guard: poses.gg_guard, charge: poses.gg_power }, poses),
     moves: {
@@ -533,7 +628,7 @@
         projectile: { kind: 'soul', speed: 46, radius: 0.62, damage: 2300, homing: 0.6, color: 0xdff2ff, core: 0xffffff, explode: 3.2, knock: 'heavy', knockSpeed: 26, impact: 3, life: 3.2 },
       },
       ultimate: {
-        id: 'bigBangKame', name: 'Big Bang Kamehameha', type: 'beam', kiCost: 100, icon: 'ultimate', ultimate: true,
+        id: 'bigBangKame', name: 'Big Bang Kamehameha', type: 'beam', kiCost: 100, icon: 'ultimate', ultimate: true, sting: 'gogeta_finisher',
         chargeMin: 50, chargeMax: 50, damage: [10500, 10500], radius: [2.0, 2.0], speed: 112, range: 190, sustain: 56,
         // Kamehameha blue around a Big Bang's gold-white core, gold rings running down it
         color: 0x6ab8ff, core: 0xfff2c0, style: { rings: 5, ringColor: 0xffd860, ringSpeed: 1.8 },
@@ -542,6 +637,7 @@
         callout: ['BIG BANG', 'KAMEHAME', 'HA!'],
         formVariants: {
           ssj: { name: 'Big Bang Kamehameha', radiusMul: 1.2, damageMul: 1.1, core: 0xffffff, ringColor: 0xfff0a0 },
+          blue: { name: 'Kamehameha', radiusMul: 1.35, damageMul: 1.2, color: 0x3ab0ff, core: 0xf0fbff, ringColor: 0xc8ecff },
         },
       },
     },
@@ -551,6 +647,24 @@
         rise: 14, height: 6, shots: 14, interval: 3, damage: 380, finalDamage: 1500, speed: 72, recovery: 22,
         colors: [0x8ad8ff, 0xffe36a, 0xff9ad8, 0x9affc0, 0xffffff],
         poses: { wind: 'gg_stardustW', fire: 'gg_stardust', fireL: 'gg_stardustL', finish: 'gg_stardustFin' },
+      },
+      // STARDUST BREAKER (the records PDF: Super Gogeta's distinctive finisher — no big beam): the palm up, the prism
+      // orb over it, the fist closing, the dust thrown into him (techniques.js stardustBreaker). Super Saiyan only,
+      // Free Battle after Fusion Reborn's "Gogeta" (fr_gogeta, which stages the film's own)
+      {
+        id: 'stardustBreaker', name: 'Stardust Breaker', type: 'stardustBreaker', kiCost: 100, icon: 'ultimate', ultimate: true,
+        forms: ['ssj'], freeUnlock: 'fr_gogeta', freeOnly: true,
+        raise: 44, orbR: 0.55, damage: 5600, speed: 64, recovery: 34,
+        poses: { raise: 'gg_breakerRaise', crush: 'gg_breakerCrush' },
+        // his calm face, low under the raised palm and the orb, the darkened sky; the opponent's side as the dust comes
+        cine: {
+          steps: [
+            { on: 'start', shot: 'face', dur: 0.5, mood: [0.45, 0x140a2a, 0.5] },
+            { on: 'start', at: 22, shot: 'low', dur: 0.6 },
+            { on: 'release', shot: 'reverse', dur: 0.7 },
+            { on: 'release', at: 34, shot: 'impact', dur: 0.9, quake: 0.25 },
+          ],
+        },
       },
       {
         id: 'gogetaIT', name: 'Instant Transmission', type: 'teleport', kiCost: 16, icon: 'teleport',
@@ -587,5 +701,5 @@
 
   SL.data.fusions = SL.data.fusions || {};
   // the Fusion Dance: thirty minutes in canon; a What-If keeps him for as long as the fight lasts
-  SL.data.fusions.gogeta = { parts: ['goku', 'vegeta'], method: 'dance', seconds: 0 };
+  SL.data.fusions.gogeta = { parts: ['goku', 'vegeta'], method: 'dance', seconds: 0, fanfare: true };
 })();

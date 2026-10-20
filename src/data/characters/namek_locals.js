@@ -184,7 +184,7 @@
     name: 'Nail',
     fullName: 'Nail, Guardian of the Grand Elder',
     era: 'Namek Saga',
-    playable: false,
+    playable: true, // Free Battle after "The Warrior" (unlocks.js); he is also the player in that mission
     prototype: true,
     storyAlly: true,
     style: 'Guardian',
@@ -201,11 +201,28 @@
         { a: [-0.35, 0.95, 0.35], d: [-0.3, 1, 0.5], l: 0.09, r: 0.012, color: NAIL_SKIN, depth: 0.98, outline: 0.4 },
       ],
       face: { pupil: 0x101010, eyeW: 0.92, brow: 0x3e7a34, browThick: 1.1, pointedEars: true },
+      // (2026-10-16, the board p.19: he wore a white sleeveless gi top and a brown belt. Now as the board: the bare
+      // Namekian torso with the pink muscle on the belly, the white shawl over the shoulders and round the neck (Piccolo
+      // Jr.'s construction), the light-blue sash, baggy white trousers gathered at the ankle, brown shoes, the pink
+      // muscle patches down the arms)
       outfit: {
-        topStyle: 'gi', top: 0xf2efe6, sleeves: 'none', arms: NAIL_SKIN,
-        wrist: 0x8a6a3a, belt: 0x8a6a3a, pants: 0xf2efe6, pantsStyle: 'gi',
-        boots: 0x6a4a2a, bootStyle: 'gi',
+        topStyle: 'bare', top: NAIL_SKIN, arms: NAIL_SKIN, abs: 0xd8907e,
+        belt: 0x6a9ad8, beltStyle: 'sash', sashTails: { len: 0.22, side: 1 },
+        pants: 0xf2efe6, pantsStyle: 'harem', boots: 0x6a4a2a, bootStyle: 'shoe',
       },
+      props: [
+        { id: 'shawlL', joint: 'chest', shape: 'ball', pos: [0.19, 0.275, -0.005], rot: [0, 0, -0.14], size: [0.12, 0.05, 0.13], color: 0xf2f2f0 },
+        { id: 'shawlR', joint: 'chest', shape: 'ball', pos: [-0.19, 0.275, -0.005], rot: [0, 0, 0.14], size: [0.12, 0.05, 0.13], color: 0xf2f2f0 },
+        { id: 'shawlNeck', joint: 'neck', shape: 'neckRing', pos: [0, 0.0, 0.0], radius: 0.098, thick: 0.4, color: 0xf2f2f0 },
+      ],
+      decals: ['L', 'R'].flatMap((sd) => {
+        const k = sd === 'L' ? 1 : -1;
+        return [
+          { at: 'shoulder' + sd, t: 0.5, ang: 0.9 * k, size: [0.044, 0.1], color: 0xd8907e },
+          { at: 'shoulder' + sd, t: 0.55, ang: 0.15 * k, size: [0.034, 0.08], color: 0xd8907e },
+          { at: 'elbow' + sd, t: 0.45, ang: 0.6 * k, size: [0.04, 0.1], color: 0xd8907e },
+        ];
+      }),
       portraitColor: '#74c25f',
     },
     vfx: { ghost: 0xbfe6a0 },

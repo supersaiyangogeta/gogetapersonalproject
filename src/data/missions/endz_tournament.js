@@ -308,7 +308,7 @@
       m.music('next_journey', 2);
       yield* m.cine(2.6);
       m.endShot();
-      m.title('SAIYAN LEGACY · CHAPTER 17', 'THE END OF THE BUU SAGA', 'Goku and Uub · Age 784 — the journey goes on', 6.4);
+      m.title('SAIYAN LEGACY · CHAPTER 23', 'THE END OF THE BUU SAGA', 'Goku and Uub · Age 784 — the journey goes on', 6.4);
       yield* m.cine(7);
       if (SL.Save && SL.Save.data && SL.Save.data.flags) SL.Save.data.flags.buuSagaComplete = true;
     },
@@ -317,7 +317,7 @@
   const def = {
     id: 'endz_tournament',
     canon: true,
-    chapter: 'CHAPTER 17 · THE END OF Z',
+    chapter: 'CHAPTER 23 · THE END OF Z',
     title: 'The 28th World Tournament',
     subtitle: 'Goku and Uub · Age 784',
     character: 'uub',

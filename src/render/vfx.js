@@ -30,6 +30,7 @@
       this.drag = new Float32Array(capacity);
       this.grav = new Float32Array(capacity);
       this.baseAlpha = new Float32Array(capacity);
+      this.fadeIn = new Float32Array(capacity); // how fast a speck comes up (1/8 of its life by default)
       this.free = [];
       for (let i = capacity - 1; i >= 0; i--) this.free.push(i);
       this.alive = new Set();
@@ -79,6 +80,7 @@
       this.grow[i] = opts ? opts.grow || 0 : 0;
       this.drag[i] = opts ? opts.drag || 0 : 0;
       this.grav[i] = opts ? opts.gravity || 0 : 0;
+      this.fadeIn[i] = (opts && opts.fadeIn) || 8;
     }
 
     update(dt) {
@@ -101,7 +103,7 @@
         this.pos[i3 + 2] += this.vel[i3 + 2] * dt;
         const t = 1 - this.life[i] / this.maxLife[i];
         this.size[i] = this.baseSize[i] * (1 + this.grow[i] * t);
-        const fadeIn = Math.min(1, t * 8);
+        const fadeIn = Math.min(1, t * this.fadeIn[i]);
         this.col[i * 4 + 3] = this.baseAlpha[i] * fadeIn * (1 - t * t);
       }
       const g = this.points.geometry;
@@ -214,6 +216,8 @@
       this.color.set(style.color);
       this.core.set(style.core || 0xffffff);
       this.lightning = !!style.lightning;
+      // style.boltColor: the lightning in the aura takes a colour of its own (Broly's green)
+      this.boltColor = style.boltColor || 0xe8f6ff;
       this.particleColor = new THREE.Color(style.particles || style.color);
       this.mat.uniforms.uSpeed.value = style.speed || 1;
       this.mat.uniforms.uSharp.value = style.sharp || 0;
@@ -222,6 +226,28 @@
       // GOD KI (Super Saiyan God): a flame of several colours instead of one — tongues that lick up
       // off the body in orange, magenta and gold, and the glow itself breathing like a fire
       this.flame = style.flame ? style.flame.map((c) => new THREE.Color(c)) : null;
+      // style.inner { color, core, scale, alpha }: a second, tighter shell inside the first — two energies that
+      // stay distinct (Blue under Kaioken's red, Ultra Instinct's bright core under its pale outer light)
+      this.innerStyle = style.inner || null;
+      if (this.innerStyle && !this.inner) {
+        this.innerMat = makeAuraMaterial();
+        this.inner = new THREE.Mesh(getAuraGeo(), this.innerMat);
+        this.inner.renderOrder = 12;
+        this.group.add(this.inner);
+      }
+      if (this.inner) {
+        this.inner.visible = !!this.innerStyle;
+        if (this.innerStyle) {
+          const s = this.innerStyle.scale || 0.8;
+          this.inner.scale.set(s, s * 0.94, s);
+          this.innerMat.uniforms.uColor.value.set(this.innerStyle.color);
+          this.innerMat.uniforms.uCore.value.set(this.innerStyle.core || 0xffffff);
+          this.innerMat.uniforms.uSpeed.value = this.innerStyle.speed || style.speed || 1;
+          this.innerMat.uniforms.uSharp.value = this.innerStyle.sharp === undefined ? style.sharp || 0 : this.innerStyle.sharp;
+        }
+      }
+      // style.trail: the colour(s) streaming off the body when it moves fast (one colour, or several taken in turn)
+      this.trailColors = style.trail === undefined ? null : [].concat(style.trail);
     }
 
     update(dt) {
@@ -240,6 +266,18 @@
       this.mat.uniforms.uView.value = this.viewMul;
       this.mat.uniforms.uColor.value.copy(this.color);
       this.mat.uniforms.uCore.value.copy(this.core);
+      if (this.innerStyle && this.inner) {
+        const u = this.innerMat.uniforms;
+        u.uTime.value = this.vfx.time * 1.3;
+        u.uIntensity.value = this.intensity * (this.innerStyle.alpha === undefined ? 0.85 : this.innerStyle.alpha);
+        u.uView.value = this.viewMul;
+      }
+      // a film shot that has thinned the aura right away (auraViewCap 0) takes its particles, sparks and lightning too
+      if (this.viewMul < 0.04) return;
+      if (this.trailColors && this.intensity > 0.3 && this.f.vel.lengthSq() > 196) {
+        this.trailN = (this.trailN || 0) + 1;
+        if (this.trailN % 2 === 0) this.vfx.trail(this.f.chest(), this.trailColors[(this.trailN / 2) % this.trailColors.length], 0.32 * (this.f.scale || 1), 0.28);
+      }
 
       const p = this.f.pos;
       const scale = this.vfx.pScale;
@@ -287,7 +325,7 @@
           this.vfx.bolt(
             new THREE.Vector3(p.x + U.rand(-0.5, 0.5) * s, p.y + U.rand(0.2, 1.9) * s, p.z + U.rand(-0.5, 0.5) * s),
             U.rand(0.5, 1.1) * s,
-            0xe8f6ff
+            this.boltColor
           );
           if (Math.random() < 0.3 && this.f.isPlayer) SL.Audio.play('lightning', { vol: 0.7 });
         }
@@ -297,6 +335,7 @@
     dispose() {
       if (this.group.parent) this.group.parent.remove(this.group);
       this.mat.dispose();
+      if (this.innerMat) this.innerMat.dispose();
     }
   }
 
@@ -449,6 +488,8 @@
       const cap = Math.round(3200 * Math.max(0.5, this.pScale));
       this.add = new Particles(scene, cap, SL.Toon.tex.glow, true);
       this.smoke = new Particles(scene, Math.round(900 * Math.max(0.5, this.pScale)), SL.Toon.tex.smoke, false);
+      // solid round specks drawn 'over', not added: coloured dust that keeps its colour on a bright sky
+      this.specks = new Particles(scene, Math.round(1200 * Math.max(0.5, this.pScale)), SL.Toon.tex.soft, false);
       this.flashes = [];
       this.rings = [];
       this.balls = [];
@@ -634,13 +675,17 @@
       }
       this.flash(pos, 0.9 + lv * 0.7, color, 0.08 + lv * 0.03);
       if (lv >= 2) this.ring(pos, 1 + lv * 0.9, color, 0.22 + lv * 0.05);
-      if (lv >= 3) this.light(pos, color, 2 + lv, 12 + lv * 6, 0.2);
+      // (2026-10-17, the shared bright-flash task) softer and shorter-reaching than the 2 + lv / 12 + 6·lv m it was: up
+      // close it lit the ground almost white under every heavy hit
+      if (lv >= 3) this.light(pos, color, 1.2 + lv * 0.5, 8 + lv * 3, 0.16);
     }
 
+    /** opts.flash: scales the two flash sprites (1); a very wide burst seen from close by turns the frame white without it. */
     explosion(pos, radius, color = 0xffc060, opts = {}) {
+      const fl = opts.flash === undefined ? 1 : opts.flash;
       this.ball(pos, radius, color, opts.life || 0.55 + radius * 0.03);
-      this.flash(pos, radius * 3.2, color, 0.3);
-      this.flash(pos, radius * 1.6, 0xffffff, 0.15, SL.Toon.tex.glow);
+      this.flash(pos, radius * 3.2 * fl, color, 0.3);
+      this.flash(pos, radius * 1.6 * fl, 0xffffff, 0.15, SL.Toon.tex.glow);
       this.ring(pos, radius * 2.4, color, 0.5);
       this.light(pos, color, 1.6 + radius * 0.35, 14 + radius * 5, 0.4);
       const c = new THREE.Color(color);
@@ -659,7 +704,10 @@
       }
     }
 
-    dust(pos, radius, count = 14, color = 0xb89a78) {
+    dust(pos, radius, count = 14, color) {
+      // a stage can colour the dust nobody chose a colour for (def.dust: the glacier's blue-grey powder, where the
+      // default brown on white snow read as mud)
+      if (color === undefined || color === null) color = (this.stage && this.stage.def && this.stage.def.dust) || 0xb89a78;
       const c = new THREE.Color(color);
       const n = Math.round(count * this.pScale);
       for (let i = 0; i < n; i++) {
@@ -757,6 +805,39 @@
       }
     }
 
+    /** Dragon Fist on the way in: strands of gold twisting round the line he flies along, left hanging behind him. */
+    dragonTrail(pos, fw, frame, color, scale = 1) {
+      const c = new THREE.Color(color);
+      // two strands, each laid down as a short run of motes per frame so the coil reads as a body, not dots
+      const n = Math.max(2, Math.round(8 * this.pScale));
+      const r = 0.85 * scale;
+      for (let i = 0; i < n; i++) {
+        const back = (i % 4) * 0.35 * scale + 0.4 * scale;
+        const a = (frame + (i % 4) * 0.25) * 0.55 + (i < n / 2 ? 0 : Math.PI);
+        const x = pos.x - fw.z * Math.cos(a) * r - fw.x * back;
+        const z = pos.z + fw.x * Math.cos(a) * r - fw.z * back;
+        this.add.emit(x, pos.y + Math.sin(a) * r, z, 0, 0, 0, c.r, c.g, c.b, 1, 0.75 * scale, 0.8, {});
+      }
+      if (frame % 3 === 0) this.flash(pos.clone().addScaledVector(fw, 0.8 * scale), 1.6 * scale, color, 0.1, SL.Toon.tex.glow);
+    }
+
+    /** Dragon Fist landing: a coil of gold bursting up through the one it hits, widening as it climbs — the dragon rising. */
+    dragonCoil(pos, color, core = 0xffffff, size = 1) {
+      const c = new THREE.Color(color);
+      const n = Math.round(70 * size * Math.max(0.5, this.pScale));
+      for (let i = 0; i < n; i++) {
+        const k = i / n, a = k * Math.PI * 7, r = (0.6 + k * 1.6) * size;
+        this.add.emit(pos.x + Math.cos(a) * r, pos.y + (k * 1.5 - 1) * size, pos.z + Math.sin(a) * r, -Math.sin(a) * 4 * size, 9 * size * (0.4 + k), Math.cos(a) * 4 * size, c.r, c.g, c.b, 1, (0.5 - k * 0.25) * size, 0.7 + k * 0.6, { drag: 1.5 });
+      }
+      // the head: a few large motes at the top of the coil, climbing fastest
+      for (let i = 0; i < 5; i++) this.add.emit(pos.x + U.rand(-0.3, 0.3) * size, pos.y + 0.6 * size, pos.z + U.rand(-0.3, 0.3) * size, 0, 13 * size, 0, c.r, c.g, c.b, 1, 1.1 * size, 1.2, { drag: 1.5 });
+      // a short, contained flash: the coil is the effect, and both fighters stay in view
+      this.flash(pos, 2.2 * size, core, 0.12, SL.Toon.tex.glow);
+      this.ring(pos, 3 * size, color, 0.45);
+      this.light(pos, color, 2.5, 18 * size, 0.5);
+      this.sparks(pos, color, 18, 12, 0.14);
+    }
+
     /** Sky lightning strike from above down to a point. */
     skyBolt(target, height = 30, color = 0xeaf6ff) {
       const segs = 7;
@@ -779,8 +860,10 @@
       const scale = h / (2 * Math.tan((camera.fov * Math.PI) / 360));
       this.add.uniforms.uScale.value = scale;
       this.smoke.uniforms.uScale.value = scale;
+      this.specks.uniforms.uScale.value = scale;
       this.add.update(dt);
       this.smoke.update(dt);
+      this.specks.update(dt);
 
       for (const s of this.flashes) {
         if (!s.visible) continue;
@@ -880,6 +963,7 @@
       for (const g of this.ghosts.slice()) this._removeGhost(g);
       this.add.dispose();
       this.smoke.dispose();
+      this.specks.dispose();
       for (const a of this.auras) a.dispose();
       const all = [...this.flashes, ...this.rings, ...this.balls, ...this.bolts, ...this.debris, ...this.lights, ...this.slashes];
       for (const o of all) {
@@ -938,6 +1022,18 @@
       if (this.visionEl) this.visionEl.style.opacity = a.toFixed(3);
       const c = SL.Render && SL.Render.canvas;
       if (c) c.style.filter = a > 0.01 ? 'blur(' + (a * 1.6).toFixed(2) + 'px) saturate(' + (1 - a * 0.55).toFixed(2) + ') brightness(' + (1 + a * 0.18).toFixed(2) + ') contrast(' + (1 - a * 0.12).toFixed(2) + ')' : '';
+    },
+    /**
+     * An anime impact frame: the picture as a hard black-and-white negative for the instant of a blow (k 0..1; 0 takes
+     * it away). Reduce Flashing keeps the hard contrast and drops the negative. Opt-in: only scenes that call it.
+     */
+    impact(k) {
+      const c = SL.Render && SL.Render.canvas;
+      if (!c) return;
+      const a = U.clamp01(k);
+      if (a < 0.01) c.style.filter = '';
+      else if (SL.Settings.data.accessibility.flashReduction) c.style.filter = 'grayscale(' + a.toFixed(2) + ') contrast(' + (1 + a).toFixed(2) + ')';
+      else c.style.filter = 'grayscale(1) invert(' + a.toFixed(2) + ') contrast(' + (1 + 0.8 * a).toFixed(2) + ')';
     },
     setSpeed(v) {
       this.speedTarget = SL.Settings.data.accessibility.speedLines ? U.clamp01(v) : 0;

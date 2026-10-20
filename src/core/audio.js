@@ -15,6 +15,8 @@
     reverb: null,
     voices: 0,
     MAX_VOICES: 40,
+    // voices above MAX_VOICES that only the sounds outside MINOR_SFX may use (see play)
+    VOICE_RESERVE: 12,
     muted: false,
 
     init() {
@@ -172,14 +174,36 @@
     },
 
     /** Plays a one-shot sound effect. opts: {vol, pan, pitch} */
+    /**
+     * One-shot sound. The voice cap (2026-10-17, the shared audio task — "sounds go silent after a burst"): everyday
+     * blows (MINOR_SFX) give way first at MAX_VOICES; finishers, beams and explosions have VOICE_RESERVE more above it,
+     * so a burst of punches can no longer swallow the blow that ends the rush. A sound function that throws no longer
+     * keeps its voice for ever (the counter went up before it ran and never came down — enough of those and every
+     * one-shot was dropped for the rest of the session). A context the browser suspended mid-game (another tab, a
+     * device change) is woken again; the sound asked for meanwhile is lost.
+     */
     play(name, opts = {}) {
-      if (!this.ctx || this.ctx.state !== 'running') return;
-      if (this.voices >= this.MAX_VOICES) return;
+      const ctx = this.ctx;
+      if (!ctx) return;
+      if (ctx.state !== 'running') {
+        if (ctx.state === 'suspended' || ctx.state === 'interrupted') {
+          const p = ctx.resume && ctx.resume();
+          if (p && p.catch) p.catch(() => {});
+        }
+        return;
+      }
       const fn = SFX[name];
       if (!fn) return;
+      if (this.voices >= this.MAX_VOICES + (MINOR_SFX[name] ? 0 : this.VOICE_RESERVE)) return;
+      let dur;
+      try {
+        dur = fn(this, ctx.currentTime, opts) || 0.5;
+      } catch (e) {
+        if (SL.warn) SL.warn('sfx failed', name, e);
+        return;
+      }
       this.voices++;
-      const dur = fn(this, this.ctx.currentTime, opts) || 0.5;
-      setTimeout(() => this.voices--, dur * 1000 + 100);
+      setTimeout(() => (this.voices = Math.max(0, this.voices - 1)), dur * 1000 + 100);
     },
 
     /**
@@ -248,6 +272,8 @@
   const NULL_HANDLE = { set() {}, stop() {}, stopped: true };
 
   /* ---------------- one-shot effects ---------------- */
+  // the everyday sounds of a fight: the first to give way when too many play at once (Audio.play)
+  const MINOR_SFX = { swing: 1, punchLight: 1, punchHeavy: 1, block: 1, dodge: 1, dash: 1, jump: 1, kiBlast: 1, explosionSmall: 1, uiMove: 1 };
   const SFX = {
     uiMove(A, t) {
       const out = A._out('ui', 0.18);
@@ -761,6 +787,79 @@
       [659, 831, 988, 1319, 1661].forEach((f, i) => A._env(A._osc(out, t + 0.03 * i, 1.6, 'sine', f, f * 1.003), t + 0.03 * i, 0.005, 0.22, 1.6));
       A._env(A._noise(out, t, 0.9, 'highpass', 4000, 1500, 0.6), t, 0.005, 0.5, 0.9);
       return 1.8;
+    },
+
+    /* ---------- FUSION REBORN (the dimensional sounds, the plant, the tanks, Veku) ---------- */
+    // a portal opening: a falling, phasing whoosh with a glassy ring at the bottom of it
+    portalOpen(A, t, o) {
+      const out = A._out('sfx', 0.3 * (o.vol || 1), o.pan, 0.5);
+      A._env(A._noise(out, t, 0.5, 'bandpass', 3200, 380, 4), t, 0.02, 0.6, 0.5);
+      A._env(A._osc(out, t, 0.45, 'sine', 880, 220), t, 0.01, 0.35, 0.45);
+      A._env(A._osc(out, t + 0.05, 0.6, 'triangle', 1318, 1310), t + 0.05, 0.01, 0.14, 0.6);
+      return 0.7;
+    },
+    // a body coming apart into cubes (or a blade): a spray of tiny glassy clicks
+    warpShatter(A, t, o) {
+      const p = o.pitch || 1;
+      const out = A._out('sfx', 0.3 * (o.vol || 1), o.pan, 0.4);
+      for (let i = 0; i < 7; i++) A._env(A._osc(out, t + i * 0.022, 0.08, 'square', (2400 + i * 340) * p, (1800 + i * 200) * p), t + i * 0.022, 0.001, 0.22, 0.08);
+      A._env(A._noise(out, t, 0.3, 'highpass', 5200 * p, 3000 * p, 1), t, 0.003, 0.4, 0.3);
+      return 0.35;
+    },
+    // Janemba's giggle: a bouncy, wobbling "hee-hee" (no voice files ship with the game)
+    giggle(A, t, o) {
+      const p = o.pitch || 1;
+      const out = A._out('sfx', 0.26 * (o.vol || 1), o.pan, 0.3);
+      for (let i = 0; i < 4; i++) {
+        const s = t + i * 0.11;
+        A._env(A._osc(out, s, 0.09, 'triangle', 520 * p, 760 * p), s, 0.005, 0.6, 0.09);
+        A._env(A._osc(out, s, 0.09, 'sine', 260 * p, 380 * p), s, 0.005, 0.3, 0.09);
+      }
+      return 0.5;
+    },
+    // the Stardust Breaker's shimmer: a cluster of bright bell partials that drift and sparkle
+    prismHum(A, t, o) {
+      const out = A._out('sfx', 0.28 * (o.vol || 1), o.pan, 0.8);
+      [784, 988, 1175, 1568, 1976, 2349].forEach((f, i) => A._env(A._osc(out, t + i * 0.09, 2.2, 'sine', f, f * 1.01), t + i * 0.09, 0.2, 0.18, 2));
+      A._env(A._noise(out, t, 2.4, 'bandpass', 6000, 9000, 2), t, 0.4, 0.16, 2);
+      return 2.5;
+    },
+    // Veku bouncing: a round rubber boing
+    boing(A, t, o) {
+      const p = o.pitch || 1;
+      const out = A._out('sfx', 0.3 * (o.vol || 1), o.pan);
+      A._env(A._osc(out, t, 0.32, 'sine', 160 * p, 420 * p), t, 0.004, 0.8, 0.32);
+      A._env(A._osc(out, t, 0.32, 'triangle', 82 * p, 210 * p), t, 0.004, 0.35, 0.32);
+      return 0.35;
+    },
+    // the Panic Puff: a short, embarrassed raspberry — kept quiet and rare
+    puff(A, t, o) {
+      const out = A._out('sfx', 0.22 * (o.vol || 1), o.pan);
+      A._env(A._osc(out, t, 0.28, 'sawtooth', 96, 70), t, 0.01, 0.4, 0.28);
+      A._env(A._noise(out, t, 0.32, 'lowpass', 600, 300, 1), t, 0.02, 0.5, 0.32);
+      return 0.35;
+    },
+    // a tank's gun: a deep thump and a crack
+    tankFire(A, t, o) {
+      const out = A._out('sfx', 0.5 * (o.vol || 1), o.pan, 0.3);
+      A._env(A._osc(out, t, 0.4, 'sine', 90, 34), t, 0.002, 1, 0.4);
+      A._env(A._noise(out, t, 0.35, 'lowpass', 2400, 200, 0.7), t, 0.002, 0.9, 0.35);
+      return 0.45;
+    },
+    // an alarm in the Spirit Cleansing plant: two tones, over and over
+    alarm(A, t, o) {
+      const out = A._out('sfx', 0.18 * (o.vol || 1), o.pan, 0.4);
+      for (let i = 0; i < 4; i++) A._env(A._osc(out, t + i * 0.25, 0.22, 'square', i % 2 ? 660 : 880, i % 2 ? 660 : 880), t + i * 0.25, 0.01, 0.5, 0.2, 'lin');
+      return 1;
+    },
+    // the cleansing tank straining: a low beating hum that rises
+    machineHum(A, t, o) {
+      const p = o.pitch || 1;
+      const out = A._out('sfx', 0.3 * (o.vol || 1), o.pan, 0.3);
+      A._env(A._osc(out, t, 1.6, 'sawtooth', 55 * p, 62 * p), t, 0.2, 0.35, 1.4, 'lin');
+      A._env(A._osc(out, t, 1.6, 'sawtooth', 56.5 * p, 63 * p), t, 0.2, 0.3, 1.4, 'lin');
+      A._env(A._noise(out, t, 1.6, 'lowpass', 300, 500, 2), t, 0.3, 0.3, 1.3);
+      return 1.6;
     },
   };
 

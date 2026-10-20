@@ -332,7 +332,7 @@
     name: 'Zarbon',
     fullName: "Zarbon, Frieza's Right Hand",
     era: 'Namek Saga',
-    playable: false,
+    playable: true, // Free Battle after "The Prince Repaid" (unlocks.js); the story still owns his boss phases
     style: 'Duelist',
     blurb: 'Elegant, fast and vain — until vanity costs more than the fight is worth, and he stops being beautiful.',
     ratings: { power: 3, speed: 4, ki: 3, defense: 3 },

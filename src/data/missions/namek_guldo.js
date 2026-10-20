@@ -176,7 +176,8 @@
       gd.target = k;
       m.lock(false);
       b.aiLocked = false;
-      m.music('battle', 3);
+      // the Ginyu Force's own theme (soundtrack PDF p.95, an original stand-in: superhero-show brass)
+      m.music('ginyu_force', 3);
       m.objective('guldo', 'Beat Guldo', { icon: 'fist' });
       const unfrozen = m.objective('unfrozen', 'Never be caught by a freeze', { icon: 'guard', optional: true });
       let freezes = 0, caught = false;

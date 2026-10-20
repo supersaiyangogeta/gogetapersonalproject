@@ -90,9 +90,9 @@
     const b = m.battle, S = b.story;
     lineUp(b);
     b.switchPlayer(S.trunks, { force: true });
-    m.shot((t, out) => {
+    m.shot((t, out, el) => {
       const mid = S.goten.chest().lerp(S.trunks.chest(), 0.5);
-      out.pos.set(mid.x + Math.sin(t * 0.08) * 0.5, mid.y + 0.15, mid.z - 4.6);
+      out.pos.set(mid.x + Math.sin(el * 0.08) * 0.5, mid.y + 0.15, mid.z - 4.6);
       out.look.copy(mid).add(new V3(0, -0.05, 0));
       out.fov = 42;
     }, 999, { hold: true, cut: true, blendIn: 0 });

@@ -142,15 +142,14 @@ module.exports = function cellGamesTests({ test, eq, ok }) {
     eq(run.gg.errors.length, 0, errs(run.gg));
   });
 
-  test('the Instant Transmission Kamehameha: a held charge, then point-blank — the top half of Cell is gone and his legs still stand; watched or skipped, the same', () => {
+  test('the Instant Transmission Kamehameha: a held charge, then point-blank — Cell swallowed by the beam and lost in a column of green vapour (non-graphic: no body cut apart); watched or skipped, the same', () => {
     const snap = (b) => {
-      const S = b.story, cut = S.cellCut;
+      const S = b.story;
       return JSON.stringify({
         charged: !!b.mission.flags.kameCharged,
         pointBlank: !!b.mission.flags.pointBlank,
-        cut: !!cut,
-        topGone: !!cut && !cut.a.alive,
-        legs: !!cut && cut.b.alive,
+        cut: !!S.cellCut,
+        inSmoke: !!S.cellInSmoke,
         cellHidden: !!S.cell.hidden,
         gokuClose: S.goku.distTo(S.cell) < 3,
       });
@@ -161,7 +160,7 @@ module.exports = function cellGamesTests({ test, eq, ok }) {
     ok(w.snap, 'the watched run reaches the regrowth');
     const o = JSON.parse(w.snap);
     ok(o.charged && o.pointBlank, 'charged and fired point-blank: ' + w.snap);
-    ok(o.cut && o.topGone && o.legs, 'cut at the waist: the top half vaporised, the legs standing');
+    ok(!o.cut && o.inSmoke && o.cellHidden, 'swallowed: nothing cut apart, Cell hidden inside the vapour until he regrows');
     ok(holds.includes('charge'), 'the charge is the player\'s to hold: ' + holds.join(','));
     eq(s.snap, w.snap, 'skipped leaves exactly the same state');
     eq(w.gg.errors.length + s.gg.errors.length, 0, 'no engine errors');
@@ -383,14 +382,21 @@ module.exports = function cellGamesTests({ test, eq, ok }) {
     b.dispose();
   });
 
-  test('Android 16\'s death and Super Saiyan 2: silence, the crunch, the pupils, the red line across the screen snapping, the tears, the roar — and watched or skipped, the same Gohan after', () => {
+  test('Android 16\'s death and Super Saiyan 2: silence, the boot (non-graphic: the camera on Gohan\'s face, nothing crushed on screen), the pupils, the red line across the screen snapping, the tears, the roar — and watched or skipped, the same Gohan after', () => {
     const { SL } = H.create({ quiet: true, seed: 1 });
     const sc = SL.data.scenes.gh_sixteen;
     eq(sc.music && sc.music.song, null, 'the music stops');
     const src = sc.events.map((e) => [e.call, e.tick].filter(Boolean).map((f) => f.toString()).join(' ') + (e.pose ? JSON.stringify(e.pose) : '')).map((s, i) => [i, s]);
     const at = (re) => (src.find(([, s]) => re.test(s)) || [-1])[0];
-    const crunch = at(/boneCrack/), pupils = at(/setPupilScale\(0\.35\)/), line = at(/rl\.line/), snap = at(/rl\.snap/), roar = at(/setRage\(true, 1\)/);
-    ok(crunch >= 0 && pupils > crunch && line > pupils && snap > line && roar > snap, 'crunch → pupils → red line → snap → roar: ' + [crunch, pupils, line, snap, roar].join(','));
+    const boot = at(/cl_stompDown/), pupils = at(/setPupilScale\(0\.35\)/), line = at(/rl\.line/), snap = at(/rl\.snap/), roar = at(/setRage\(true, 1\)/);
+    ok(boot >= 0 && pupils > boot && line > pupils && snap > line && roar > snap, 'boot → pupils → red line → snap → roar: ' + [boot, pupils, line, snap, roar].join(','));
+    // non-graphic (owner, 2026-10-14): when the boot lands the camera is on Gohan's face, and the head is hidden, never flattened
+    const bootCam = sc.events[boot].cam;
+    ok(bootCam && /^gohan:face$/.test(bootCam.from.at), 'the boot lands on Gohan\'s face, not on the head');
+    const all = [SL.data.scenes.gh_sixteen, SL.data.scenes.gh_crush].map((s2) => s2.events.concat([{ call: s2.end }]).map((e) => [e.call, e.tick].filter(Boolean).map((f) => f.toString()).join(' ') + JSON.stringify(e.sfx || '')).join(' ')).join(' ');
+    ok(!/boneCrack/.test(all), 'no bone-crack sounds');
+    ok(!/scale\.set\(1\.5, 0\.22/.test(all), 'the head is not shown crushed');
+    ok(!/dice\(/.test(all), 'no body pieces');
     ok(sc.events.some((e) => !e.say && (e.hold || 0) >= 1.5 && e.cam && (e.cam.fov || 99) <= 32), 'a silent close-up on his face');
     const run = (watch) =>
       playTo('cell_gohan', 'sixteen', 'after', {
@@ -483,6 +489,11 @@ module.exports = function cellGamesTests({ test, eq, ok }) {
     ok(noSells > 0, 'their blows landed on him: ' + noSells);
     eq(toGohan.filter((a) => a > 0).length, 0, 'and did nothing at all');
     eq(run.gg.errors.length, 0, errs(run.gg));
+    // non-graphic (owner, 2026-10-14): each kill ends at the decisive blow in light — nothing is cut apart on screen
+    const src = require('fs').readFileSync(require('path').join(__dirname, '..', 'src', 'data', 'missions', 'cell_rampage.js'), 'utf8');
+    const X = src.slice(src.indexOf('const X = {};'), src.indexOf('const P = {};'));
+    ok(!/CK\.split|dice\(|'junior'/.test(X), 'no split bodies, no fragments, no blue-liquid bursts in the executions');
+    ok((X.match(/'energy'/g) || []).length >= 6, 'every execution ends in light');
   });
 
   test('the catch, the gut punch and 18: semi-perfect again; nothing Cell throws registers on the boy; then he swells', () => {

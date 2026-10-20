@@ -582,6 +582,19 @@
       battle.sfx('explosionBig', null, { at: point });
       battle.cameraTraumaAt(point, 0.55);
       battle.stage.explode(point, size * 1.4, this.damage, stageHit, this.owner);
+      // spec.trench (outside the story): the ground under the beam's path is torn open from his feet to the impact — the
+      // chasm a Final Flash leaves behind; once per beam, only where it ran low over the ground
+      const st = battle.stage;
+      if (this.spec.trench && !this.trenched && battle.mode !== 'story' && st.hasGround) {
+        this.trenched = true;
+        const len = point.distanceTo(this.origin), step = Math.max(2.5, this.radius * 1.6);
+        for (let d = step; d < len && d < step * 14; d += step) {
+          const p = this.origin.clone().addScaledVector(this.dir, d), gh = st.heightAt(p.x, p.z);
+          if (p.y - gh > 5) continue;
+          st.crater(new THREE.Vector3(p.x, gh, p.z), this.radius * 1.2, 0.45, null);
+          if (Math.round(d / step) % 2 === 0) battle.vfx.dust(new THREE.Vector3(p.x, gh, p.z), this.radius * 1.4, 8, st.def.terrain.sand);
+        }
+      }
       this.headDist = Math.max(1, point.distanceTo(this.origin));
       this.state = 'sustain';
       this.sustain = Math.min(this.sustain, 12);

@@ -131,7 +131,9 @@
     },
   });
 
-  const BUILD = { chestW: 0.168, chestD: 0.122, shoulderX: 0.16, waistW: 0.132, upperArmR: 0.046, foreArmR: 0.039, fist: 0.045, thighR: 0.075, shinR: 0.058, headR: 0.138, neckLen: 0.04 };
+  // a child's proportions (2026-10-15): a bigger head over a shorter body, shorter arms and legs (the hip lowered with them,
+  // so the feet stay on the ground) — he had an adult's limb lengths at a small scale
+  const BUILD = { chestW: 0.168, chestD: 0.122, shoulderX: 0.16, waistW: 0.132, upperArmR: 0.046, foreArmR: 0.039, fist: 0.045, thighR: 0.075, shinR: 0.058, headR: 0.158, neckLen: 0.032, absLen: 0.17, upperArmLen: 0.22, foreArmLen: 0.2, thighLen: 0.35, shinLen: 0.33, hipY: 0.82 };
   const OUTFIT = {
     // the Metamoran vest: open, dark teal, gold padded shoulders with a gold edge; bare arms
     topStyle: 'bare', top: 0xf6cda6,
@@ -156,6 +158,8 @@
     ratings: { power: 5, speed: 5, ki: 4, defense: 3 },
     stats: { hp: 15000, ki: 130, stamina: 130, speed: 1.22, power: 1.08, defense: 0.92, weight: 0.72, kiRegen: 3, chargeRate: 36, canonPower: 3.2 },
     appearance: {
+      // (kept with the child's build: height is also the fighter's scale in play — hurt box, hand and chest points — so
+      // gameplay is unchanged; the figure itself now stands a little shorter inside it)
       height: 0.68,
       skin: 0xf6cda6,
       build: BUILD,
@@ -328,5 +332,5 @@
 
   // what fuses into what, and how
   SL.data.fusions = SL.data.fusions || {};
-  SL.data.fusions.gotenks = { parts: ['goten', 'kid_trunks'], method: 'dance', seconds: 0, failures: { finger: 'gotenks_fat', timing: 'gotenks_thin' } };
+  SL.data.fusions.gotenks = { parts: ['goten', 'kid_trunks'], method: 'dance', seconds: 0, fanfare: true, failures: { finger: 'gotenks_fat', timing: 'gotenks_thin' } };
 })();

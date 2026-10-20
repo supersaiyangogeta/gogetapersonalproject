@@ -53,9 +53,23 @@
         },
         hold: 3.4,
       },
+      // SAC-S01 (Roadmap Three, the owner's Gemini research — a research draft, not checked against the footage): a slow
+      // push-in on his laughing face, blue lightning running over the swollen skin
       {
         mood: { amount: 0.35, color: 0x241c10, seconds: 1.4 },
-        cam: { from: { at: 'cell:face', local: [0.2, 0.14, 1.4] }, look: { at: 'cell:head', off: [0, 0.15, 0] }, fov: 36 },
+        // not nearer than 1.2 m: closer, the curve of the swollen body comes up over his mouth and eyes
+        cam: { from: { at: 'cell:face', local: [0.2, 0.14, 1.4] }, to: { at: 'cell:face', local: [0.17, 0.18, 1.2] }, look: { at: 'cell:head', off: [0, 0.15, 0] }, fov: 36, fov2: 33 },
+        tick: (ctx) => {
+          const c = story(ctx).cell, b = ctx.b;
+          if (b.frame % 5 !== 0) return;
+          ctx.m.flags.bloatBolts = (ctx.m.flags.bloatBolts || 0) + 1;
+          // over the swollen skin round his face, on the lens's side (the frame is his face on top of the body; the head
+          // joint itself sits inside the swelling)
+          const h = SL.Cinema.actorPoint(ctx, 'cell:face'), toCam = b.camera.camera.position.clone().sub(h).normalize();
+          const side = new V3(toCam.z, 0, -toCam.x).normalize();
+          // sparks, not bolts: the 1-pixel bolt lines were lost against the skin at this distance
+          b.vfx.sparks(h.addScaledVector(side, U.rand(-0.7, 0.7)).add(new V3(0, U.rand(-0.35, 0.3), 0)).addScaledVector(toCam, 0.3), 0x9ad8ff, 6, 3, 0.18);
+        },
         say: { who: 'cell', line: 'Hahahaha! Touch me and I explode instantly! In one minute I take this whole planet with me!', duration: 4.6, style: 'shout' },
         hold: 4.8,
       },
@@ -118,10 +132,12 @@
         say: { who: 'krillin', line: 'Goku...? What are you—', duration: 2, style: 'quiet' },
         hold: 2,
       },
-      // 00:22 two fingers to his forehead
+      // 00:22 two fingers to his forehead. SAC-S02 (research draft): the gentle smile. Its profile framing is not used: from
+      // one side the near shoulder hides the fingers, from the other the raised arm crosses his face; the three-quarter
+      // shows both
       {
         call: (ctx) => faceTo(story(ctx).goku, story(ctx).cell.pos),
-        pose: [{ who: 'goku', pose: 'twoFingers', face: 'calm', speed: 6 }],
+        pose: [{ who: 'goku', pose: 'twoFingers', face: 'soft', speed: 6 }],
         cam: { from: { at: 'goku', local: [0.4, 0.4, 1.4] }, look: { at: 'goku:head' }, fov: 32 },
         cue: { key: 's2', label: 'Instant Transmission', auto: 7, slow: 0.4 },
       },

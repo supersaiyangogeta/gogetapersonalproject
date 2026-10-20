@@ -170,6 +170,13 @@
         turban: 0xf4f2ee, turbanBand: 0x5b3a8e,
         cape: 0xf4f2ee,
       },
+      // the weighted cape's broad padded shoulders and its collar round the neck (2026-10-16: Piccolo Jr.'s construction —
+      // the Z Piccolo wore the cape without them, a sheet hanging off his back); `cape: true` — they go when he drops it
+      props: [
+        { id: 'capePadL', joint: 'chest', shape: 'ball', pos: [0.2, 0.275, -0.005], rot: [0, 0, -0.12], size: [0.115, 0.048, 0.125], color: 0xf4f2ee, cape: true },
+        { id: 'capePadR', joint: 'chest', shape: 'ball', pos: [-0.2, 0.275, -0.005], rot: [0, 0, 0.12], size: [0.115, 0.048, 0.125], color: 0xf4f2ee, cape: true },
+        { id: 'capeCollar', joint: 'neck', shape: 'neckRing', pos: [0, 0.0, 0.0], radius: 0.085, thick: 0.38, color: 0xf4f2ee, cape: true },
+      ],
       portraitColor: '#5b3a8e',
     },
     vfx: { ghost: 0xd8ffc8 },
@@ -182,7 +189,7 @@
         id: 'nail',
         name: 'Fused',
         noCost: true,
-        storyLocked: true, // only 'The Warrior' hands it over
+        storyLocked: true, // only 'The Warrior' hands it over; story-only, not a Free Battle starting form (owner, 2026-10-17)
         style: 'burst',
         line: 'piccolo_fuse',
         mult: { damage: 1.55, speed: 1.2, defense: 1.3, kiRegen: 1.4, chargeRate: 1.25 },
@@ -240,7 +247,8 @@
       },
     ],
     mechanic: { type: 'regeneration', name: 'Regeneration', desc: 'After a few seconds without taking damage, visibly regrows health up to 60%.' },
-    ai: { personality: 'adaptive', aggression: 0.5, defense: 0.7, ranged: 0.55, beam: 0.35, transformHp: 0, preferredRange: 6, hooks: 'piccolo' },
+    // patience and efficiency (ToP refinement brief §23): short bursts, long watchful rests at his own range
+    ai: { personality: 'adaptive', aggression: 0.5, defense: 0.74, ranged: 0.55, beam: 0.35, transformHp: 0, preferredRange: 6, hooks: 'piccolo', rhythm: { burst: 2, rest: 52 } },
     barks: { combo: 'piccolo_combo', hurt: 'piccolo_hurt', lowHp: 'piccolo_lowHp', trap: 'piccolo_trap', grab: 'piccolo_grab' },
     sequences: {
       intro: [

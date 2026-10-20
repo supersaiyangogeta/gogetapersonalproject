@@ -282,6 +282,8 @@
       v.setState('scripted', { pose: 'punchR', expression: 'majin', speed: 30, aura: 1 });
       g.takeHit(v, { type: 'melee', damage: 900, knock: 'heavy', knockSpeed: 18, hitstun: 24, impact: 4, dir: v.dirTo(g) });
       yield 0.25;
+      // the rings, the close blows, the headbutt — and Goku tearing loose (staged; the owner's PDF, 2026-10-17)
+      yield* SL.Cinema.play(m, 'pride_rings');
       fight(m);
       const rush = m.storyFight({ aggression: [{ f: v, value: 1 }] });
       let rt = 0;

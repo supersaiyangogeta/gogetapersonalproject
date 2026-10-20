@@ -1,10 +1,10 @@
 /*
  * FRIEZA'S MEN ON NAMEK (Namek Saga) — story enemies for Vegeta's Namek campaign.
  *
- *   CUI — ENEMY (not playable). Vegeta's old rival in Frieza's army: a purple,
+ *   CUI — ENEMY (playable in Free Battle after "A Prince on Namek"). Vegeta's old rival in Frieza's army: a purple,
  *     finned alien who fights from range. Quick volleys, a charged Cui Cannon,
  *     and a habit of backing off to shoot. Roughly Vegeta's equal on paper.
- *   DODORIA — BOSS (not playable). Frieza's pink, spiked bruiser. Not a health
+ *   DODORIA — BOSS (playable in Free Battle after "A Prince on Namek"). Frieza's pink, spiked bruiser. Not a health
  *     sponge: POISE (light hits don't move him), TELEGRAPHED BODY SLAM (red disc
  *     where he lands — get out or jump), SHOULDER RAM, a BEAR HUG throw, and the
  *     MOUTH ENERGY WAVE. Two phases: BULLY (enjoys himself) and CORNERED (roars,
@@ -88,7 +88,7 @@
     name: 'Dodoria',
     fullName: 'Dodoria, Frieza\'s Enforcer',
     era: 'Namek Saga',
-    playable: false,
+    playable: true, // Free Battle after "A Prince on Namek" (unlocks.js)
     poise: { max: 90, regen: 10, regenDelay: 110, armor: 2, cost: { 1: 5, 2: 9, 3: 16, 4: 28 }, beamMul: 1.4, beamArmor: true, breakFrames: 160, vulnerable: 1.35 },
     style: 'Bruiser',
     blurb: 'Frieza\'s pink enforcer: a wall of spikes and armor who loves a massacre and hates a fair fight.',
@@ -189,7 +189,7 @@
     name: 'Cui',
     fullName: 'Cui, Frieza\'s Elite',
     era: 'Namek Saga',
-    playable: false,
+    playable: true, // Free Battle after "A Prince on Namek" (unlocks.js)
     style: 'Gunner',
     blurb: 'Vegeta\'s old rival in Frieza\'s army. Confident at range, nervous up close.',
     ratings: { power: 3, speed: 3, ki: 4, defense: 2 },
@@ -250,7 +250,7 @@
     mechanic: null,
     ai: { personality: 'gunner', aggression: 0.5, defense: 0.5, ranged: 0.75, beam: 0.5, transformHp: 0, preferredRange: 9 },
     barks: {},
-    intro: { pose: 'idle', expression: 'smirk' },
+    intro: { pose: 'laughPoint', expression: 'smirk' },
     victory: { poses: ['victory'], expression: 'grin' },
     defeat: { pose: 'defeatKneel', expression: 'hurt' },
   };

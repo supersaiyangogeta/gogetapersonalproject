@@ -208,10 +208,10 @@
       p.setState('scripted', { pose: 'g_tailGrab', expression: 'grit' });
       pc.setState('scripted', { pose: 'idle', expression: 'angry', face: true });
       m.fade('clear', 0.3);
-      m.shot((t, out) => {
+      m.shot((t, out, el) => {
         const c = r.pos.clone().add(new V3(0, 0.8, 0));
         const side = new V3(fwd.z, 0, -fwd.x);
-        camAt(out, c.clone().addScaledVector(side, U.lerp(3.8, 3.2, t)).add(new V3(0, -0.2, 0)).addScaledVector(fwd, -0.6), c, 44);
+        camAt(out, c.clone().addScaledVector(side, U.lerp(3.8, 3.2, Math.min(1, el / 1.4))).add(new V3(0, -0.2, 0)).addScaledVector(fwd, -0.6), c, 44);
       }, 999, { hold: true, cut: true, blendIn: 0 });
       SL.Audio.play('punchHeavy');
       m.say('goku', "Got your tail! Every Saiyan has the same weak spot, right?", 2.6);
@@ -589,6 +589,8 @@
   const canon = {
     id: 'saiyan_brothers',
     canon: true,
+    // Gohan at four, in the Raditz-arc clothes: the yellow tunic, green sleeves, the hat with the Dragon Ball
+    appearance: { kid_gohan: { outfit: 'kg_raditz' } },
     chapter: 'CHAPTER 1 · SAIYAN SAGA',
     title: 'A Brother From Space',
     subtitle: 'Earth · Age 761',
@@ -982,6 +984,7 @@
   const whatIf = {
     id: 'whatif_raditz',
     whatIf: true,
+    appearance: { kid_gohan: { outfit: 'kg_raditz' } },
     branchOf: 'saiyan_brothers',
     branchPoint: 'hold',
     chapter: 'WHAT IF · CHAPTER 1',

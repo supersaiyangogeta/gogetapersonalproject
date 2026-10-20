@@ -340,9 +340,9 @@
     dino.prevPos.copy(dino.pos);
     dino.yaw = Math.atan2(p.pos.x - dino.pos.x, p.pos.z - dino.pos.z);
     dino.setState('roar', { then: 'idle' });
-    m.shot((t, out) => {
+    m.shot((t, out, el) => {
       const hp = dino.headPos();
-      camAt(out, p.chest().addScaledVector(back, 2.2).add(new V3(0, -0.3, 0)), hp, U.lerp(50, 36, t));
+      camAt(out, p.chest().addScaledVector(back, 2.2).add(new V3(0, -0.3, 0)), hp, U.lerp(50, 36, Math.min(1, el / 1.8)));
     }, 999, { hold: true, cut: true, blendIn: 0 });
     b.slowmo(0.2, 3.5);
     m.say('kid_gohan', 'STOP IIIT!', 1.4);
@@ -435,9 +435,9 @@
       S.moon = fullMoon(b, spot);
       const moonPos = S.moon.group.position;
       m.fade('clear', 0.8);
-      m.shot((t, out) => {
+      m.shot((t, out, el) => {
         const c = p.chest();
-        camAt(out, c.clone().add(new V3(1.2, -0.3, 2.2)), c.clone().lerp(moonPos, 0.02 + t * 0.03), 44);
+        camAt(out, c.clone().add(new V3(1.2, -0.3, 2.2)), c.clone().lerp(moonPos, 0.02 + el * 0.03), 44);
       }, 999, { hold: true, cut: true, blendIn: 0 });
       m.say('kid_gohan', 'The moon is so big and round tonight...', 2.6);
       yield* m.cine(2.6);
@@ -453,7 +453,7 @@
       ape.controller = scriptedController();
       ape.setState('scripted', { pose: 'ga_roar', expression: 'shout' });
       S.gape = ape;
-      m.shot((t, out) => camAt(out, ground(b, spot.clone().add(new V3(-16, 0, 22)), 3), ape.pos.clone().add(new V3(0, 2 + t * 5, 0)), 56), 999, { hold: true, cut: true, blendIn: 0 });
+      m.shot((t, out, el) => camAt(out, ground(b, spot.clone().add(new V3(-16, 0, 22)), 3), ape.pos.clone().add(new V3(0, 2 + el * 5, 0)), 56), 999, { hold: true, cut: true, blendIn: 0 });
       yield* m.cine(2.4);
       b.sfx('roar', ape, { pitch: 0.8 });
       // Piccolo takes over

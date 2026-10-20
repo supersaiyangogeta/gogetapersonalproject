@@ -113,6 +113,10 @@
      * Holds the last pose unless opts.loop. opts.onEnd fires once.
      */
     playSequence(steps, opts = {}) {
+      // step.needs: something the body must wear ('scouter', a prop id; '!sword' when it must not) — Vegeta's ear tap
+      // needs his scouter, Trunks' draw his sword: an outfit without it skips the step
+      const m = this.model;
+      if (steps) steps = steps.filter((s) => !s.needs || (s.needs[0] === '!') !== !!(m.wears && m.wears(s.needs.replace('!', ''))));
       if (!steps || !steps.length) return;
       this.seq = { steps, i: -1, t: 0, loop: !!opts.loop, onEnd: opts.onEnd };
       this._advance();

@@ -1674,6 +1674,96 @@ module.exports = function simTests({ test, eq, ok }) {
     });
   }
 
+  console.log('\nBattle tick handlers (headless)');
+  {
+    const g = H.create({ quiet: true, seed: 23 });
+    // the 2026-10-19 engine fix: battle.js rebuilt the handler list after running it, so a b.onTick / b.after
+    // registered from inside a handler was silently lost (Gogeta's sphere impacts, Beerus' barrage, a barrier fade)
+    test('tick handlers: one registered inside a handler (onTick or after) is kept and first runs next tick, after the others, once per tick; removed or cancelled, it stops at once; a throwing handler keeps the list intact', () => {
+      const b = g.battle({ p1: 'test_dummy', p2: 'test_dummy', distance: 20 });
+      const base = b.tickHandlers.length;
+      const log = [];
+      let t = 0, spawned = false;
+      b.onTick(() => {
+        t++;
+        log.push('A' + t);
+        if (!spawned) {
+          spawned = true;
+          b.onTick(() => log.push('C' + t));
+          b.after(2, () => log.push('D' + t));
+        }
+      });
+      b.onTick(() => log.push('B' + t));
+      for (let i = 0; i < 4; i++) b.tick();
+      eq(log.join(','), 'A1,B1,A2,B2,C2,A3,B3,C3,D3,A4,B4,C4', 'kept, in registration order, from the next tick; after() fires once');
+      eq(b.tickHandlers.length, base + 3, 'the fired after() is gone, nothing duplicated');
+      // removal from inside a handler: a later handler removed by an earlier one does not run that tick, or again
+      const seen = [];
+      let offLater = null;
+      const offEarly = b.onTick(() => {
+        seen.push('E');
+        if (offLater) offLater();
+      });
+      offLater = b.onTick(() => seen.push('L'));
+      const cancel = b.after(1, () => seen.push('X'));
+      cancel();
+      b.tick();
+      b.tick();
+      eq(seen.join(','), 'E,E', 'the removed handler never ran; the cancelled after() never fired');
+      offEarly();
+      b.tick();
+      eq(seen.join(','), 'E,E', 'a handler removed between ticks does not run');
+      eq(b.tickHandlers.length, base + 3, 'removed handlers leave the list');
+      // a handler that throws: the ones already done are settled, the rest keep their place, nothing is lost
+      const order = [];
+      let boom = true;
+      b.tickHandlers.length = 0;
+      b.onTick(() => (order.push('once'), false));
+      b.onTick(() => {
+        order.push('T');
+        if (boom) throw new Error('boom');
+      });
+      b.onTick(() => order.push('Y'));
+      let threw = false;
+      try {
+        b.tick();
+      } catch (e) {
+        threw = e.message === 'boom';
+      }
+      boom = false;
+      b.tick();
+      ok(threw, 'the error still reaches the caller');
+      eq(order.join(','), 'once,T,T,Y', 'after a throw: the finished one-shot gone, the thrower and the rest kept, each once a tick');
+      eq(b.tickHandlers.length, 2, 'two handlers left');
+      b.dispose();
+    });
+
+    test('mission tick hooks: one that removes itself (or another) no longer makes the next one skip a tick; each runs once a tick; one added meanwhile runs at once, as before', () => {
+      const b = g.battle({ p1: 'test_dummy', p2: 'test_dummy', distance: 20 });
+      const m = new g.SL.Mission(b, { id: 'probe', phases: [] });
+      const log = [];
+      const drop = (h) => {
+        const i = m.tickHooks.indexOf(h);
+        if (i >= 0) m.tickHooks.splice(i, 1);
+      };
+      const A = () => (log.push('A'), drop(A)); // gone after its first run
+      const B = () => log.push('B');
+      const C = () => (log.push('C'), drop(B)); // removes one that already ran
+      const D = () => {
+        log.push('D');
+        if (!m.tickHooks.includes(E)) m.tickHooks.push(E);
+      };
+      const E = () => log.push('E');
+      m.tickHooks.push(A, B, C, D);
+      m.tick();
+      eq(log.join(','), 'A,B,C,D,E', 'first tick: none skipped, none twice, the new one at once');
+      log.length = 0;
+      m.tick();
+      eq(log.join(','), 'C,D,E', 'second tick: the removed ones gone');
+      b.dispose();
+    });
+  }
+
   console.log('\nBattle rules: form level limit (headless)');
   {
     const g = H.create({ quiet: true, seed: 22 });
@@ -2861,6 +2951,9 @@ module.exports = function simTests({ test, eq, ok }) {
       ['duel', 'galick', 'transform', 'greatApe', 'shrink', 'desperate', 'moonlight', 'gohanApe', 'retreat'].forEach((id) => ok(ids.includes(id), 'reached ' + id));
       ok(r.log.some((x) => x.ev === 'switch' && x.to === 'great_ape_gohan_player'), 'the player takes Great Ape Gohan');
       ok(r.log.some((x) => x.ev === 'objectives' && x.id === 'struggle' && x.done), 'Kamehameha wins the beam struggle');
+      // Roadmap Three (the owner's Gemini research): the Kaioken assault through the spires (B04) and the beam carrying
+      // Vegeta into the sky (B-CLASH-05) are staged between the played stretches
+      ok(r.m.flags.firstExchange && r.m.flags.airExchange && r.m.flags.kaiokenAssault && r.m.flags.skyward, 'the first exchange (B01), the air exchange (B02), the Kaioken assault and the ride into the sky play');
       ok(r.log.some((x) => x.ev === 'zoneBroken' && x.zone === 'tail'), "the Great Ape's tail is cut");
       ok(r.log.some((x) => x.ev === 'switch' && x.to === 'kid_gohan'), 'Gohan takes over for the last stand');
       eq(g.errors.length, 0, 'engine errors: ' + g.errors.slice(0, 2).join(' | '));
@@ -3840,9 +3933,11 @@ module.exports = function simTests({ test, eq, ok }) {
 
     test('the four forms are four different fighters, not one with a tint', () => {
       eq(SL.Schema.validateCharacter(FZ).join(' | '), '', 'schema');
-      // four forms, plus the story-only 100% (namek_end) built on the final form
-      eq(FZ.forms.map((f) => f.id).join(','), 'base,second,third,final,full', 'four forms, then 100%');
+      // four forms, plus the story-only 100% (namek_end) built on the final form — and, since Movie 2 · Super Broly
+      // (2026-10-10), the film-only Golden form after it, story-locked as well
+      eq(FZ.forms.map((f) => f.id).join(','), 'base,second,third,final,full,golden', 'four forms, then 100%, then Golden');
       ok(FZ.forms[4].storyLocked, 'and 100% is a story form');
+      ok(FZ.forms[5].storyLocked, 'and so is Golden');
       const ids = (i) => Object.values((FZ.forms[i].specials) || FZ.specials).map((x) => x.id).join(',');
       const moveIds = (i) => ((FZ.forms[i].moves || FZ.moves).light || []).map((x) => x.id).join(',');
       const seenSpecials = new Set();
@@ -3863,7 +3958,7 @@ module.exports = function simTests({ test, eq, ok }) {
       const horns = FZ.forms.map((f) => (f.look && f.look.headExtras ? f.look.headExtras.length : (FZ.appearance.headExtras || []).length));
       ok(new Set(horns).size >= 3, 'and different heads: ' + horns.join(', '));
       const auras = FZ.forms.map((f) => f.aura && f.aura.color);
-      eq(new Set(auras).size, 5, 'an aura each');
+      eq(new Set(auras).size, FZ.forms.length, 'an aura each');
       // and they are meant to play differently
       const sp = FZ.forms[3].specials;
       eq(sp.special1.type, 'deathSaucer', 'the final form throws saucers');
@@ -4431,7 +4526,7 @@ module.exports = function simTests({ test, eq, ok }) {
       ok(iV > 0 && iG === iV + 1 && iK === iG + 1, 'the prince dies first, then the two Kaioken missions: ' + order.slice(iV, iK + 1).join(' → '));
       const def = SL.data.missions.namek_goku;
       eq(def.character, 'goku', 'played as Goku');
-      eq(def.phases.map((x) => x.id).join(','), 'open,base,kaioken,rising,after', 'five phases');
+      eq(def.phases.map((x) => x.id).join(','), 'open,base,lake,kaioken,rising,after', 'six phases (the lake: moveset roadmap #24)');
       eq(def.phases.filter((x) => x.checkpoint).map((x) => x.id).join(','), 'base,rising', 'the two fights are the checkpoints');
     });
 
@@ -4440,7 +4535,7 @@ module.exports = function simTests({ test, eq, ok }) {
       const b = r.b, m = r.m, S = b.story;
       const phases = r.log.filter((x) => x.ev === 'phase').map((x) => x.id);
       eq(m.state, 'success', 'mission state (' + r.seconds.toFixed(0) + ' s, phases ' + phases.join(',') + ')');
-      eq(phases.join(','), 'open,base,kaioken,rising,after', 'every phase played');
+      eq(phases.join(','), 'open,base,lake,kaioken,rising,after', 'every phase played');
       ok(m.flags.kaiokenShown, 'and the Kaioken escalation');
       ok(m.flags.kaiokenSeconds >= 3, 'and spent real time in the Kaioken: ' + m.flags.kaiokenSeconds + ' s');
       eq(S.goku.form.id, 'kaioken', 'which is still lit at the end');
@@ -4590,11 +4685,17 @@ module.exports = function simTests({ test, eq, ok }) {
       const kinds = new Set();
       for (const e of sc.events) for (const k of Object.keys(e)) kinds.add(k);
       for (const k of ['vfx', 'shake', 'screen', 'say', 'cam', 'mood']) ok(kinds.has(k), 'it uses ' + k);
-      const orbit = sc.events.filter((e) => e.cam && e.cam.orbit).length;
-      ok(orbit >= 2, 'the camera circles him more than once: ' + orbit);
       // the form change itself is the engine's transform sequence, not a stat write
-      const change = sc.events.find((e) => e.call && String(e.call).includes("'transform'"));
-      ok(change, 'the change runs through the engine transform state');
+      const ci = sc.events.findIndex((e) => e.call && String(e.call).includes("'transform'"));
+      ok(ci > 0, 'the change runs through the engine transform state');
+      // the owner's nine-shot restoration (2026-10-14) replaced the earlier double orbit: the camera circles him once, at
+      // the change itself; the whisper on his face comes before it, the close on his eyes after it
+      const orbits = sc.events.map((e, i) => (e.cam && e.cam.orbit ? i : -1)).filter((i) => i >= 0);
+      ok(orbits.includes(ci), 'the camera circles him at the change: ' + orbits.join(','));
+      const whisper = sc.events.findIndex((e) => e.say && /I tried to end this/.test(e.say.line));
+      ok(whisper >= 0 && whisper < ci, 'the whisper on his face comes first: ' + whisper + ' < ' + ci);
+      const eyes = sc.events.findIndex((e, i) => i > ci && e.cam && e.cam.from && e.cam.from.at === 'goku:head' && e.cam.fov <= 32);
+      ok(eyes > ci, 'then in on his eyes: ' + eyes);
     });
 
     test('Super Saiyan arrives whether the cinematic is watched or skipped', () => {
@@ -5230,7 +5331,9 @@ module.exports = function simTests({ test, eq, ok }) {
       // he is the same person as the Namek boss, and the file says so by reusing his body language
       ok(mf.poses.fz_jab && mf.poses.mf_sweep, 'Mecha Frieza keeps Frieza\'s poses and adds his own');
       // Mecha Frieza is a separate fighter: the Namek boss keeps his own four forms plus the story-only 100%
-      eq(SL.data.characters.frieza.forms.map((f) => f.id).join(','), 'base,second,third,final,full', 'the Namek boss is untouched by the Android saga');
+      // (and, since Movie 2 · Super Broly, 2026-10-10, the film-only Golden form after them, story-locked too)
+      eq(SL.data.characters.frieza.forms.map((f) => f.id).join(','), 'base,second,third,final,full,golden', 'the Namek boss is untouched by the Android saga');
+      ok(SL.data.characters.frieza.forms.find((f) => f.id === 'golden').storyLocked, 'Golden is story-only');
     });
 
     // the missions themselves (rebuilt 2026-09-24) are covered in tests/trunks-arrival-tests.js
@@ -5367,9 +5470,12 @@ module.exports = function simTests({ test, eq, ok }) {
       eq(a17.mechanic.type, 'tireless', 'both are tireless');
       eq(a18.mechanic.type, 'tireless', '');
       ok(SL.Mechanics.boss.isPrototypeOf(SL.Mechanics.tireless), 'and the mechanic is built on the boss one');
-      // 16 exists as a body in a capsule and is never switched on in this chapter
+      // 16 exists as a body in a capsule and is never switched on in this chapter; since the roster expansion
+      // (2026-10-14) he is a Free Battle fighter — but only once "Gohan's Turn" is cleared, long after this chapter
       ok(SL.data.characters.android_16, 'Android 16 exists');
-      eq(SL.data.characters.android_16.playable, false, 'as a story body');
+      const u16 = SL.data.unlocks.find((u) => u.type === 'characters' && u.target === 'android_16');
+      ok(u16 && u16.condition.missionComplete === 'cell_gohan', 'playable only after "Gohan\'s Turn": ' + JSON.stringify(u16 && u16.condition));
+      ok(!SL.Save.fresh().unlocks.characters.includes('android_16'), 'and locked in a fresh save');
     });
 
     test('"The Laboratory Door" is a race and a room, not a boss fight', () => {
@@ -5688,10 +5794,14 @@ module.exports = function simTests({ test, eq, ok }) {
     test('the Majin form is a story decision, not something the wheel offers', () => {
       const v = SL.data.characters.vegeta;
       eq(JSON.stringify(SL.Schema.validateCharacter(v)), '[]', 'Vegeta still validates');
-      // since Chapter 10 (2026-09-24) Super Saiyan 2 sits between the first level and the mark
-      eq(v.forms.map((f) => f.id).join(','), 'base,ssj,ssj2,majin', 'four forms now');
+      // since Chapter 10 (2026-09-24) Super Saiyan 2 sits between the first level and the mark; since
+      // the Final Flash rebuild (2026-10-03) the story-only Super Vegeta (Cell saga) comes after it;
+      // since Movie 2 (2026-10-10) the film's God and Blue sit after SSJ2 (Free Battle only once the film gives them);
+      // since the Tournament of Power, Blue Evolution comes last (Free Battle after "Toppo", top_toppo)
+      eq(v.forms.map((f) => f.id).join(','), 'base,ssj,ssj2,god,blue,majin,super_vegeta,blueEvo', 'eight forms now');
       const majin = v.forms.find((f) => f.id === 'majin');
       eq(majin.storyLocked, true, 'the Majin state is story-locked');
+      eq(v.forms.find((f) => f.id === 'super_vegeta').storyLocked, true, 'and so is Super Vegeta');
       ok(majin.mult.damage > v.forms[1].mult.damage * 1.25, 'and it is a real jump over Super Saiyan: ×' + v.forms[1].mult.damage + ' → ×' + majin.mult.damage);
       ok(majin.sequence && majin.sequence.steps.some((st) => st.burst), 'with a staged transformation');
       ok(majin.aura.color !== v.forms[1].aura.color, 'and its own aura colour');
@@ -5699,6 +5809,9 @@ module.exports = function simTests({ test, eq, ok }) {
       const b = g.battle({ p1: 'vegeta', p2: 'goku', distance: 8 });
       const vf = b.fighters.find((f) => f.def.id === 'vegeta');
       eq(!!(vf.lockedForms && vf.lockedForms.majin), true, 'it is locked at spawn');
+      eq(!!(vf.lockedForms && vf.lockedForms.super_vegeta), true, 'Super Vegeta too');
+      eq(!!(vf.lockedForms && vf.lockedForms.god && vf.lockedForms.blue), true, 'and God and Blue before the film has given them');
+      eq(!!(vf.lockedForms && vf.lockedForms.blueEvo), true, 'and Blue Evolution before the Tournament has given it');
       b.dispose();
       eq(g.errors.length, 0, 'engine errors: ' + g.errors.slice(0, 2).join(' | '));
     });
@@ -5773,6 +5886,13 @@ module.exports = function simTests({ test, eq, ok }) {
   require('./playtest3-tests')({ test, eq, ok });
   require('./playtest4-tests')({ test, eq, ok });
   require('./whatif-tests')({ test, eq, ok });
+  require('./fusion-reborn-tests')({ test, eq, ok });
+  require('./super-broly-tests')({ test, eq, ok });
+  require('./rof-tests')({ test, eq, ok });
+  require('./rof-goku-tests')({ test, eq, ok });
+  require('./rof-finale-tests')({ test, eq, ok });
+  require('./universe6-tests')({ test, eq, ok });
+  require('./moveset-tests')({ test, eq, ok });
   require('./frieza-fair-tests')({ test, eq, ok });
   require('./immersion-tests')({ test, eq, ok });
   require('./wardrobe-tests')({ test, eq, ok });

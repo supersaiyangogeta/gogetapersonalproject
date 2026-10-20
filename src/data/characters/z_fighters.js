@@ -62,6 +62,18 @@
     },
     k_victory: { ...C.victory, head: [-14, 0, 0], chest: [-6, 0, 0] },
     k_defeat: C.defeatKneel,
+    // HIS OWN STRIKES (ToP refinement brief §30: compact strikes, quick evasive movement, courage — not Goku's power):
+    // short straight punches from a low crouch, a snap kick at the shin, a low spinning kick, a palm thrust
+    k_jabW: { root: { y: -0.08 }, hips: [0, -10, 0], chest: [6, -14, 0], head: [-4, 10, 0], shoulderL: [-60, 0, 14], elbowL: [-112, 0, 0], shoulderR: [-34, 0, -12], elbowR: [-120, 0, 0], thighL: [-24, 14, 12], kneeL: [34, 0, 0], thighR: [14, -10, -12], kneeR: [28, 0, 0], hands: ['fist', 'fist'] },
+    k_jab: { root: { y: -0.09, rx: 6 }, hips: [0, 8, 0], chest: [8, 18, 0], head: [-6, -12, 0], shoulderL: [-90, 0, 0], elbowL: [-6, 0, 0], shoulderR: [-40, 0, -14], elbowR: [-118, 0, 0], thighL: [-30, 14, 12], kneeL: [40, 0, 0], thighR: [16, -10, -12], kneeR: [28, 0, 0], hands: ['fist', 'fist'] },
+    k_crossW: { root: { y: -0.08 }, chest: [6, 16, 0], head: [-4, -10, 0], shoulderR: [-40, 0, -14], elbowR: [-120, 0, 0], shoulderL: [-62, 0, 14], elbowL: [-110, 0, 0], thighL: [-24, 14, 12], kneeL: [34, 0, 0], thighR: [14, -10, -12], kneeR: [28, 0, 0], hands: ['fist', 'fist'] },
+    k_cross: { root: { y: -0.09, rx: 6 }, hips: [0, -8, 0], chest: [8, -20, 0], head: [-6, 14, 0], shoulderR: [-90, 0, 0], elbowR: [-6, 0, 0], shoulderL: [-50, 0, 16], elbowL: [-110, 0, 0], thighR: [-26, -10, -12], kneeR: [36, 0, 0], thighL: [12, 10, 12], kneeL: [26, 0, 0], hands: ['fist', 'fist'] },
+    k_lowKickW: { root: { y: -0.08 }, chest: [8, 0, 0], head: [-6, 0, 0], shoulderL: [-60, 0, 14], elbowL: [-110, 0, 0], shoulderR: [-50, 0, -14], elbowR: [-112, 0, 0], thighR: [-40, 0, -6], kneeR: [90, 0, 0], thighL: [-14, 10, 12], kneeL: [30, 0, 0], hands: ['fist', 'fist'] },
+    k_lowKick: { root: { y: -0.1, rx: 4 }, chest: [10, 0, 0], head: [-8, 0, 0], shoulderL: [-60, 0, 20], elbowL: [-110, 0, 0], shoulderR: [-50, 0, -20], elbowR: [-112, 0, 0], thighR: [-50, 0, -6], kneeR: [6, 0, 0], footR: [20, 0, 0], thighL: [-16, 10, 12], kneeL: [34, 0, 0], hands: ['fist', 'fist'] },
+    k_spinW: { root: { y: -0.14 }, hips: [0, -60, 0], spine: [6, -20, 0], chest: [8, -30, 0], head: [0, 70, 0], shoulderL: [-30, 0, 50], elbowL: [-80, 0, 0], shoulderR: [-60, 0, -10], elbowR: [-100, 0, 0], thighL: [-30, 0, 10], kneeL: [60, 0, 0], thighR: [0, 0, -10], kneeR: [60, 0, 0], hands: ['fist', 'fist'] },
+    k_spin: { root: { y: -0.1, rz: -18 }, hips: [0, 90, 0], spine: [-4, 30, 0], chest: [-8, 40, 0], head: [10, -90, 0], shoulderL: [-20, 0, 60], elbowL: [-40, 0, 0], shoulderR: [-10, 0, -60], elbowR: [-40, 0, 0], thighL: [-70, 0, 50], kneeL: [10, 0, 0], footL: [30, 0, 0], thighR: [-10, 0, -6], kneeR: [40, 0, 0], hands: ['fist', 'fist'] },
+    k_palmW: { root: { y: -0.08 }, chest: [4, -18, 0], head: [-4, 12, 0], shoulderR: [-30, 0, -20], elbowR: [-120, 0, 0], shoulderL: [-70, 0, 16], elbowL: [-60, 0, 0], thighL: [-20, 14, 12], kneeL: [30, 0, 0], thighR: [12, -10, -12], kneeR: [24, 0, 0], hands: ['open', 'open'] },
+    k_palm: { root: { y: -0.1, rx: 10 }, chest: [10, 20, 0], head: [-8, -14, 0], shoulderR: [-90, 0, 0], elbowR: [-4, 0, 0], shoulderL: [-40, 0, 26], elbowL: [-80, 0, 0], thighL: [-34, 14, 12], kneeL: [44, 0, 0], thighR: [20, -10, -12], kneeR: [20, 0, 0], hands: ['open', 'open'] },
   };
 
   SL.data.characters.krillin = {
@@ -103,13 +115,13 @@
     poses: krillinPoses,
     moves: {
       light: [
-        { id: 'jab', startup: 4, active: 3, recovery: 10, cancel: 6, damage: 240, reach: 1.05, radius: 0.65, lunge: 10, hitstun: 18, knock: 'flinch', impact: 1, pose: { wind: 'punchWindR', strike: 'punchR' }, sfx: 'punchLight', hitPose: 'hitLight' },
-        { id: 'cross', startup: 4, active: 3, recovery: 11, cancel: 6, damage: 260, reach: 1.05, radius: 0.65, lunge: 10, hitstun: 18, knock: 'flinch', impact: 1, pose: { wind: 'punchWindL', strike: 'punchL' }, sfx: 'punchLight', hitPose: 'hitLight' },
-        { id: 'snapKick', startup: 5, active: 4, recovery: 13, cancel: 8, damage: 300, reach: 1.2, radius: 0.75, lunge: 11, hitstun: 22, knock: 'flinch', impact: 1, pose: { wind: 'kickWindR', strike: 'kickR' }, sfx: 'punchHeavy', hitPose: 'hitBody' },
-        { id: 'spinKick', startup: 6, active: 4, recovery: 15, cancel: 9, damage: 340, reach: 1.3, radius: 0.8, lunge: 12, hitstun: 24, knock: 'push', knockSpeed: 7, impact: 2, pose: { wind: 'kickWindR', strike: 'kickR' }, sfx: 'punchHeavy', hitPose: 'hitHeavy' },
+        { id: 'jab', startup: 4, active: 3, recovery: 9, cancel: 5, damage: 240, reach: 1.05, radius: 0.65, lunge: 10, hitstun: 18, knock: 'flinch', impact: 1, pose: { wind: 'k_jabW', strike: 'k_jab' }, sfx: 'punchLight', hitPose: 'hitLight' },
+        { id: 'cross', startup: 4, active: 3, recovery: 10, cancel: 5, damage: 260, reach: 1.05, radius: 0.65, lunge: 10, hitstun: 18, knock: 'flinch', impact: 1, pose: { wind: 'k_crossW', strike: 'k_cross' }, sfx: 'punchLight', hitPose: 'hitLight' },
+        { id: 'snapKick', startup: 5, active: 4, recovery: 12, cancel: 7, damage: 300, reach: 1.2, radius: 0.75, lunge: 11, hitstun: 22, knock: 'flinch', impact: 1, pose: { wind: 'k_lowKickW', strike: 'k_lowKick' }, sfx: 'punchHeavy', hitPose: 'hitBody' },
+        { id: 'spinKick', startup: 6, active: 4, recovery: 15, cancel: 9, damage: 340, reach: 1.3, radius: 0.8, lunge: 12, hitstun: 24, knock: 'push', knockSpeed: 7, impact: 2, pose: { wind: 'k_spinW', strike: 'k_spin' }, sfx: 'punchHeavy', hitPose: 'hitHeavy' },
       ],
       heavy: {
-        0: { id: 'palmThrust', startup: 10, active: 4, recovery: 20, damage: 640, reach: 1.15, radius: 0.85, lunge: 16, hitstun: 30, knock: 'heavy', knockSpeed: 22, impact: 2, pose: { wind: 'punchWindR', strike: 'punchR' }, sfx: 'punchHeavy', hitPose: 'hitHeavy' },
+        0: { id: 'palmThrust', startup: 10, active: 4, recovery: 20, damage: 640, reach: 1.15, radius: 0.85, lunge: 16, hitstun: 30, knock: 'heavy', knockSpeed: 22, impact: 2, pose: { wind: 'k_palmW', strike: 'k_palm' }, sfx: 'punchHeavy', hitPose: 'hitHeavy' },
         2: { id: 'risingKnee', startup: 8, active: 4, recovery: 20, damage: 560, reach: 1.0, radius: 0.85, lunge: 11, hitstun: 34, knock: 'launch', knockSpeed: 17, impact: 2, pose: { wind: 'uppercutWind', strike: 'uppercut' }, sfx: 'punchHeavy', hitPose: 'hitBody' },
         3: { id: 'doubleAxe', startup: 11, active: 4, recovery: 24, damage: 780, reach: 1.1, radius: 0.9, lunge: 10, hitstun: 36, knock: 'smash', knockSpeed: 32, impact: 3, pose: { wind: 'hammerWind', strike: 'hammer' }, sfx: 'punchHeavy', hitPose: 'hitHeavy' },
       },
@@ -135,9 +147,10 @@
       },
     },
     mechanic: { type: 'survivor', name: 'Survivor', desc: 'Below 40% health, dodges and vanishes cost half the stamina and ki recovers twice as fast.' },
-    ai: { personality: 'adaptive', aggression: 0.55, defense: 0.6, ranged: 0.5, beam: 0.5, transformHp: 0, preferredRange: 5 },
+    // quick and evasive: he gets out of the way first, darts in for a short string, and keeps the disc for an opening
+    ai: { personality: 'adaptive', aggression: 0.55, defense: 0.72, ranged: 0.5, beam: 0.5, transformHp: 0, preferredRange: 4.5, rhythm: { burst: 3, rest: 30 } },
     barks: {},
-    intro: { pose: 'idle', expression: 'angry' },
+    intro: { pose: 'k_discCharge', expression: 'angry' }, // the Destructo Disc raised
     victory: { poses: ['k_victory'], expression: 'grin' },
     defeat: { pose: 'k_defeat', expression: 'hurt' },
   };
@@ -186,6 +199,17 @@
     t_dodonCharge: { ...C.twoFingers },
     t_dodonFire: { ...C.twoFingers, shoulderR: [-92, 0, 4], elbowR: [-2, 0, 0] },
     t_victory: { ...C.armsCrossed, head: [-10, 0, 0] },
+    // THE CRANE SCHOOL (ToP refinement brief §31: a direct martial stance, focused defence, a deliberate wind-up — not
+    // Krillin, not Gohan): the hand drawn back past the ear before an open-palm strike, the knife-hand from high, the
+    // crane's high front kick with the arms spread like wings, a two-palm push
+    t_palmW: { root: { y: -0.06 }, hips: [0, -14, 0], chest: [0, -16, 0], head: [-4, 12, 0], shoulderR: [-120, 0, -30], elbowR: [-130, 0, 0], shoulderL: [-72, 0, 6], elbowL: [-30, 0, 0], thighL: [-18, 14, 10], kneeL: [24, 0, 0], thighR: [10, -10, -12], kneeR: [18, 0, 0], hands: ['open', 'open'] },
+    t_palm: { root: { y: -0.07, rx: 6 }, hips: [0, 10, 0], chest: [4, 20, 0], head: [-6, -14, 0], shoulderR: [-92, 0, 0], elbowR: [-4, 0, 0], shoulderL: [-40, 0, 20], elbowL: [-90, 0, 0], thighL: [-28, 14, 10], kneeL: [34, 0, 0], thighR: [14, -10, -12], kneeR: [16, 0, 0], hands: ['open', 'open'] },
+    t_knifeW: { root: { y: -0.05 }, chest: [-4, 14, 0], head: [-6, -8, 0], shoulderL: [-150, 0, 30], elbowL: [-60, 0, 0], shoulderR: [-40, 0, -20], elbowR: [-90, 0, 0], thighL: [-16, 14, 10], kneeL: [22, 0, 0], thighR: [10, -10, -12], kneeR: [16, 0, 0], hands: ['open', 'open'] },
+    t_knife: { root: { y: -0.08, rx: 8 }, chest: [8, -16, 0], head: [-8, 12, 0], shoulderL: [-70, 0, -10], elbowL: [-10, 0, 0], shoulderR: [-40, 0, -24], elbowR: [-90, 0, 0], thighL: [-26, 14, 10], kneeL: [32, 0, 0], thighR: [14, -10, -12], kneeR: [16, 0, 0], hands: ['open', 'open'] },
+    t_craneW: { root: { y: -0.02 }, chest: [-4, 0, 0], head: [-6, 0, 0], shoulderL: [-30, 0, 70], elbowL: [-20, 0, 0], shoulderR: [-30, 0, -70], elbowR: [-20, 0, 0], thighR: [-60, 0, -6], kneeR: [100, 0, 0], thighL: [-6, 0, 8], kneeL: [14, 0, 0], hands: ['open', 'open'] },
+    t_crane: { root: { y: 0.02, rx: -10 }, chest: [-8, 0, 0], head: [-2, 0, 0], shoulderL: [-20, 0, 80], elbowL: [-10, 0, 0], shoulderR: [-20, 0, -80], elbowR: [-10, 0, 0], thighR: [-120, 0, -6], kneeR: [4, 0, 0], footR: [24, 0, 0], thighL: [6, 0, 8], kneeL: [12, 0, 0], hands: ['open', 'open'] },
+    t_doubleW: { root: { y: -0.06, rx: -4 }, chest: [-4, 0, 0], head: [-6, 0, 0], shoulderL: [-20, 0, 20], elbowL: [-120, 0, 0], shoulderR: [-20, 0, -20], elbowR: [-120, 0, 0], thighL: [-18, 0, 14], kneeL: [26, 0, 0], thighR: [10, 0, -14], kneeR: [20, 0, 0], hands: ['open', 'open'] },
+    t_double: { root: { y: -0.09, rx: 10 }, chest: [10, 0, 0], head: [-10, 0, 0], shoulderL: [-90, 0, 6], elbowL: [-4, 0, 0], shoulderR: [-90, 0, -6], elbowR: [-4, 0, 0], thighL: [-34, 0, 14], kneeL: [42, 0, 0], thighR: [20, 0, -14], kneeR: [14, 0, 0], hands: ['open', 'open'] },
   };
 
   SL.data.characters.tien = {
@@ -222,12 +246,13 @@
     poses: tienPoses,
     moves: {
       light: [
-        { id: 'palmStrike', startup: 5, active: 3, recovery: 11, cancel: 7, damage: 280, reach: 1.2, radius: 0.7, lunge: 9, hitstun: 20, knock: 'flinch', impact: 1, pose: { wind: 'punchWindR', strike: 'punchR' }, sfx: 'punchLight', hitPose: 'hitLight' },
-        { id: 'knifeHand', startup: 5, active: 3, recovery: 12, cancel: 7, damage: 300, reach: 1.2, radius: 0.72, lunge: 9, hitstun: 20, knock: 'flinch', impact: 1, pose: { wind: 'punchWindL', strike: 'punchL' }, sfx: 'punchLight', hitPose: 'hitLight' },
-        { id: 'craneKick', startup: 7, active: 4, recovery: 15, cancel: 9, damage: 380, reach: 1.4, radius: 0.8, lunge: 10, hitstun: 24, knock: 'push', knockSpeed: 8, impact: 2, pose: { wind: 'kickWindR', strike: 'kickR' }, sfx: 'punchHeavy', hitPose: 'hitHeavy' },
+        // a beat longer to come out than Krillin's, and a beat more behind it
+        { id: 'palmStrike', startup: 6, active: 3, recovery: 11, cancel: 7, damage: 300, reach: 1.2, radius: 0.7, lunge: 9, hitstun: 20, knock: 'flinch', impact: 1, pose: { wind: 't_palmW', strike: 't_palm' }, sfx: 'punchLight', hitPose: 'hitLight' },
+        { id: 'knifeHand', startup: 6, active: 3, recovery: 12, cancel: 7, damage: 320, reach: 1.2, radius: 0.72, lunge: 9, hitstun: 20, knock: 'flinch', impact: 1, pose: { wind: 't_knifeW', strike: 't_knife' }, sfx: 'punchLight', hitPose: 'hitSideL' },
+        { id: 'craneKick', startup: 8, active: 4, recovery: 15, cancel: 9, damage: 400, reach: 1.45, radius: 0.8, lunge: 10, hitstun: 24, knock: 'push', knockSpeed: 8, impact: 2, pose: { wind: 't_craneW', strike: 't_crane' }, sfx: 'punchHeavy', hitPose: 'hitHeavy' },
       ],
       heavy: {
-        0: { id: 'doublePalm', startup: 12, active: 5, recovery: 22, damage: 820, reach: 1.25, radius: 0.95, lunge: 14, hitstun: 32, knock: 'heavy', knockSpeed: 26, impact: 2, guardCrush: true, guardDamage: 40, pose: { wind: 'punchWindR', strike: 'punchR' }, sfx: 'punchHeavy', hitPose: 'hitHeavy' },
+        0: { id: 'doublePalm', startup: 12, active: 5, recovery: 22, damage: 820, reach: 1.25, radius: 0.95, lunge: 14, hitstun: 32, knock: 'heavy', knockSpeed: 26, impact: 2, guardCrush: true, guardDamage: 40, pose: { wind: 't_doubleW', strike: 't_double' }, sfx: 'punchHeavy', hitPose: 'hitHeavy' },
         2: { id: 'craneLift', startup: 9, active: 4, recovery: 20, damage: 640, reach: 1.2, radius: 0.85, lunge: 11, hitstun: 34, knock: 'launch', knockSpeed: 18, impact: 2, pose: { wind: 'uppercutWind', strike: 'uppercut' }, sfx: 'punchHeavy', hitPose: 'hitBody' },
       },
       dash: { id: 'elbowDive', startup: 6, active: 9, recovery: 18, damage: 700, reach: 1.2, radius: 0.9, lunge: 30, hitstun: 30, knock: 'heavy', knockSpeed: 22, impact: 2, pose: { wind: 'dash', strike: 'dash' }, sfx: 'punchHeavy', hitPose: 'hitBody' },
@@ -252,9 +277,10 @@
       },
     },
     mechanic: { type: 'thirdEye', name: 'Third Eye', desc: 'A wider Perfect Guard window; every Perfect Guard restores extra ki.' },
-    ai: { personality: 'adaptive', aggression: 0.5, defense: 0.75, ranged: 0.45, beam: 0.45, transformHp: 0, preferredRange: 5 },
+    // focused: he waits behind his guard, reads, and answers with a short, deliberate string
+    ai: { personality: 'martial', aggression: 0.48, defense: 0.8, ranged: 0.45, beam: 0.45, transformHp: 0, preferredRange: 4, rhythm: { burst: 2, rest: 46 } },
     barks: {},
-    intro: { pose: 'idle', expression: 'calm' },
+    intro: { pose: 't_triCharge', expression: 'calm' }, // the Tri-Beam's triangle
     victory: { poses: ['t_victory'], expression: 'calm' },
     defeat: { pose: 'defeatKneel', expression: 'hurt' },
   };
@@ -335,7 +361,7 @@
     mechanic: null,
     ai: { personality: 'aggressive', aggression: 0.7, defense: 0.4, ranged: 0.35, beam: 0.35, transformHp: 0, preferredRange: 4 },
     barks: {},
-    intro: { pose: 'idle', expression: 'smirk' },
+    intro: { pose: 'y_wolfW', expression: 'smirk' }, // the Wolf Fang Fist's stance
     victory: { poses: ['y_victory'], expression: 'grin' },
     defeat: { pose: 'defeatKneel', expression: 'hurt' },
   };

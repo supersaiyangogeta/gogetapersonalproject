@@ -21,10 +21,10 @@
     /** Every wheel entry for this fighter right now. Pure: no side effects. */
     buildEntries(f, b) {
       const out = [];
-      const sp = (f.def && f.def.specials) || {};
       const lim = (f === b.player && b.playerLimits) || {};
       for (const slot of ['special1', 'special2', 'ultimate']) {
-        const x = sp[slot];
+        // the active form's technique (Ultimate Gohan's own Masenko), as the HUD cards show it
+        const x = f.specFor(slot);
         if (!x) continue;
         const key = SLOT_KEYS[slot];
         let locked = null;
@@ -45,11 +45,11 @@
       // extra techniques: no button of their own, reached through the wheel
       for (const x of (f.def && f.def.extras) || []) {
         const slot = 'x:' + x.id;
-        let locked = null;
-        if (f.lockedSlots && f.lockedSlots[slot]) locked = 'Not learned yet';
-        else if (x.ultimate && !b.rules.allowUltimates) locked = 'Not allowed here';
+        const gate = f.extraLock(x);
+        if (gate === 'hidden') continue;
         const tech = SL.Techniques && SL.Techniques[x.type];
-        if (!locked && tech && tech.lockedReason) locked = tech.lockedReason(f, x);
+        // a technique's own wording first (God Bind: "Needs divine ki"), then the shared gates
+        const locked = f.lockedSlots && f.lockedSlots[slot] ? 'Not learned yet' : (tech && tech.lockedReason && tech.lockedReason(f, x)) || gate;
         const cost = f.skillCost(slot);
         out.push({
           id: slot, kind: 'special', extra: true, label: x.name, icon: x.icon || 'beam', cost, aim: aimOf(x),
@@ -81,7 +81,7 @@
         const capped = f.formLevel >= f.formLevelCap(fm);
         out.push({ id: 'formLevel', kind: 'info', label: fm.name + ' ' + fm.levels[f.formLevel + 1].name, icon: 'transform', cost: fm.levelCost || 15, affordable: true, locked: storyCapped ? 'Not mastered yet' : capped ? 'Limited by battle rules' : null, hint: 'Hold Charge', intent: null });
       }
-      if (f.formIndex > 0) out.push({ id: 'revert', kind: 'form', label: 'Power Down', icon: 'transform', cost: 0, affordable: true, locked: null, intent: { revert: true } });
+      if (f.formIndex > 0) out.push({ id: 'revert', kind: 'form', label: 'Power Down', icon: 'transform', cost: 0, affordable: true, locked: b.playerLimits && b.playerLimits.revert === false ? 'Unavailable in this encounter' : null, intent: { revert: true } });
       if (b.party && b.party.length > 1) {
         const nx = b.nextPartyMember(1);
         out.push({ id: 'switch', kind: 'party', label: nx ? 'Switch to ' + nx.name : 'Switch hero', icon: 'run', cost: 0, affordable: true, locked: nx && b.canSwitchTo(nx) ? null : 'No one can take over', action: 'partyNext' });
@@ -99,7 +99,8 @@
       let best = -1, bd = 1e9;
       entries.forEach((e, i) => {
         const a = (i / entries.length) * Math.PI * 2;
-        let d = Math.abs(ang - a);
+        // atan2 gives -π..π and the slots 0..2π, so the gap can pass a full turn: fold it into 0..π
+        let d = Math.abs(ang - a) % (Math.PI * 2);
         if (d > Math.PI) d = Math.PI * 2 - d;
         if (d < bd) {
           bd = d;

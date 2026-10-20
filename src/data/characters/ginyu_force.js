@@ -15,7 +15,12 @@
 
   const GULDO_SKIN = 0x7fb86a;
   const GULDO_DARK = 0x4a7a3a;
-  const ARMOR = { plate: 0xf2eee2, belly: 0xf2eee2, pads: 0x6a4a8a, padStyle: 'saga', hipGuards: 0x6a4a8a, trim: 0x6a4a8a };
+  // the Ginyu Force's battle armour, from the owner's visual reference (p.12-18): the big ribbed shoulder pads, the
+  // belly plate and the hip guards are BROWN for all five, edged in white; the chest is white (dark navy for the
+  // captain and for Burter) over a black bodysuit. It used to be a different pad colour for each, on white
+  const GF_BROWN = 0x8a4c20, GF_EDGE = 0xeceae4, GF_BLACK = 0x1c1c24, GF_NAVY = 0x23284a, GF_WHITE = 0xf2eee2;
+  const gfArmor = (plate, hips) => Object.assign({ plate, belly: GF_BROWN, pads: GF_BROWN, padStyle: 'saga', trim: GF_EDGE }, hips ? { hipGuards: GF_BROWN } : {});
+  const ARMOR = gfArmor(GF_WHITE, false);
 
   // the upper pair of eyes: two whites with dark pupils sitting above the normal ones
   const eye = (x, y, z, r, color) => ({ shape: 'ball', a: [x, y, z], d: [x, y, 1], l: 0.012, r, color, depth: 0.99, flat: 0.6, outline: 0.25 });
@@ -114,7 +119,7 @@
    * becomes something else entirely — see battle.swapBodies.
    * ====================================================================== */
   const GINYU_SKIN = 0x8f5fb0;
-  const GINYU_HORN = 0xe8e2d0;
+  const GINYU_HORN = 0x2a2a32; // black horns (visual reference p.12)
 
   const ginyuPoses = {
     idle: (t) => {
@@ -207,7 +212,7 @@
     name: 'Captain Ginyu',
     fullName: 'Captain Ginyu, Ginyu Force',
     era: 'Namek Saga',
-    playable: false,
+    playable: true, // Free Battle after "Nothing Like a Frog" (unlocks.js)
     style: 'Body Thief',
     blurb: 'A competent fighter and a far better thief. Everything he does is setup for one move, and the only defence against it is to not be standing there.',
     ratings: { power: 4, speed: 3, ki: 4, defense: 4 },
@@ -224,11 +229,13 @@
         { a: [-0.45, 0.85, -0.1], d: [-0.7, 1, 0.1], l: 0.15, r: 0.035, color: GINYU_HORN, depth: 0.96, outline: 0.4 },
       ],
       face: { pupil: 0x1a1020, sclera: 0xf2ecf6, brow: 0x5a3a72, eyeW: 1.05, noEars: true },
+      // the reference (p.12): the captain's dark navy chest, bare purple arms and legs below black shorts, dark
+      // wristbands and shin guards, white boots with brown toes, the green scouter
       outfit: {
-        topStyle: 'armor', top: 0x2b2340, arms: GINYU_SKIN, pants: 0x2b2340, pantsStyle: 'tight',
-        gloves: 0xf2eee2, boots: 0xf2eee2, bootTip: 0x3a6aa8, bootStyle: 'saiyan', wrist: 0x3a6aa8,
-        armor: { plate: 0xf2eee2, belly: 0xf2eee2, pads: 0x3a6aa8, padStyle: 'saga', hipGuards: 0x3a6aa8, trim: 0x3a6aa8 },
-        scouter: { lens: 0x6fd0ff, body: 0xd8d8d8 },
+        topStyle: 'armor', top: GF_BLACK, arms: GINYU_SKIN, pants: GF_BLACK, pantsStyle: 'tight', thighs: GINYU_SKIN, legs: GF_NAVY,
+        gloves: null, boots: GF_WHITE, bootTip: GF_BROWN, bootStyle: 'saiyan', bootTop: 0.32, wrist: GF_NAVY,
+        armor: gfArmor(GF_NAVY, true),
+        scouter: { lens: 0x3cff78, body: 0xd8d8d8 },
       },
       portraitColor: '#8f5fb0',
     },
@@ -392,7 +399,7 @@
     name: 'Burter',
     fullName: 'Burter, Ginyu Force',
     era: 'Namek Saga',
-    playable: false,
+    playable: true, // Free Battle after "Two Against One" (unlocks.js)
     style: 'Speedster',
     blurb: 'The fastest in the universe, and he will tell you so. Hitting him is not an aiming problem — it is a timing problem.',
     ratings: { power: 3, speed: 5, ki: 3, defense: 2 },
@@ -405,17 +412,19 @@
       build: { chestW: 0.2, chestD: 0.14, shoulderX: 0.205, waistW: 0.13, waistD: 0.11, upperArmR: 0.054, foreArmR: 0.048, thighR: 0.082, shinR: 0.066, neckR: 0.07, neckLen: 0.09, headR: 0.112 },
       hair: { style: 'frieza_dome', color: BURTER_SKIN },
       headExtras: [
-        // the long crested head
+        // the long crested head, and the gold ribbed crest from the brow over the top (visual reference p.15)
         { a: [0, 0.95, -0.2], d: [0, 1, -0.55], l: 0.16, r: 0.05, color: BURTER_SKIN, depth: 0.96, outline: 0.4 },
+        { shape: 'ball', a: [0, 0.9, 0.3], d: [0, 1, -0.2], l: 0.13, r: 0.055, color: 0xd8a838, depth: 1, flat: 0.45, outline: 0.4 },
         { a: [0.5, 0.45, -0.55], d: [0.6, 0.4, -1], l: 0.1, r: 0.03, color: BURTER_DARK, depth: 0.96, outline: 0.4 },
         { a: [-0.5, 0.45, -0.55], d: [-0.6, 0.4, -1], l: 0.1, r: 0.03, color: BURTER_DARK, depth: 0.96, outline: 0.4 },
       ],
-      face: { pupil: 0xd8f0ff, sclera: 0x101820, brow: BURTER_DARK, eyeW: 1.1, noEars: true },
+      // the reference (p.15): red eyes, the dark navy chest, black bodysuit legs, bare blue hands, dark wristbands
+      face: { pupil: 0xe02424, sclera: 0x101820, brow: BURTER_DARK, eyeW: 1.1, noEars: true },
       outfit: {
-        topStyle: 'armor', top: 0x2b2340, arms: BURTER_SKIN, pants: 0x2b2340, pantsStyle: 'tight',
-        gloves: 0xf2eee2, boots: 0xf2eee2, bootTip: 0x3a6aa8, bootStyle: 'saiyan', wrist: 0x3a6aa8,
-        armor: { plate: 0xf2eee2, belly: 0xf2eee2, pads: 0x3a6aa8, padStyle: 'saga', hipGuards: 0x3a6aa8, trim: 0x3a6aa8 },
-        scouter: { lens: 0x6fd0ff, body: 0xd8d8d8 },
+        topStyle: 'armor', top: GF_BLACK, arms: BURTER_SKIN, pants: GF_BLACK, pantsStyle: 'tight',
+        gloves: null, boots: GF_WHITE, bootTip: GF_BROWN, bootStyle: 'saiyan', wrist: GF_NAVY,
+        armor: gfArmor(GF_NAVY, false),
+        scouter: { lens: 0x3cff78, body: 0xd8d8d8 },
       },
       portraitColor: '#4a86d8',
     },
@@ -584,7 +593,7 @@
     name: 'Jeice',
     fullName: 'Jeice, the Red Magma',
     era: 'Namek Saga',
-    playable: false,
+    playable: true, // Free Battle after "Nothing Like a Frog" (unlocks.js)
     style: 'Zoner',
     blurb: 'Fights at the distance he picks. Every time you close it he buys it back with ki.',
     ratings: { power: 3, speed: 4, ki: 5, defense: 3 },
@@ -596,11 +605,13 @@
       build: { chestW: 0.225, chestD: 0.155, shoulderX: 0.215, waistW: 0.15, waistD: 0.12, upperArmR: 0.062, foreArmR: 0.052, thighR: 0.092, shinR: 0.072, neckR: 0.075, neckLen: 0.07, headR: 0.118 },
       hair: { style: 'jeice', color: 0xf4f1e8 },
       face: { pupil: 0x2a1410, sclera: 0xf6f2ea, brow: 0xf4f1e8, eyeW: 1.02 },
+      // the reference (p.17): a black bodysuit with long sleeves and a high collar, RED tights, white gloves and boots,
+      // the white chest with the brown plates
       outfit: {
-        topStyle: 'armor', top: 0x2b2340, arms: JEICE_SKIN, pants: 0x2b2340, pantsStyle: 'tight',
-        gloves: 0xf2eee2, boots: 0xf2eee2, bootTip: 0x3a6aa8, bootStyle: 'saiyan', wrist: 0x3a6aa8,
-        armor: { plate: 0xf2eee2, belly: 0xf2eee2, pads: 0x3a6aa8, padStyle: 'saga', hipGuards: 0x3a6aa8, trim: 0x3a6aa8 },
-        scouter: { lens: 0x6fd0ff, body: 0xd8d8d8 },
+        topStyle: 'armor', top: GF_BLACK, arms: GF_BLACK, collar: GF_BLACK, collarStyle: 'turtle', pants: GF_BLACK, pantsStyle: 'tight', thighs: 0xc8241c, legs: 0xc8241c,
+        gloves: GF_WHITE, boots: GF_WHITE, bootStyle: 'saiyan',
+        armor: gfArmor(GF_WHITE, false),
+        scouter: { lens: 0x3cff78, body: 0xd8d8d8 },
       },
       portraitColor: '#d2493f',
     },
@@ -787,7 +798,7 @@
     name: 'Recoome',
     fullName: 'Recoome, Ginyu Force',
     era: 'Namek Saga',
-    playable: false,
+    playable: true, // Free Battle after "Recoome's Show" (unlocks.js)
     style: 'Showman',
     blurb: 'Enormous, cheerful and completely unbothered by anything you hit him with — as long as you let him finish his pose.',
     ratings: { power: 4, speed: 2, ki: 3, defense: 5 },
@@ -797,13 +808,15 @@
       height: 1.42,
       skin: RECOOME_SKIN,
       build: { chestW: 0.26, chestD: 0.19, shoulderX: 0.26, waistW: 0.19, waistD: 0.16, upperArmR: 0.078, foreArmR: 0.068, fist: 0.07, delt: 0.095, thighR: 0.105, shinR: 0.08, neckR: 0.095, headR: 0.118 },
-      hair: { style: 'soldier_crest', color: RECOOME_HAIR },
+      // the reference (p.13): his own red-orange mop, black short sleeves and black shorts on bare, heavy limbs, white
+      // gloves and boots, the white chest with brown plates and hip guards
+      hair: { style: 'recoome', color: RECOOME_HAIR },
       face: { pupil: 0x2a1a10, eyeW: 0.95, brow: RECOOME_HAIR, browThick: 1.4 },
       outfit: {
-        topStyle: 'armor', top: 0x2b2340, arms: RECOOME_SKIN, pants: 0x2b2340, pantsStyle: 'tight',
-        gloves: 0xf2eee2, boots: 0xf2eee2, bootTip: 0x8a3a2a, bootStyle: 'saiyan', wrist: 0x8a3a2a,
-        armor: { plate: 0xf2eee2, belly: 0xf2eee2, pads: 0x8a3a2a, padStyle: 'saga', hipGuards: 0x8a3a2a, trim: 0x8a3a2a },
-        scouter: { lens: 0xff8a3a, body: 0xd8d8d8 },
+        topStyle: 'armor', top: GF_BLACK, arms: RECOOME_SKIN, sleeves: 'short', sleeveColor: GF_BLACK, pants: GF_BLACK, pantsStyle: 'tight', thighs: RECOOME_SKIN, legs: RECOOME_SKIN,
+        gloves: GF_WHITE, boots: GF_WHITE, bootStyle: 'saiyan',
+        armor: gfArmor(GF_WHITE, true),
+        scouter: { lens: 0x3cff78, body: 0xd8d8d8 },
       },
       portraitColor: '#d8582a',
     },
@@ -882,7 +895,7 @@
     name: 'Guldo',
     fullName: 'Guldo, Ginyu Force',
     era: 'Namek Saga',
-    playable: false,
+    playable: true, // Free Battle after "Five Seconds" (unlocks.js)
     style: 'Psychic',
     blurb: 'The weakest member of the Ginyu Force, and the only one who can beat you without touching you — for as long as he can hold his breath.',
     ratings: { power: 1, speed: 1, ki: 5, defense: 2 },
@@ -893,17 +906,20 @@
       build: { chestW: 0.215, chestD: 0.17, shoulderX: 0.2, waistW: 0.185, waistD: 0.16, pelvisW: 0.17, upperArmR: 0.055, foreArmR: 0.05, fist: 0.055, thighR: 0.082, shinR: 0.062, neckR: 0.085, neckLen: 0.005, headR: 0.135 },
       hair: { style: 'frieza_dome', color: GULDO_SKIN },
       headExtras: [
-        // the second pair of eyes
-        eye(0.42, 0.52, 0.78, 0.036, 0xffffff),
-        eye(-0.42, 0.52, 0.78, 0.036, 0xffffff),
-        eye(0.42, 0.5, 0.92, 0.016, 0x101010),
-        eye(-0.42, 0.5, 0.92, 0.016, 0x101010),
+        // the second pair of eyes: round and white on the SIDES of the head, where ears would be (visual reference
+        // p.18; they sat on his forehead)
+        { shape: 'ball', a: [0.97, 0.2, 0.05], d: [1, 0, 0.15], l: 0.02, r: 0.058, color: 0xffffff, depth: 1.04, flat: 0.55, outline: 0.35 },
+        { shape: 'ball', a: [-0.97, 0.2, 0.05], d: [-1, 0, 0.15], l: 0.02, r: 0.058, color: 0xffffff, depth: 1.04, flat: 0.55, outline: 0.35 },
+        { shape: 'ball', a: [0.97, 0.2, 0.22], d: [1, 0, 0.3], l: 0.012, r: 0.02, color: 0x101010, depth: 1.16, flat: 0.6, outline: 0 },
+        { shape: 'ball', a: [-0.97, 0.2, 0.22], d: [-1, 0, 0.3], l: 0.012, r: 0.02, color: 0x101010, depth: 1.16, flat: 0.6, outline: 0 },
       ],
-      face: { pupil: 0x101010, eyeW: 1.05, noEars: true, brow: GULDO_DARK },
+      // the small round pink mouth (reference p.18)
+      face: { pupil: 0x101010, eyeW: 1.05, noEars: true, brow: GULDO_DARK, mouthColor: 0xd85a9a, mouthZ: 0.95 },
+      // black long sleeves and baggy black trousers, white gloves and boots, the white chest with brown plates
       outfit: {
-        topStyle: 'armor', top: 0x2b2340, arms: GULDO_SKIN, pants: 0x2b2340, pantsStyle: 'tight',
-        gloves: 0xf2eee2, boots: 0xf2eee2, bootTip: 0x6a4a8a, bootStyle: 'saiyan',
-        armor: ARMOR, scouter: { lens: 0x8ef07a, body: 0xd8d8d8 },
+        topStyle: 'armor', top: GF_BLACK, arms: GF_BLACK, pants: GF_BLACK, pantsStyle: 'gi',
+        gloves: GF_WHITE, boots: GF_WHITE, bootStyle: 'saiyan',
+        armor: ARMOR, scouter: { lens: 0x3cff78, body: 0xd8d8d8 },
       },
       portraitColor: '#7fb86a',
     },

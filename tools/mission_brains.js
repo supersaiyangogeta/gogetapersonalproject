@@ -1741,7 +1741,462 @@
       }
       return it;
     },
+    /* ---------------- MOVIE: FUSION REBORN ---------------- */
+    /** Mission 1: fly to the station round the rifts, then strike the crystal. */
+    fr_cleansing(ctx) {
+      const { SL, b, p, st, phase } = ctx;
+      const it = SL.emptyIntent();
+      const B = b.stage.barrier;
+      if (phase === 'arrive') {
+        p.target = null;
+        const front = b.stage.landmarks.barrierFront;
+        const d = aim(it, p, front);
+        it.my = 1;
+        it.boost = d > 10;
+        // a careful pilot goes round the rifts
+        for (const r of (b.story && b.story.rifts) || []) {
+          const dx = r.at.x - p.pos.x, dz = r.at.z - p.pos.z;
+          if (Math.hypot(dx, dz) < 7 && Math.abs(r.at.y - p.chest().y) < 5) it.mx = (dx * Math.cos(it.camYaw) - dz * Math.sin(it.camYaw)) > 0 ? -1 : 1;
+        }
+        if (p.pos.y - b.stage.heightAt(p.pos.x, p.pos.z) < 4) it.up = true;
+        return it;
+      }
+      if (phase === 'barrier' && B) {
+        p.target = null;
+        const d = aim(it, p, B.center) - B.radius;
+        if (p.pos.y - b.stage.heightAt(p.pos.x, p.pos.z) > 1.5) it.down = true;
+        if (d > 2.2) it.my = 1;
+        else if (p.state === 'free' && (st.n = (st.n || 0) + 1) % 12 === 0) it.light = true;
+      }
+      return it;
+    },
+
+    /** Mission 2: test the crystal as Pikkon; fight the child without punching into his doors; hold for SSJ3;
+     *  charge when SSJ3 runs low; fire the Kamehameha when that is all the story allows. */
+    fr_janemba(ctx) {
+      const { SL, b, p, st, phase } = ctx;
+      const it = SL.emptyIntent();
+      st.n = (st.n || 0) + 1;
+      if (holding(b)) {
+        it.charge = true;
+        return it;
+      }
+      const B = b.stage.barrier, m = b.mission;
+      if (phase === 'pikkon' && B) {
+        p.target = null;
+        const d = aim(it, p, B.center) - B.radius;
+        if (p.pos.y - b.stage.heightAt(p.pos.x, p.pos.z) > 1.5) it.down = true;
+        const want = !m.flags.pkMelee ? 'light' : !m.flags.pkBlast ? 'blast' : 'heavy';
+        if (want === 'blast') {
+          if (d > 6) it.my = 1;
+          else if (d < 4) it.my = -1;
+          else if (p.state === 'free' && st.n % 20 === 0) it.blast = true;
+          return it;
+        }
+        if (d > 2.2) it.my = 1;
+        else if (p.state === 'free' && st.n % 14 === 0) it[want] = true;
+        return it;
+      }
+      if (phase === 'finish') {
+        if (b.playerLimits && b.playerLimits.s1 === undefined && b.playerLimits.light === false) {
+          st.k = (st.k || 0) + 1;
+          if (st.k < 3) it.s1 = true;
+          it.s1Held = st.k < 64;
+        }
+        return it;
+      }
+      if (phase === 'duel' || phase === 'fight') {
+        const jb = b.story && b.story.janemba;
+        // the door is open: do not hit into it, step round to his side instead
+        if (jb && SL.Mechanics.dimensional.doorOpen(jb)) {
+          p.target = jb;
+          it.mx = 1;
+          it.my = p.distTo(jb) > 5 ? 1 : 0;
+          if (p.distTo(jb) < 2.6 && jb.forward.dot(p.pos.clone().sub(jb.pos).setY(0).normalize()) < 0.1 && st.n % 10 === 0) it.light = true;
+          return it;
+        }
+        if (jb && p.form.id === 'ssj3' && p.ki < p.kiMax * 0.2 && p.state === 'free' && p.distTo(jb) > 7) st.charging = true;
+        if (st.charging) {
+          if (!jb || p.ki > p.kiMax * 0.7 || p.distTo(jb) < 4) st.charging = false;
+          else {
+            it.charge = true;
+            return it;
+          }
+        }
+        return brawl(ctx, it);
+      }
+      return it;
+    },
+
+    fr_gohan(ctx) {
+      const { SL, phase } = ctx;
+      const it = SL.emptyIntent();
+      if (phase === 'soldiers' || phase === 'frieza') return brawl(ctx, it);
+      return it;
+    },
+
+    /** Mission 4: go for the nearest tank, heavy it when close; transform when that is all the story allows. */
+    fr_boys(ctx) {
+      const { SL, b, p, st, phase } = ctx;
+      const it = SL.emptyIntent();
+      st.n = (st.n || 0) + 1;
+      if (b.playerLimits && b.playerLimits.transform === undefined && b.playerLimits.light === false) {
+        if (p.state === 'free' && p.formIndex === 0) it.transform = true;
+        return it;
+      }
+      if (phase !== 'tanks' && phase !== 'finish') return it;
+      const A = b.story && b.story.armour;
+      const tanks = A ? A.tanks.filter((t) => t.pr.alive) : [];
+      if (!tanks.length) return brawl(ctx, it);
+      tanks.sort((a, c) => a.pr.pos.distanceTo(p.pos) - c.pr.pos.distanceTo(p.pos));
+      p.target = null;
+      const tk = tanks[0];
+      const d = aim(it, p, tk.pr.pos);
+      const dy = tk.pr.pos.y - p.chest().y;
+      if (dy > 0.8) it.up = true;
+      else if (dy < -1.2) it.down = true;
+      if (d > 3.4) {
+        it.my = 1;
+        it.boost = d > 10;
+      } else if (p.state === 'free' && st.n % 16 === 0) it[st.n % 48 === 0 ? 'light' : 'heavy'] = true;
+      return it;
+    },
+
+    /** Mission 5: last against Super Janemba without repeating one strike (he reads it), then the duo. */
+    fr_vegeta(ctx) {
+      const { SL, b, p, st, phase } = ctx;
+      const it = SL.emptyIntent();
+      if (phase !== 'struggle' && phase !== 'duo') return it;
+      st.n = (st.n || 0) + 1;
+      const t = b.enemiesOf(p).find((e) => !e.hidden && !e.untargetable);
+      if (!t) return it;
+      p.target = t;
+      const d = p.distTo(t);
+      it.my = d > 2.4 ? 1 : 0;
+      it.boost = d > 9;
+      if (t.pos.y - p.pos.y > 1.2) it.up = true;
+      else if (p.pos.y - t.pos.y > 1.2) it.down = true;
+      // varied: light, heavy, blast, a pause: never the same strike three times in a row
+      if (d < 2.8 && p.state === 'free') {
+        const k = st.n % 60;
+        if (k === 0) it.light = true;
+        if (k === 20) it.heavy = true;
+        if (k === 40) it.blast = true;
+      }
+      if (d >= 2.8 && d < 14 && st.n % 50 === 0) it.blast = true;
+      return it;
+    },
+
+    /** Mission 6: bounce away whenever Janemba is close or swinging; waddle away otherwise. */
+    fr_veku(ctx) {
+      const { SL, b, p, st, phase } = ctx;
+      const it = SL.emptyIntent();
+      if (phase !== 'survive') return it;
+      st.n = (st.n || 0) + 1;
+      const sj = b.story && b.story.sj;
+      if (!sj) return it;
+      p.target = null;
+      const away = p.pos.clone().sub(sj.pos).setY(0);
+      const d = away.length();
+      const goal = p.pos.clone().add(away.normalize().multiplyScalar(10));
+      if (goal.length() > 100) goal.multiplyScalar(0.5);
+      aim(it, p, goal);
+      it.my = 1;
+      const shot = b.projectiles.list.some((pr) => pr.alive && pr.owner === sj && pr.pos.distanceTo(p.chest()) < 9 && pr.vel.clone().normalize().dot(p.chest().sub(pr.pos).normalize()) > 0.7);
+      const threat = d < 4.5 || (sj.state === 'attack' && d < 6) || sj.state === 'portalStrike' || shot;
+      if (threat && p.state === 'free' && st.n % 6 === 0) it.dodge = true;
+      return it;
+    },
+
+    /** Mission 7: Pikkon's stand (brawl); the dance and the cues answer themselves; fight Janemba; hold the Stardust Breaker. */
+    fr_gogeta(ctx) {
+      const { SL, b, phase } = ctx;
+      const it = SL.emptyIntent();
+      if (phase === 'finish') {
+        // the Stardust Breaker: hold Special 2 until the orb is full, then let go
+        if (b.breaker) it.s2Held = b.breaker.want === 'hold';
+        return it;
+      }
+      // Pikkon's stand and the free fight: brawl (the stand ends on its own clock, win or not)
+      if (phase === 'dominate' || phase === 'pikkon') return brawl(ctx, it);
+      return it;
+    },
+
+    fr_x_fat(ctx) {
+      return BRAINS.fr_janemba(Object.assign({}, ctx, { phase: 'fight' }));
+    },
+    fr_x_earth(ctx) {
+      return brawl(ctx, ctx.SL.emptyIntent());
+    },
+    fr_x_dance(ctx) {
+      return ctx.SL.emptyIntent();
+    },
+    fr_x_super(ctx) {
+      const { p } = ctx;
+      const next = p.def.forms[p.formIndex + 1];
+      if (next && !(p.lockedForms && p.lockedForms[next.id]) && p.ki >= (next.kiCost || 0) && p.state === 'free') {
+        const it = ctx.SL.emptyIntent();
+        it.transform = true;
+        return it;
+      }
+      return BRAINS.fr_vegeta(Object.assign({}, ctx, { phase: 'duo' }));
+    },
+
+    /** MOVIE 2 · "The First Clash": hold for the transformations; brawl (Broly reads the bot's repeated jab — as a
+     *  real player who never varies would be read); the finish cue answers itself. */
+    bb_clash(ctx) {
+      const { SL, b } = ctx;
+      const it = SL.emptyIntent();
+      if (holding(b)) {
+        it.charge = true;
+        return it;
+      }
+      return bbFight(ctx, it);
+    },
+    /** "Wrath": the seven shots' cues answer themselves; hold for Blue; brawl round the leaps; the Galick Gun. */
+    bb_wrath(ctx) {
+      const { SL, b, st, phase } = ctx;
+      const it = SL.emptyIntent();
+      if (holding(b)) {
+        it.charge = true;
+        return it;
+      }
+      if (phase === 'clash') {
+        if (b.playerLimits && b.playerLimits.s1 === undefined && !b.clash.active) {
+          st.k = (st.k || 0) + 1;
+          if (st.k < 3) it.s1 = true;
+          it.s1Held = st.k < 48;
+        }
+        return it;
+      }
+      return bbFight(ctx, it);
+    },
   };
+
+  /**
+   * MOVIE 2, the rest of the film: one brain for every part. Holds for a required Charge; walks to an
+   * exploration goal (b.story.goal); hits a story target that is not a fighter (b.story.hitProp: the Vampa beast,
+   * the rockfall); presses the button a required prompt names (God Bind, a beam); otherwise a Broly fight.
+   */
+  function bbFilm(ctx) {
+    const { SL, b, m, p, st } = ctx;
+    const it = SL.emptyIntent();
+    if (holding(b)) {
+      it.charge = true;
+      return it;
+    }
+    st.n = (st.n || 0) + 1;
+    // a required prompt naming a special or the ultimate: press it (and hold it a while)
+    for (const pr of m.prompts.values()) {
+      if (!pr.required) continue;
+      const k = pr.action === 'special1' ? 's1' : pr.action === 'special2' ? 's2' : pr.action === 'ultimate' ? 'ult' : null;
+      if (!k || p.state === 'stagger') continue;
+      st.hold = (st.hold || 0) + 1;
+      if (st.hold % 90 < 2) it[k] = true;
+      it[k + 'Held'] = st.hold % 90 < 60;
+      return it;
+    }
+    st.hold = 0;
+    const S = b.story || {};
+    if (S.goal) {
+      p.target = null;
+      const d = aim(it, p, S.goal);
+      it.my = d > 1.6 ? 1 : 0;
+      it.boost = d > 12;
+      if (S.goal.y - p.pos.y > 1.5) it.up = true;
+      else if (p.pos.y - S.goal.y > 2.5 && d < 8) it.down = true;
+      return it;
+    }
+    const prop = S.hitProp && (typeof S.hitProp === 'function' ? S.hitProp() : S.hitProp);
+    if (prop && prop.alive && !prop.invulnerable) {
+      p.target = null;
+      const d = aim(it, p, prop.pos);
+      const dy = prop.pos.y - p.pos.y;
+      it.my = d > prop.r + 1.2 ? 1 : 0;
+      it.boost = d > 10;
+      if (dy > 1.4) it.up = true;
+      else if (dy < -1.4) it.down = true;
+      if (d < prop.r + 2.2 && Math.abs(dy) < prop.r + 1.6) {
+        const k = st.n % 30;
+        if (k === 0 || k === 10) it.light = true;
+        if (k === 20) it.heavy = true;
+      }
+      return it;
+    }
+    // a red ring on the ground (a lunge, a leap): get out of it
+    if (!st.marks) {
+      st.marks = [];
+      b.on('telegraph', (e) => st.marks.push({ pos: e.pos, radius: e.radius, until: b.frame + e.frames + 4 }));
+    }
+    st.marks = st.marks.filter((mk) => mk.until > b.frame);
+    for (const mk of st.marks) {
+      const dx = p.pos.x - mk.pos.x, dz = p.pos.z - mk.pos.z;
+      if (Math.hypot(dx, dz) < mk.radius + 1.5) {
+        p.target = null;
+        it.camYaw = Math.atan2(dx, dz);
+        it.my = 1;
+        it.boost = true;
+        return it;
+      }
+    }
+    return bbFight(ctx, it);
+  }
+  for (const id of ['bb_planet', 'bb_vampa', 'bb_goku', 'bb_legend', 'bb_alliance', 'bb_fusion', 'bb_gogeta', 'bb_epilogue']) BRAINS[id] = bbFilm;
+
+  /**
+   * UNIVERSE 6 (a tournament match): fight as in the film brain — but the ring is the rule: near its edge, walk back
+   * toward the middle first (a ring-out is a defeat).
+   */
+  function u6Match(ctx) {
+    const { SL, b, p } = ctx;
+    const A = b.stage.arena;
+    if (A && !b.inputLocked && b.rules.ringOut && Math.max(Math.abs(p.pos.x), Math.abs(p.pos.z)) > A.half - 6) {
+      const it = SL.emptyIntent();
+      p.target = null;
+      it.camYaw = Math.atan2(-p.pos.x, -p.pos.z);
+      it.my = 1;
+      if (p.pos.y - A.y > 1.5) it.down = true;
+      return it;
+    }
+    return bbFilm(ctx);
+  }
+  BRAINS.u6_cabba = u6Match;
+  BRAINS.u6_botamo = u6Match;
+  BRAINS.u6_frost_goku = u6Match;
+  BRAINS.u6_frost_piccolo = u6Match;
+  BRAINS.u6_frost_vegeta = u6Match;
+  BRAINS.u6_magetta = u6Match;
+  // Vegeta vs Hit: the match brain, plus the read — Dodge in the last moment of Hit's tell (b.u6Hit, u6_hit.js)
+  BRAINS.u6_hit = (ctx) => {
+    const { SL, b, p } = ctx;
+    const hs = b.u6Hit, tu = SL.data.u6Hit && SL.data.u6Hit.TU;
+    if (hs && tu && hs.phase === 'tell' && !b.inputLocked && b.frame - hs.f0 >= (tu.tell - tu.readWindow * 0.6) * 60 && p.state === 'free') {
+      const it = SL.emptyIntent();
+      it.dodge = true;
+      it.mx = 1;
+      return it;
+    }
+    return u6Match(ctx);
+  };
+  // Goku vs Hit: the same read, and in Kaioken a punch inside the stopped time
+  BRAINS.u6_goku_hit = (ctx) => {
+    const { SL, b } = ctx;
+    const hs = b.u6Hit;
+    if (hs && hs.phase === 'skip' && !b.inputLocked && b.frame - hs.f0 >= 8) {
+      const it = SL.emptyIntent();
+      it.heavy = true;
+      return it;
+    }
+    return BRAINS.u6_hit(ctx);
+  };
+  // The Contract: the Hit reads, and out of the Time Cage's cube before it closes (b.hcCage), mashing Charge inside
+  BRAINS.hit_contract = (ctx) => {
+    const { SL, b, p } = ctx;
+    const cg = b.hcCage;
+    if (cg && !b.inputLocked && cg.phase === 'caught') {
+      const it = SL.emptyIntent();
+      it.charge = b.frame % 4 < 2;
+      return it;
+    }
+    if (cg && !b.inputLocked && cg.phase === 'tell' && cg.at && p.state === 'free') {
+      const it = SL.emptyIntent();
+      it.dodge = true;
+      it.mx = 1;
+      return it;
+    }
+    return BRAINS.u6_goku_hit(ctx);
+  };
+  // The Future Trunks Saga: the film brawler (fights, holds, staged beats)
+  BRAINS.ft_black = bbFilm;
+  BRAINS.ft_rose = bbFilm;
+  BRAINS.ft_hakai = bbFilm;
+  BRAINS.ft_zero = bbFilm;
+  BRAINS.ft_genuine = bbFilm;
+  BRAINS.ft_scythe = bbFilm;
+  // "Vegito" (2026-10-19): its assault has the lightning bird to break (b.story.hitProp) — the parity-safe film brawler
+  BRAINS.ft_vegito = filmParity;
+  BRAINS.ft_hope = bbFilm;
+  BRAINS.sh_beast = bbFilm;
+  // Universe Survival: the sparring match (the film brawler: fights, cues, holds)
+  BRAINS.us_gohan = bbFilm;
+  // "The Park Ranger": b.story.goal (the camp) and b.story.hitProp (the beam's emitter) steer the film brawler.
+  // Known quirk of bbFilm (not changed here, other missions' bot runs depend on it): bbFilm and brawl both advance
+  // st.n, so an early return (goal, prop, prompt, mark) flips its parity and brawl's `k === 0 / 10 / 20` never comes
+  // round again — the bot stops attacking. This mission's goal and prop phases hit it: set the parity each call (the
+  // prop branch reads st.n after one step and wants it even then, brawl after two).
+  function filmParity(ctx) {
+    const S = ctx.b.story || {};
+    const prop = S.hitProp && (typeof S.hitProp === 'function' ? S.hitProp() : S.hitProp);
+    const want = prop && prop.alive ? 1 : 0;
+    if ((ctx.st.n || 0) % 2 !== want) ctx.st.n = (ctx.st.n || 0) + 1;
+    return bbFilm(ctx);
+  }
+  BRAINS.us_ranger = filmParity;
+  // "The Tenth Warrior": the same (its cues and struggle flip the parity too); the lock-on goes to whoever grabs the Crone
+  BRAINS.us_frieza = filmParity;
+  // The Tournament of Power: the film brawler (fights, cues, holds and struggles)
+  BRAINS.top_jiren = bbFilm;
+  BRAINS.top_saiyans = bbFilm;
+  BRAINS.top_kefla = bbFilm;
+  BRAINS.top_vegeta = bbFilm;
+  // Vegeta vs Toppo: keep moving while a Hakai sphere drifts after you (b.hakai), and burst it with a blast
+  BRAINS.top_toppo = (ctx) => {
+    const { SL, b, p } = ctx;
+    const hk = b.hakai;
+    if (hk && hk.orbs && hk.orbs.length && !b.inputLocked && p.state === 'free') {
+      const it = SL.emptyIntent();
+      if (b.frame % 40 < 2) it.blast = true;
+      else {
+        it.mx = b.frame % 240 < 120 ? 1 : -1;
+        it.boost = true;
+      }
+      return it;
+    }
+    return bbFilm(ctx);
+  };
+  // Mastered Ultra Instinct: the film brawler, and in the protect phase fly at each Power Impact headed for the stands (b.muiOrbs)
+  BRAINS.top_mui = (ctx) => {
+    const { SL, b, p } = ctx;
+    const orbs = b.muiOrbs;
+    if (orbs && orbs.length && !b.inputLocked && (p.state === 'free' || p.state === 'attack' || p.state === 'dash')) {
+      const it = SL.emptyIntent();
+      let o = orbs[0];
+      for (const x of orbs) if (x.mesh.position.distanceTo(p.chest()) < o.mesh.position.distanceTo(p.chest())) o = x;
+      const at = o.mesh.position, d = aim(it, p, at), dy = at.y - p.chest().y;
+      p.target = null;
+      it.my = 1;
+      it.boost = d > 4;
+      if (dy > 0.6) it.up = true;
+      else if (dy < -0.6) it.down = true;
+      if (p.chest().distanceTo(at) < 3) it.light = b.frame % 6 < 3;
+      return it;
+    }
+    return bbFilm(ctx);
+  };
+  BRAINS.top_finale = bbFilm;
+  // RESURRECTION OF F, the invasion: the film brain (brawl the nearest soldier, holds, cues)
+  BRAINS.rof_invasion = bbFilm;
+  BRAINS.rof_goku = bbFilm;
+  BRAINS.rof_finale = bbFilm;
+
+  /** A Broly fight: brawl — but a crashing leap is a red ring on the ice, and the bot flies out of it. */
+  function bbFight(ctx, it) {
+    const { b, p } = ctx;
+    const br = b.story && b.story.broly;
+    if (br && br.state === 'bossSlam' && br.sd && br.sd.land) {
+      const dx = p.pos.x - br.sd.land.x, dz = p.pos.z - br.sd.land.z;
+      if (Math.hypot(dx, dz) < 11) {
+        it.camYaw = Math.atan2(dx, dz);
+        p.target = null;
+        it.my = 1;
+        it.boost = true;
+        it.up = true;
+        return it;
+      }
+    }
+    if (br && !p.target && br.alive && !br.untargetable) p.target = br;
+    return brawl(ctx, it);
+  }
 
   /** Wire a brain onto a mission battle. Returns the run log. */
   /**

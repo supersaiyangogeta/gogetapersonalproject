@@ -173,9 +173,62 @@
           out.fov = 50;
         }, 999, { hold: true, blendIn: 0.3 });
       };
+      // a short insert, then back to the wide side-on shot the struggle is read from
+      let briefUntil = 0, nextInsert = 0, insertAt = 0;
       const brief = (fn, seconds) => {
+        briefUntil = b.frame + Math.round(seconds * 60);
         m.shot(fn, seconds, { cut: true, blendIn: 0, onEnd: () => b.clash.active && wide() });
       };
+      // THE STRUGGLE'S CAMERA (cinematic brief, section 43): the wide side-on shot is home; between the story
+      // beats it cuts away briefly, in this order — Gohan straining, Cell pushing, over Gohan's shoulder, the
+      // reverse over Cell's, the whole arena lit by it, Vegeta watching — never a continuous spin
+      const head = (f) => SL.Cinema.actorPoint({ cast: { x: f } }, 'x:head');
+      const frame = () => {
+        const pa = gh.chest(), pb = c.chest(), axis = pb.clone().sub(pa).setY(0).normalize();
+        return { pa, pb, axis, right: new V3(axis.z, 0, -axis.x), pt: b.clash.active ? b.clash.active.point : pa.clone().lerp(pb, 0.5) };
+      };
+      const INSERTS = [
+        () => brief((t, out) => {
+          const F = frame(), h = head(gh);
+          out.pos.copy(h).addScaledVector(F.axis, 0.95).addScaledVector(F.right, 0.45).add(new V3(0, -0.05, 0));
+          out.look.copy(h).add(new V3(0, -0.12, 0));
+          out.fov = 36;
+        }, 1.5),
+        () => brief((t, out) => {
+          const F = frame(), h = head(c);
+          out.pos.copy(h).addScaledVector(F.axis, -1.1).addScaledVector(F.right, -0.45).add(new V3(0, -0.05, 0));
+          out.look.copy(h).add(new V3(0, -0.12, 0));
+          out.fov = 36;
+        }, 1.5),
+        () => brief((t, out) => {
+          const F = frame();
+          out.pos.copy(F.pa).addScaledVector(F.axis, -2.6).addScaledVector(F.right, 0.95).add(new V3(0, 0.55, 0));
+          out.look.copy(F.pt);
+          out.fov = 46;
+        }, 1.8),
+        () => brief((t, out) => {
+          const F = frame();
+          out.pos.copy(F.pb).addScaledVector(F.axis, 2.8).addScaledVector(F.right, -1).add(new V3(0, 0.6, 0));
+          out.look.copy(F.pt);
+          out.fov = 46;
+        }, 1.8),
+        () => brief((t, out) => {
+          const F = frame(), sep = F.pa.distanceTo(F.pb), mid = F.pa.clone().lerp(F.pb, 0.5);
+          out.pos.copy(mid).addScaledVector(F.right, sep * 1.5).add(new V3(0, sep * 0.75 + t * 2, 0));
+          out.look.copy(mid);
+          out.fov = 56;
+        }, 2),
+        () => {
+          const v = S.vegeta;
+          if (!v || v.hidden || v._gone) return;
+          brief((t, out) => {
+            const h = head(v), F = frame();
+            out.pos.copy(h).add(new V3(0, 0.5, 0)).addScaledVector(F.right, 1.1);
+            out.look.copy(h);
+            out.fov = 38;
+          }, 1.4);
+        },
+      ];
       const offS = b.on('clashStart', (e) => {
         if (!((e.a === gh || e.b === gh) && (e.a === c || e.b === c))) return;
         beats.clashes++;
@@ -189,6 +242,7 @@
         m.music(null, 7);
         orb.visible = true;
         wide();
+        nextInsert = b.frame + 150;
       });
       const offE = b.on('clashEnd', (e) => {
         orb.visible = false;
@@ -231,6 +285,11 @@
         if (b.frame % 4 === 0) b.vfx.bolt(cl.point.clone().add(new V3(U.rand(-1.5, 1.5), U.rand(-1.5, 1.5), U.rand(-1.5, 1.5))), U.rand(1.5, 3), b.frame % 8 ? 0xfff3a0 : 0xbfe4ff);
         const p = b.clash.playerProgress();
         m.progress('fsk', Math.floor(p * 100));
+        // the next insert, once the wide shot has had its time and no story beat is on screen
+        if (b.frame >= briefUntil && b.frame >= nextInsert) {
+          INSERTS[insertAt++ % INSERTS.length]();
+          nextInsert = b.frame + 240;
+        }
         // 1. his father's voice, when the boy is pushed back
         if (!beats.voice && p <= FSK.voiceAt) {
           beats.voice = true;

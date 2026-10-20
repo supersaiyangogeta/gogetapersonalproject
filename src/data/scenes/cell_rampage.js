@@ -2,10 +2,11 @@
  * SCENES — the Cell Games, part three (mission cell_rampage, 2026-10-01).
  *
  *   rp_open    seven of them in a ring round him; he looks at each one
- *   rp_after   dust and silence where the seven were; Cell, for once, not smiling
+ *   rp_after   dust and silence where the seven were; the others getting up, disbelief instead of
+ *              desperation; Cell, for once, not smiling
  *   rp_catch   the full-power punch stopped in one open hand an inch from his nose; the gut punch —
- *              the back bulges, the eyes go white; on his knees, Cell brings Android 18 back up and the
- *              perfect form melts away
+ *              the eyes go white; on his knees, Android 18 is forced out of him in a burst of green light
+ *              (non-graphic, owner 2026-10-14) and the perfect form melts away
  *   rp_swell   "If I lose, everybody loses": he starts to swell
  *
  * Dialogue is paraphrased English written for this project.
@@ -75,6 +76,22 @@
           if (ctx.b.frame % 10 === 0) ctx.b.vfx.dust(ctx.cast.here.pos.clone().add(new V3(Math.sin(ctx.b.frame) * 3, 0.2, Math.cos(ctx.b.frame) * 3)), 1.2, 2);
         },
         hold: 4,
+      },
+      // the others get up off the stone: the desperation going out of their faces, disbelief coming in
+      {
+        pose: [{ who: 'piccolo', pose: 'p_kneelLook', face: 'shock', speed: 2 }],
+        cam: { subject: 'piccolo', focus: 'upper', angle: 'three' },
+        say: { who: 'piccolo', line: 'Not one of them laid a finger on him...', duration: 2.6, style: 'quiet' },
+        hold: 2.8,
+      },
+      {
+        pose: [
+          { who: 'krillin', pose: 'g_riseSlow', face: 'shock', speed: 1 },
+          { who: 'trunks', pose: 'g_riseSlow', face: 'shock', speed: 1 },
+        ],
+        cam: { subject: 'krillin', with: 'trunks', focus: 'full', angle: 'three' },
+        say: { who: 'krillin', line: 'That\'s... that\'s Gohan?', duration: 2.2, style: 'quiet' },
+        hold: 2.4,
       },
       {
         pose: [{ who: 'cell', pose: 'cl_calm', face: 'shock', speed: 2 }],
@@ -194,22 +211,22 @@
         },
         hold: 1.6,
       },
-      // on his knees, retching
+      // down on his knees
       {
         call: (ctx) => {
           const c = story(ctx).cell;
           c.model.root.scale.setScalar(ctx.base);
         },
         pose: [{ who: 'cell', pose: 'cl_kneelRetch', face: 'shock', speed: 6 }],
-        sfx: { name: 'stretch', who: 'cell', pitch: 0.5, vol: 1.2 },
+        sfx: { name: 'rumble', who: 'cell', pitch: 0.7, vol: 0.9 },
         cam: { from: { at: 'cell', local: [1.4, 0.2, 1.8] }, look: { at: 'cell', off: [0, -0.2, 0] }, fov: 40 },
         hold: 1.8,
       },
-      // and Android 18 comes back out of him, onto the stone
+      // and Android 18 is forced out of him in a burst of green light, onto the stone
       {
         call: (ctx) => {
           const st = story(ctx), b = ctx.b, c = st.cell, a = st.a18;
-          const mouth = SL.Cinema.actorPoint(ctx, 'cell:head').addScaledVector(c.forward.clone().setY(0).normalize(), 0.3);
+          const mouth = c.chest().addScaledVector(c.forward.clone().setY(0).normalize(), 0.4);
           ctx.m0 = mouth.clone();
           ctx.m1 = CK().ground(b, mouth.clone().addScaledVector(c.forward.clone().setY(0).normalize(), 2.2).add(new V3(1.6, 0, 0)));
           // the boy steps back out of the way
@@ -219,10 +236,13 @@
           a.grounded = false;
           faceTo(a, ctx.m1);
           a.setState('scripted', { pose: 'tumble', expression: 'ko' });
+          b.vfx.flash(mouth, 3, 0xc8ffb0, 0.35, SL.Toon.tex.glow);
+          b.vfx.ring(mouth, 3.4, 0x8ad87a, 0.45);
           b.vfx.explosion(mouth, 1.4, 0x8ad87a, { smoke: true });
-          b.sfx('stretch', c, { pitch: 0.4, vol: 1.4 });
+          b.sfx('explosionBig', c, { pitch: 0.8, vol: 1 });
         },
-        cam: { from: { at: 'cell', local: [2.2, -0.2, 2.6] }, look: { at: 'cell', off: [0, -0.3, 0] }, fov: 46 },
+        screen: { flash: 0.25, color: '#d8ffc8' },
+        cam: { from: { at: 'cell', local: [3.2, 0.4, 3.6] }, look: { at: 'cell', off: [0.6, -0.2, 0.6] }, fov: 48 },
         tick: (ctx, t) => {
           const a = story(ctx).a18, k = Math.min(1, t / 0.7);
           const p = ctx.m0.clone().lerp(ctx.m1, k);

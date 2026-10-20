@@ -127,31 +127,62 @@
       { shape: 'line', a: [-0.3, -0.02, 0.94], d: [-0.12, -1, 0.15], l: 0.09, r: 0.014, color: BLACK },
     ].concat(extra || []);
   const PERFECT_CROWN = crown(GREEN, BLACK);
+  // Perfect Cell's plating (2026-10-15 visual pass, the board p.36): dark plates over the pecs and the shoulders, and the
+  // belly turned from the cream of the earlier forms into green carapace (look.swap). Props for the 'perfect' form only;
+  // Super Perfect Cell (super_perfect_cell.js) re-tags them for his single form.
+  const CELL_ABS = 0xe2dccb, CELL_ABS_PERFECT = 0x5a9a45, CELL_PLATE = 0x34343f;
+  const PERFECT_PLATES = [
+    { id: 'pecL', joint: 'chest', shape: 'ball', pos: [0.085, 0.19, 0.172], rot: [-0.25, 0.35, 0], size: [0.1, 0.075, 0.04], color: CELL_PLATE, forms: ['perfect'] },
+    { id: 'pecR', joint: 'chest', shape: 'ball', pos: [-0.085, 0.19, 0.172], rot: [-0.25, -0.35, 0], size: [0.1, 0.075, 0.04], color: CELL_PLATE, forms: ['perfect'] },
+    { id: 'shoulderPlateL', joint: 'shoulderL', shape: 'ball', pos: [0.01, 0.0, 0], size: [0.082, 0.07, 0.082], color: CELL_PLATE, forms: ['perfect'] },
+    { id: 'shoulderPlateR', joint: 'shoulderR', shape: 'ball', pos: [-0.01, 0.0, 0], size: [0.082, 0.07, 0.082], color: CELL_PLATE, forms: ['perfect'] },
+    // the purple band round the waist (the board p.36), ribbed with two dark lines
+    { id: 'waistBand', joint: 'spine', shape: 'neckRing', pos: [0, 0.02, 0.004], radius: 0.166, depth: 0.62, thick: 0.13, color: 0x5a2a6a, forms: ['perfect'] },
+    { id: 'waistRibA', joint: 'spine', shape: 'neckRing', pos: [0, 0.03, 0.004], radius: 0.171, depth: 0.63, thick: 0.035, color: 0x2a1030, outline: 0, forms: ['perfect'] },
+    { id: 'waistRibB', joint: 'spine', shape: 'neckRing', pos: [0, 0.01, 0.004], radius: 0.171, depth: 0.63, thick: 0.035, color: 0x2a1030, outline: 0, forms: ['perfect'] },
+  ];
   // Imperfect: orange crest-wings on the head and a beak where the mouth should be
   const IMPERFECT_CROWN = crown(0xe08a2a, 0xe08a2a, [{ shape: 'ball', a: [0, -0.42, 0.9], d: [0, -0.2, 1], l: 0.06, r: 0.07, color: 0xd8862a, flat: 0.8, depth: 0.95 }]);
   // Semi-Perfect: the crown bigger and flatter, and the snout
   const SEMI_CROWN = crown(GREEN, BLACK, [{ shape: 'ball', a: [0, -0.18, 0.96], d: [0, 0, 1], l: 0.05, r: 0.05, color: 0xc8b4cc, flat: 0.8, depth: 0.97 }]);
-  // black spots over the green: shoulders, arms, chest, thighs
-  const spotsBody = (c, s) => {
+  // black spots over the green: shoulders, arms, chest, thighs. z: the spots' own size; forms: drawn only in those forms;
+  // shift: the same layout turned round the limbs and moved down them (a second layer of speckles)
+  const spotsBody = (c, s, z = 1, forms, shift = 0) => {
     const out = [];
+    const sz = (w, h) => [w * s * z, h * s * z];
+    const dt = shift ? 0.12 : 0, dy = shift ? -0.045 : 0;
     for (const side of ['L', 'R']) {
       const k = side === 'L' ? 1 : -1;
+      const a = (x) => (x + shift) * k;
       out.push(
-        { at: 'shoulder' + side, t: 0.18, ang: 0.5 * k, size: [0.024 * s, 0.03 * s], color: c },
-        { at: 'shoulder' + side, t: 0.45, ang: -0.9 * k, size: [0.02 * s, 0.026 * s], color: c },
-        { at: 'shoulder' + side, t: 0.7, ang: 1.9 * k, size: [0.022 * s, 0.022 * s], color: c },
-        { at: 'elbow' + side, t: 0.25, ang: 1.1 * k, size: [0.018 * s, 0.022 * s], color: c },
-        { at: 'elbow' + side, t: 0.55, ang: -1.5 * k, size: [0.018 * s, 0.02 * s], color: c },
-        { at: 'thigh' + side, t: 0.22, ang: 0.4 * k, size: [0.03 * s, 0.036 * s], color: c },
-        { at: 'thigh' + side, t: 0.5, ang: -1.2 * k, size: [0.028 * s, 0.03 * s], color: c },
-        { at: 'thigh' + side, t: 0.42, ang: 2.5 * k, size: [0.03 * s, 0.03 * s], color: c },
-        { at: 'thigh' + side, t: 0.75, ang: 0.9 * k, size: [0.024 * s, 0.026 * s], color: c },
-        { at: 'chest', pos: [k * 0.075 * s, 0.215, 0.168 * s], rot: [-0.3, k * 0.35, 0], size: [0.024 * s, 0.028 * s], color: c },
-        { at: 'chest', pos: [k * 0.15 * s, 0.13, 0.135 * s], rot: [-0.1, k * 0.8, 0], size: [0.022 * s, 0.026 * s], color: c },
-        { at: 'chest', pos: [k * 0.2 * s, 0.24, 0.04], rot: [-0.6, k * 1.3, 0], size: [0.026 * s, 0.024 * s], color: c },
+        { at: 'shoulder' + side, t: 0.18 + dt, ang: a(0.5), size: sz(0.024, 0.03), color: c },
+        { at: 'shoulder' + side, t: 0.45 + dt, ang: a(-0.9), size: sz(0.02, 0.026), color: c },
+        { at: 'shoulder' + side, t: 0.7 + dt, ang: a(1.9), size: sz(0.022, 0.022), color: c },
+        { at: 'elbow' + side, t: 0.25 + dt, ang: a(1.1), size: sz(0.018, 0.022), color: c },
+        { at: 'elbow' + side, t: 0.55 + dt, ang: a(-1.5), size: sz(0.018, 0.02), color: c },
+        { at: 'thigh' + side, t: 0.22 + dt, ang: a(0.4), size: sz(0.03, 0.036), color: c },
+        { at: 'thigh' + side, t: 0.5 + dt, ang: a(-1.2), size: sz(0.028, 0.03), color: c },
+        { at: 'thigh' + side, t: 0.42 + dt, ang: a(2.5), size: sz(0.03, 0.03), color: c },
+        { at: 'thigh' + side, t: 0.75 + dt, ang: a(0.9), size: sz(0.024, 0.026), color: c },
+        { at: 'chest', pos: [k * 0.075 * s, 0.215 + dy, 0.168 * s], rot: [-0.3, k * 0.35, 0], size: sz(0.024, 0.028), color: c },
+        { at: 'chest', pos: [k * 0.15 * s, 0.13 + dy, 0.135 * s], rot: [-0.1, k * 0.8, 0], size: sz(0.022, 0.026), color: c },
+        { at: 'chest', pos: [k * 0.2 * s, 0.24 + dy, 0.04], rot: [-0.6, k * 1.3, 0], size: sz(0.026, 0.024), color: c },
       );
     }
-    return out;
+    return forms ? out.map((d) => Object.assign(d, { forms })) : out;
+  };
+
+  // Free Battle: the next shape on a button — hunched, the body swells, the burst (the story keeps its own long change)
+  const CL_PRACTICED = {
+    length: 96,
+    applyAt: 50,
+    steps: [
+      { at: 0, pose: 'cl_brace', speed: 9, expression: 'grit', aura: 0.3, shot: 'face', sfx: 'kiUp' },
+      { at: 22, aura: 0.6, quake: 0.14, dust: 3 },
+      { at: 50, burst: true, small: true, pose: 'cl_roar', speed: 12, expression: 'shout', flash: 0.25, crater: 2.5 },
+      { at: 58, shot: 'pull' },
+      { at: 80, pose: 'cl_calm', expression: 'smirk' },
+    ],
   };
 
   SL.data.characters.cell = {
@@ -159,7 +190,7 @@
     assetLevel: 1,
     name: 'Cell',
     era: 'Android Saga',
-    playable: false,
+    playable: true, // Free Battle once the Cell Games are over (unlocks.js); the story still owns his absorptions
     prototype: true,
     style: 'Bio-Android',
     blurb: 'Every fighter Gero ever recorded, in one body that is not finished yet.',
@@ -175,13 +206,16 @@
       headExtras: PERFECT_CROWN,
       face: { skin: 0xb898c4, pupil: 0x7a0e2a, sclera: 0xf6d8e4, brow: BLACK, noEars: true, eyeW: 1.08, lash: BLACK, nose: 0.6 },
       outfit: {
-        topStyle: 'bare', top: GREEN, pecs: GREEN, abs: 0xe2dccb, arms: GREEN,
+        topStyle: 'bare', top: GREEN, pecs: GREEN, abs: CELL_ABS, arms: GREEN,
         pants: GREEN, pantsStyle: 'tight', legs: BLACK,
         boots: BLACK, bootStyle: 'shoe',
         // the stinger tail he drinks people through (shown by the imperfect and semi-perfect forms)
         longTail: { color: GREEN, segments: 10, length: 1.8, radius: 0.055, lift: 1.2, curl: 0.15, tip: 0xd8a868 },
       },
-      decals: spotsBody(BLACK, 1),
+      // each shape its own spots (2026-10-15, the board p.34–36; one set used to serve all three): Imperfect a dense
+      // scatter of small speckles, Semi-Perfect big angular blotches, Perfect the medium spots
+      decals: spotsBody(BLACK, 1, 0.5, ['base']).concat(spotsBody(BLACK, 1, 0.45, ['base'], 1.3), spotsBody(BLACK, 1, 1.45, ['semi_perfect']), spotsBody(BLACK, 1, 1, ['perfect'])),
+      props: PERFECT_PLATES,
       wings: { color: BLACK, len: 0.82, width: 0.13, x: 0.07, tilt: 0.12, spread: 0.12, flat: 0.18 },
       portraitColor: '#6eb84e',
     },
@@ -198,7 +232,10 @@
       {
         id: 'semi_perfect',
         name: 'Semi-Perfect',
-        noCost: true,
+        // the story's absorptions are boss transformations and cost nothing; a player buys the next shape
+        kiCost: 40,
+        storyBoss: true,
+        practiced: CL_PRACTICED,
         style: 'full',
         line: 'cell_semi',
         aura: { color: 0x6ad4a8, core: 0xd0ffe8, particles: 0x8ae0c0, speed: 1.2 },
@@ -239,13 +276,15 @@
       {
         id: 'perfect',
         name: 'Perfect',
-        noCost: true,
+        kiCost: 45,
+        storyBoss: true,
+        practiced: CL_PRACTICED,
         style: 'full',
         line: 'cell_perfect',
         aura: { color: 0xa8ff6a, core: 0xffffff, particles: 0xd0ffa0, speed: 1.5 },
         // smaller than the bloated shape, and far above both of the others
         mult: { damage: 1.75, speed: 1.4, defense: 1.5, kiRegen: 1.4, chargeRate: 1.35, guardStamina: 1.1 },
-        look: { scale: 1.04, bulk: 1.02, tint: 0xffffff, tintAmount: 0, headExtras: PERFECT_CROWN, longTail: false },
+        look: { scale: 1.04, bulk: 1.02, tint: 0xffffff, tintAmount: 0, headExtras: PERFECT_CROWN, longTail: false, swap: { [CELL_ABS]: CELL_ABS_PERFECT } },
         sequence: { length: 240, applyAt: 150, steps: [{ at: 0, pose: 'cl_brace', shake: 0.4 }, { at: 46, pose: 'cl_brace', shake: 0.7 }, { at: 92, pose: 'cl_roar', shake: 1 }, { at: 140, pose: 'cl_roar', shake: 1, burst: true }, { at: 190, pose: 'cl_calm', shake: 0.3 }, { at: 222, pose: 'cl_idle' }] },
         moves: {
           light: [
@@ -259,6 +298,9 @@
             2: { id: 'cl3Rise', startup: 9, active: 4, recovery: 19, damage: 2400, reach: 1.6, radius: 1, lunge: 14, hitstun: 34, knock: 'launch', knockSpeed: 22, impact: 3, pose: { wind: 'uppercutWind', strike: 'uppercut' }, sfx: 'punchHeavy', hitPose: 'hitBody' },
           },
           dash: { id: 'cl3Blink', startup: 2, active: 6, recovery: 10, damage: 1900, reach: 1.6, radius: 0.95, lunge: 58, hitstun: 24, knock: 'push', knockSpeed: 20, impact: 2, pose: { wind: 'cl_clawW', strike: 'cl_claw' }, sfx: 'punchHeavy', hitPose: 'hitBody' },
+          // a Perfect Guard, then Heavy: the Perfect Counter (the extra below; Free Battle only, so the story's Cell fights
+          // keep their old heavy)
+          counter: { heavy: { special: 'perfectCounter' } },
         },
         specials: {
           special1: {
@@ -276,11 +318,49 @@
             id: 'cl3Solar', name: 'Solar Kamehameha', type: 'beam', kiCost: 100, icon: 'ultimate', ultimate: true,
             chargeMin: 60, chargeMax: 60, damage: [7200, 7200], radius: [2, 2], speed: 115, range: 180, sustain: 50,
             color: 0xd0ffa0, core: 0xffffff, poses: { charge: 'cl_kameW', fire: 'cl_kame' }, recovery: 40, cinematic: true,
+            // outside the story (the records PDF): centred on him, widening as it charges, then broad and side-on along
+            // the beam (a clash takes over the camera as always; the PDF's low release shot would stand in the beam)
+            cine: {
+              steps: [
+                { on: 'start', shot: 'front', dur: 0.5 },
+                { on: 'start', at: 26, shot: 'pull', dur: 0.6 },
+                { on: 'release', shot: 'wide', dur: 1.6, quake: 0.3 },
+              ],
+            },
           },
         },
       },
     ],
     poses: Object.assign({ idle: poses.cl_hunch }, poses),
+    // PERFECT COUNTER (the records PDF's proposed original, labelled so: "a counter-based finisher that activates only
+    // after a successful defensive read"): Perfect Cell only, answered from a Perfect Guard by Heavy (counterOnly — the
+    // wheel shows it, locked, the rest of the time). The adaptation rush: the blows he took from the fighters he is
+    // made of — a claw catch, a hook kick, Piccolo's two fingers point blank, Goku's Instant Transmission behind him
+    // for a hammer, and a Kamehameha through him. The normal camera until it lands, a short cut on his face, tracked,
+    // back at once. Free Battle after the Cell Games (cell_fatherson)
+    extras: [
+      {
+        id: 'perfectCounter', name: 'Perfect Counter', type: 'rush', kiCost: 45, icon: 'rush',
+        forms: ['perfect'], freeUnlock: 'cell_fatherson', freeOnly: true, counterOnly: 'Perfect Guard, then Heavy',
+        startup: 3, dashFrames: 12, speed: 72, recovery: 30,
+        poses: { wind: 'cl_calm', dash: 'cl_clawW' },
+        hits: [
+          { pose: 'cl_claw', damage: 420, frames: 8, sfx: 'punchHeavy', hitPose: 'hitBody' },
+          { pose: 'kickR', damage: 460, frames: 9, sfx: 'punchHeavy', hitPose: 'hitSideL' },
+          { pose: 'twoFingers', damage: 520, frames: 14, sfx: 'kiBlast', ki: { color: 0xd8ff6a, hand: 'R', pierce: 3 }, hitPose: 'hitHeavy' },
+          { pose: 'hammer', damage: 600, frames: 12, sfx: 'punchHeavy', hitPose: 'hitBack', to: 'behind' },
+          { pose: 'cl_kame', damage: 1700, frames: 30, sfx: 'kiBlastBig', to: 'front', ki: { color: 0x8ad4ff, hand: 'both' }, beam: { length: 14, radius: 0.9, frames: 30, core: 0xffffff }, explode: 1.2, knock: 'heavy', knockSpeed: 42, impact: 4, hitPose: 'hitHeavy' },
+        ],
+        cine: {
+          steps: [
+            { on: 'start', shot: 'face', dur: 0.35, flash: 1.4, flashColor: 0xa8ff6a },
+            { on: 'release', shot: 'track', dur: 0.3 },
+            { on: 'connect', shot: 'wide', dur: 0.9 },
+            { on: 'finish', shot: 'impact', dur: 0.6, quake: 0.3 },
+          ],
+        },
+      },
+    ],
     // the imperfect kit: long limbs, a tail, and a habit of leaving
     moves: {
       light: [

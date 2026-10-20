@@ -114,7 +114,7 @@
     name: 'Mecha Frieza',
     fullName: 'Frieza, rebuilt',
     era: 'Android Saga',
-    playable: false,
+    playable: true, // Free Battle after "The Stranger" (unlocks.js)
     prototype: true,
     style: 'Cybernetic Emperor',
     blurb: 'Half of him is metal now, and none of the patience survived.',
@@ -126,8 +126,9 @@
       height: 0.74,
       skin: 0xf2ece6,
       build: { chestW: 0.18, shoulderX: 0.19, waistW: 0.125, upperArmR: 0.05, foreArmR: 0.046, thighR: 0.075, shinR: 0.06, headR: 0.13 },
-      hair: { style: 'frieza_dome', color: 0x8a3fb8 },
-      face: { pupil: 0x6a0a1a, sclera: 0xffffff, brow: 0xf2ece6, noEars: true, eyeW: 1.1 },
+      hair: { style: 'frieza_shell', color: 0x8a3fb8 },
+      // Frieza's own face (frieza_force.js: ringed, slanted eyes, dark brow ridges and lips) on the rebuilt body
+      face: { pupil: 0x6a0a1a, sclera: 0xffffff, brow: 0x4a3a52, browThick: 0.6, noEars: true, eyeW: 1.1, eyeH: 0.85, eyeRim: 0x141014, eyeTilt: 0.14, mouthColor: 0x3a1636, mouthZ: 0.93, jaw: 1.06, jawW: 0.88, cheeks: 0.8 },
       outfit: {
         // the rebuilt half reads as plating over the same silhouette
         topStyle: 'armor', top: 0xc6ccd6, arms: 0xc6ccd6, pants: 0x6a6f7a, pantsStyle: 'tight', legs: 0xc6ccd6,
@@ -194,7 +195,7 @@
     mechanic: { type: 'boss', name: 'Rebuilt', desc: 'Two phases: he opens bored, and when he is hurt he stops pacing himself and throws everything.' },
     ai: { personality: 'aggressive', aggression: 0.8, defense: 0.35, ranged: 0.75, beam: 0.6, transformHp: 0, preferredRange: 7, hooks: 'boss' },
     barks: { hurt: 'frieza_hurt' },
-    intro: { pose: 'idle', expression: 'smirk' },
+    intro: { pose: 'mf_boast', expression: 'smirk' },
     victory: { poses: ['fz_laugh'], expression: 'smirk' },
     defeat: { pose: 'knockdown', expression: 'ko' },
   };
@@ -310,13 +311,14 @@
     },
   };
 
+  const KC_SKIN = 0xb48ad8;
   SL.data.characters.king_cold = {
     id: 'king_cold',
     assetLevel: 1,
     name: 'King Cold',
     fullName: 'King Cold, Frieza’s father',
     era: 'Android Saga',
-    playable: false,
+    playable: true, // Free Battle after "The Stranger" (unlocks.js)
     prototype: true,
     style: 'Emperor Emeritus',
     blurb: 'He has ruled for centuries and fought for almost none of them.',
@@ -324,23 +326,41 @@
     stats: { hp: 32000, ki: 140, stamina: 170, speed: 0.92, power: 1.6, defense: 1.45, weight: 1.6, kiRegen: 3.4, chargeRate: 30, canonPower: 13 },
     poise: { max: 110, regen: 10, regenDelay: 130, armor: 3, cost: { 1: 5, 2: 9, 3: 14, 4: 24 }, beamMul: 1, breakFrames: 170, vulnerable: 1.25 },
     vfx: { ghost: 0xbfc8ff },
+    // (2026-10-16, the board p.21: his colours were inverted — a white body under a purple dome. Now as the board draws
+    // him: lavender-purple skin; the white crown dome with its blue gem and black horns; the armour's blue chest plate
+    // with the orange-brown belly segment under it and black shorts; broad pads over a red cape; white bracers and shin
+    // guards with pink ribbing (cuff props); bare purple feet and hands with black nails; the long tail, pink-ribbed)
     appearance: {
       height: 1.32,
-      skin: 0xf2ece6,
+      skin: KC_SKIN,
       build: { chestW: 0.3, chestD: 0.2, shoulderX: 0.3, waistW: 0.24, upperArmR: 0.088, foreArmR: 0.076, fist: 0.08, thighR: 0.13, shinR: 0.1, headR: 0.155, neckLen: 0.06 },
-      hair: { style: 'frieza_dome', color: 0x6a4ac8 },
+      hair: { style: 'frieza_shell', color: 0xeceaf2 },
       headExtras: [
         { a: [0.85, 0.3, 0], d: [1, 0.55, -0.2], l: 0.2, r: 0.045, color: 0x2b2b35, depth: 0.95 },
         { a: [-0.85, 0.3, 0], d: [-1, 0.55, -0.2], l: 0.2, r: 0.045, color: 0x2b2b35, depth: 0.95 },
+        // the gem set in the front of the dome
+        { shape: 'ball', a: [0, 0.58, 0.81], d: [0, 0.58, 0.81], l: 0.05, r: 0.052, flat: 0.55, depth: 1.12, color: 0x2a6ec8, outline: 0.5 },
       ],
-      face: { pupil: 0x6a0a1a, sclera: 0xffffff, brow: 0xf2ece6, noEars: true, eyeW: 1.05 },
+      // his son's face (the visual pass): ringed eyes, dark brow ridges, dark lips — older and broader in the jaw
+      face: { pupil: 0x6a0a1a, sclera: 0xffffff, brow: 0x5a3a7a, browThick: 0.8, noEars: true, eyeW: 1.05, eyeH: 0.85, eyeRim: 0x141014, eyeTilt: 0.1, mouthColor: 0x3a1636, mouthZ: 0.93, jaw: 1.1, jawW: 1.02 },
       outfit: {
-        topStyle: 'armor', top: 0xf2ece6, arms: 0xf2ece6, pants: 0x6a4ac8, pantsStyle: 'tight', legs: 0xf2ece6,
-        boots: 0xf2ece6, bootStyle: 'gi',
-        armor: { plate: 0x6a4ac8, belly: 0xf2ece6, pads: 0x4a3a8a, padStyle: 'down' },
-        cape: { color: 0x3a2a6a, lining: 0x6a4ac8 },
+        topStyle: 'armor', top: 0x18181e, arms: KC_SKIN, pants: 0x18181e, pantsStyle: 'tight', thighs: KC_SKIN, legs: KC_SKIN,
+        boots: KC_SKIN, bootStyle: 'shoe', nails: 0x141414,
+        armor: { plate: 0x2a48b0, belly: 0xb8702a, pads: 0x1e2a6a, padStyle: 'down', trim: 0xeceaf2 },
+        // a single colour (the cape builder takes one): the red of the board p.21
+        cape: 0xb01e26,
+        longTail: { color: 0xe890a8, segments: 8, length: 1.1, radius: 0.055, lift: 0.9, curl: 0.2 },
       },
-      portraitColor: '#6a4ac8',
+      props: [1, -1].flatMap((s) => {
+        const sd = s > 0 ? 'L' : 'R';
+        return [
+          { id: 'bracer' + sd, joint: 'elbow' + sd, shape: 'cuff', pos: [0, -0.07, 0], radius: 0.098, radiusBottom: 0.09, length: 0.17, color: 0xeceaf2, outline: 0.5 },
+          { id: 'bracerRib' + sd, joint: 'elbow' + sd, shape: 'cuff', pos: [0, -0.1, 0], radius: 0.1, radiusBottom: 0.094, length: 0.11, sides: 8, color: 0xe890a8, outline: 0.3 },
+          { id: 'shin' + sd, joint: 'knee' + sd, shape: 'cuff', pos: [0, -0.08, 0], radius: 0.128, radiusBottom: 0.116, length: 0.3, color: 0xeceaf2, outline: 0.5 },
+          { id: 'shinRib' + sd, joint: 'knee' + sd, shape: 'cuff', pos: [0, -0.12, 0], radius: 0.13, radiusBottom: 0.12, length: 0.2, sides: 8, color: 0xe890a8, outline: 0.3 },
+        ];
+      }),
+      portraitColor: '#b48ad8',
     },
     forms: [{ id: 'base', name: 'Base', aura: { color: 0x8a6aff, core: 0xe0d8ff, particles: 0xbfc8ff, speed: 1 }, mult: {} }],
     poses: coldPoses,

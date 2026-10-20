@@ -236,9 +236,13 @@
     { shape: 'ball', a: [0, 0.62, -0.8], d: [0, -0.55, -0.85], l: 0.15 * k, r: 0.036, flat: 1, color, depth: 1.14 },
     { a: [0, 0.05, -1], d: [0, -1, -0.35], l: 0.22 * k, r: 0.03, color, depth: 1.42 },
   ];
-  const vents = (color) => [
-    { shape: 'ball', a: [0.62, 0.62, -0.46], d: [0.7, 0.5, -0.5], l: 0.02, r: 0.02, color, depth: 0.99, flat: 0.4, outline: 0 },
-    { shape: 'ball', a: [-0.62, 0.62, -0.46], d: [-0.7, 0.5, -0.5], l: 0.02, r: 0.02, color, depth: 0.99, flat: 0.4, outline: 0 },
+  // the antenna of Super Buu and Kid Buu (the board p.43-44): it rises off the crown and hooks over at the tip, where
+  // Good Buu's and Evil Buu's lie back over the skull — one thick curved lock that keeps its curve (`curl`)
+  const antennaUp = (color, l, r, bend, lean) => [{ a: [0, 1, 0.06], d: [0, 1, lean], l, r, bend, curl: true, toward: [0, 0, -1], color, depth: 0.9 }];
+  // (depth, k: on a skull that narrows toward the crown — Super Buu's — the vents sit further in)
+  const vents = (color, depth = 0.99, k = 1) => [
+    { shape: 'ball', a: [0.62 * k, 0.62, -0.46 * k], d: [0.7, 0.5, -0.5], l: 0.02, r: 0.02, color, depth, flat: 0.4, outline: 0 },
+    { shape: 'ball', a: [-0.62 * k, 0.62, -0.46 * k], d: [-0.7, 0.5, -0.5], l: 0.02, r: 0.02, color, depth, flat: 0.4, outline: 0 },
   ];
 
   SL.data.characters.evil_buu = {
@@ -301,7 +305,7 @@
     name: 'Super Buu',
     fullName: 'Super Buu',
     era: 'Buu Saga',
-    playable: false,
+    playable: true, // Free Battle after "Super Vegito" (unlocks.js)
     prototype: true,
     style: 'Calculating Predator',
     blurb: 'The fat one\'s power, the evil one\'s mind. He keeps his promises only when they are fights.',
@@ -316,15 +320,25 @@
         upperArmR: 0.078, foreArmR: 0.068, fist: 0.068, thighR: 0.105, shinR: 0.08, headR: 0.135, neckLen: 0.06, neckR: 0.075,
       },
       hair: { style: 'bald', color: PINK },
-      headExtras: antenna(PINK, 1.2).concat(vents(0x6a2a4a)),
-      face: { noEars: true, pupil: 0xc01830, sclera: 0x141418, eyeW: 0.82, browThick: 1.3, brow: 0x3a1a2a },
+      // (2026-10-15 pass, the board p.43: the antenna stands UP off the crown, tall, and hooks back at the tip — it lay
+      // back over the skull like Good Buu's; black bands with gold edges round the forearms — they were plain gold; the
+      // black belt sits round the top of the trousers with the gold Majin plate in front — it stood out like a ring;
+      // gathered white trousers; black boots edged in gold over brown shoes)
+      headExtras: antennaUp(PINK, 0.44, 0.09, 1.5, 0.4).concat(vents(0x6a2a4a, 0.86, 0.8)),
+      // (2026-10-15 defects batch: one shaped head, the lower half wider and drawn down into a heavy jaw — it was a ball)
+      // (2026-10-15, the board p.43: the skull narrows up into the antenna's thick root — `crown` — and stands taller; it was a
+      // round ball with the antenna stuck on top)
+      face: { noEars: true, pupil: 0xc01830, sclera: 0x141418, eyeW: 0.82, browThick: 1.3, brow: 0x3a1a2a, headShape: { taper: -0.08, drop: 0.24, fwd: 0.12, nape: 0.12, crown: 0.38 }, skull: [0.95, 1.1, 1] },
       outfit: {
         topStyle: 'bare', top: PINK, arms: PINK, pecs: PINK,
-        pants: WHITE, pantsStyle: 'gi',
-        belt: BELT, beltStyle: 'sash',
-        wrist: GOLD,
-        boots: 0x1a1a22, bootTip: GOLD, bootStyle: 'saiyan',
+        pants: WHITE, pantsStyle: 'harem', harem: { thigh: 1.35, balloon: 1.6, at: 0.36, cuff: 0.86 },
+        belt: BELT, beltStyle: 'sash', beltAt: -0.08, beltFit: 0.86,
+        wrist: BELT, wristLen: 0.16, wristTrim: GOLD, nails: 0x141414, // black nails (the board p.43)
+        boots: BELT, bootTrim: GOLD, shoes: 0x6a4a2a, bootStyle: 'saiyan',
       },
+      props: [
+        { id: 'majinPlate', joint: 'spine', shape: 'tri', pos: [0, -0.085, 0.163], rot: [-0.1, 0, 0], size: [0.085, 0.06, 0.016], color: GOLD, mark: 'majin' },
+      ],
       portraitColor: '#f29ac0',
     },
     vfx: { ghost: 0xffb0d0, trail: 0xffc0dc },
@@ -351,6 +365,13 @@
         reach: 16, extendFrames: 10, pullFrames: 13, damage: 800, hitstunAfter: 34, recovery: 20, armLength: 0.46,
         poses: { wind: 'sb_blastW', reach: 'sb_blast' },
       },
+      // the Human Extinction Attack, aimed at one fighter: he rises, laughs, and the sky fills with pink shots that
+      // turn and come down on you (a playable ultimate; the story's own version is the mission's)
+      ultimate: {
+        id: 'sbExtinction', name: 'Human Extinction Attack', type: 'scatter', kiCost: 100, icon: 'ultimate', ultimate: true, freeOnly: true,
+        windup: 24, rise: 26, height: 11, count: 16, damage: 650, speed: 74, range: 52, recovery: 28,
+        color: 0xff6ab4, poses: { wind: 'sb_blastW', throw: 'sb_blast' },
+      },
     },
     majin: {
       gut: 0.7, // no belly to sink into any more: most of a blow lands
@@ -375,7 +396,7 @@
     name: 'Kid Buu',
     fullName: 'Kid Buu (Majin Buu, the original)',
     era: 'Buu Saga',
-    playable: false,
+    playable: true, // Free Battle after "Goodbye, Buu" (unlocks.js)
     prototype: true,
     style: 'Pure Chaos',
     blurb: 'The original, with nothing absorbed to slow him down: no plan, no mercy, no limit — and a scream for every trick.',
@@ -387,18 +408,26 @@
       skin: PINK,
       build: {
         // a child's frame: a big round head on narrow, wiry shoulders
-        chestW: 0.18, chestD: 0.14, chestTop: 0.27, shoulderX: 0.18, delt: 0.058, waistW: 0.13, waistD: 0.105, pelvisW: 0.145,
+        // (2026-10-15 defects batch: a leaner chest and narrower shoulders — the board's wiry child, not a small man)
+        chestW: 0.162, chestD: 0.128, chestTop: 0.27, shoulderX: 0.168, delt: 0.052, waistW: 0.122, waistD: 0.1, pelvisW: 0.14,
         upperArmR: 0.046, foreArmR: 0.041, fist: 0.05, thighR: 0.072, shinR: 0.056, headR: 0.155, neckLen: 0.045, neckR: 0.055,
       },
       hair: { style: 'bald', color: PINK },
-      headExtras: antenna(PINK, 1.05).concat(vents(0x6a2a4a)),
+      // (2026-10-15 pass, the board p.44: the antenna rises off the crown and curls back over itself — it lay back over the
+      // skull; long black bands with gold edges up the forearms; the gold Majin plate on the black belt; the trousers
+      // balloon and gather above black boots edged in gold over brown shoes)
+      headExtras: antennaUp(PINK, 0.36, 0.07, 2.8, 0.3).concat(vents(0x6a2a4a)),
       face: { noEars: true, pupil: 0xc01830, sclera: 0x141418, eyeW: 1.15, eyeX: 0.047, browThick: 1.5, brow: 0x3a1a2a },
       outfit: {
         topStyle: 'bare', top: PINK, arms: PINK, pecs: PINK,
-        pants: WHITE, pantsStyle: 'gi',
+        pants: WHITE, pantsStyle: 'harem', harem: { thigh: 1.4, balloon: 1.75, at: 0.36, cuff: 0.86 },
         belt: BELT, beltStyle: 'sash',
-        boots: 0x1a1a22, bootTip: GOLD, bootStyle: 'saiyan',
+        wrist: BELT, wristLen: 0.2, wristTrim: GOLD, nails: 0x141414, // black nails (the board p.44)
+        boots: BELT, bootTrim: GOLD, shoes: 0x9a6a2a, bootStyle: 'saiyan',
       },
+      props: [
+        { id: 'majinPlate', joint: 'spine', shape: 'tri', pos: [0, -0.005, 0.148], rot: [-0.1, 0, 0], size: [0.075, 0.055, 0.014], color: GOLD, mark: 'majin' },
+      ],
       portraitColor: '#f29ac0',
     },
     vfx: { ghost: 0xffb0d0, trail: 0xffc0dc },

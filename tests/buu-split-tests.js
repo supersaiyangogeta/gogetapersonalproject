@@ -22,7 +22,7 @@ module.exports = function buuSplitTests({ test, eq, ok }) {
     return new gg.THREE.Box3().setFromObject(f.model.root);
   };
 
-  test('Evil Buu and Super Buu are bodies of their own, not recolours: grey and starved-thin, pink and heavy-muscled, antennae down the back, black eyes with red in them', () => {
+  test('Evil Buu and Super Buu are bodies of their own, not recolours: grey and starved-thin, pink and heavy-muscled, the antenna down the back of the grey one and standing up on the pink one, black eyes with red in them', () => {
     const gg = H.create({ quiet: true, seed: 1 });
     const { SL, V3 } = gg;
     const b = gg.battle({ p1: 'goku', p2: 'majin_buu', distance: 6 });
@@ -45,8 +45,15 @@ module.exports = function buuSplitTests({ test, eq, ok }) {
     for (const id of ['evil_buu', 'super_buu']) {
       const a = D[id].appearance;
       ok(a.face.sclera < 0x303030 && ((a.face.pupil >> 16) & 255) > 0xa0, id + ': dark eyes with red pupils');
-      const tip = a.headExtras.filter((x) => x.d[1] < -0.5 && x.a[2] < -0.5);
-      ok(tip.length >= 2, id + ': the antenna runs down the back of the head');
+      if (id === 'evil_buu') {
+        const tip = a.headExtras.filter((x) => x.d[1] < -0.5 && x.a[2] < -0.5);
+        ok(tip.length >= 2, id + ': the antenna runs down the back of the head');
+      } else {
+        // (the board p.43, 2026-10-15: Super Buu's antenna stands up off the crown, thick at the root, and hooks back
+        // at the tip — it no longer lies down the back of the head like Evil Buu's)
+        const up = a.headExtras.filter((x) => x.a[1] > 0.9 && x.d[1] > 0.8 && x.bend > 0 && x.curl && x.toward && x.toward[2] < 0);
+        ok(up.length === 1, id + ': the antenna stands up off the crown and hooks back at the tip');
+      }
       // their own poses, not the fat one's
       ok(Object.keys(D[id].poses).filter((k) => k.startsWith(id === 'evil_buu' ? 'eb_' : 'sb_')).length >= 5, id + ': a pose set of its own');
     }

@@ -235,19 +235,30 @@
       height: 1.1,
       skin: 0xc0382e,
       build: { chestW: 0.25, chestD: 0.18, shoulderX: 0.25, waistW: 0.19, upperArmR: 0.066, foreArmR: 0.058, fist: 0.06, thighR: 0.1, shinR: 0.078, headR: 0.148, neckLen: 0.058 },
-      hair: { style: 'dabura', color: 0xf2f0ea },
-      // two horns off the brow, and Babidi's mark between them
+      // the reference pass (owner's visual reference p.38): black slicked hair, short horns, the long black goatee,
+      // yellow eyes; the BLUE jumpsuit open to the chest with long sleeves and full trousers, a white belt with gold, the
+      // white cape over the shoulders, white boots (he wore a black vest, white trousers and a white mane)
+      hair: { style: 'dabura', color: 0x141414 },
+      // two horns off the brow, Babidi's mark between them, and the goatee
+      // (2026-10-15 pass, the same page: the great pointed ears sweeping up and out past the top of the head are his
+      // silhouette — he had small elf ears; the deep V of the jumpsuit down to the belt, the puffed sleeves, the wide
+      // white belt with its plate and the gold segment at his left — it was a thin knotted ring)
       headExtras: mark(0x141414, [
+        { a: [0.96, 0.15, -0.05], d: [0.85, 1.1, -0.3], l: 0.21, r: 0.05, flat: 0.3, color: 0xc0382e, depth: 0.95, outline: 0.7 },
+        { a: [-0.96, 0.15, -0.05], d: [-0.85, 1.1, -0.3], l: 0.21, r: 0.05, flat: 0.3, color: 0xc0382e, depth: 0.95, outline: 0.7 },
         { a: [0.45, 0.72, 0.5], d: [0.2, 1, 0.25], l: 0.09, r: 0.024, color: 0xf0e6d0, depth: 0.96 },
         { a: [-0.45, 0.72, 0.5], d: [-0.2, 1, 0.25], l: 0.09, r: 0.024, color: 0xf0e6d0, depth: 0.96 },
+        { a: [0, -0.86, 0.5], d: [0, -1, 0.15], l: 0.09, r: 0.022, color: 0x141414, depth: 0.98, flat: 0.6, outline: 0.3 },
       ]),
-      face: { pupil: 0x141414, sclera: 0xffe8a0, eyeW: 0.92, pointedEars: true, brow: 0xf2f0ea },
+      face: { pupil: 0x141414, sclera: 0xffd23a, eyeW: 0.92, noEars: true, brow: 0x141414 },
       outfit: {
-        topStyle: 'gi', top: 0x24242a, sleeves: 'none', arms: 0xc0382e, under: 0x8a8a94, wrist: 0x8a8a94,
-        belt: 0x8a8a94, pants: 0xe8e4dc, pantsStyle: 'gi', boots: 0x24242a, bootStyle: 'gi',
-        cape: 0xe8e4dc,
+        topStyle: 'gi', top: 0x2a66c0, under: 0xc0382e, neck: 1.35, sleeves: 'long', sleeveColor: 0x2a66c0, sleeveBulk: 1.25, arms: 0x2a66c0,
+        belt: 0xe8e8ee, beltStyle: 'sash', beltFit: 0.85, beltKnot: false, pants: 0x2a66c0, pantsStyle: 'gi', boots: 0xf2f0ea, bootStyle: 'saiyan',
+        cape: 0xe8e4dc, capeOff: 0.1, nails: 0x141414, // black nails (the board p.38)
       },
       props: [
+        { id: 'beltPlate', joint: 'spine', shape: 'box', pos: [0, 0, 0.135], size: [0.085, 0.06, 0.02], color: 0xf4f4f8 },
+        { id: 'beltGold', joint: 'spine', shape: 'box', pos: [0.12, 0, 0.1], rot: [0, 0.75, 0], size: [0.07, 0.05, 0.016], color: 0xd8b040 },
         { id: 'sword', shape: 'katana', joint: 'handR', pos: [0, -0.05, 0.012], rot: [2.25, 0, 0], length: 1.05, blade: 0xd8dce4, guard: 0x3a3a44, grip: 0x5a1a1a },
       ],
       portraitColor: '#c0382e',

@@ -128,7 +128,9 @@
       const B = b && b.isVector3 ? b.clone() : Cinema.pointOf(b);
       const fov = opts.fov === undefined ? 42 : opts.fov;
       const pad = opts.pad === undefined ? 2.2 : opts.pad;
-      const aspect = opts.aspect || 1.6;
+      // the real screen's shape (a 4:3 window cut the far fighter out of a frame sized for 16:10)
+      const cv = SL.Render && SL.Render.canvas;
+      const aspect = opts.aspect || (cv && cv.width > 0 && cv.height > 0 ? cv.width / cv.height : 1.6);
       const mid = A.clone().lerp(B, opts.bias === undefined ? 0.5 : opts.bias);
       const line = B.clone().sub(A);
       const gap = Math.max(1.5, line.length());
@@ -464,11 +466,11 @@
       m.shot(
         (t, out) => {
           if (semantic) {
-            Cinema.frameShot(ctx, c, out);
+            Cinema.frameShot(ctx, c, out, st);
             // focus2: the framing moves over the shot (a transformation: the whole body, then in to the face)
             if (c.focus2) {
               const o2 = { pos: new V3(), look: new V3(), fov: out.fov };
-              Cinema.frameShot(ctx, Object.assign({}, c, { focus: c.focus2, dist: c.dist2, fov: c.fov2 }), o2);
+              Cinema.frameShot(ctx, Object.assign({}, c, { focus: c.focus2, dist: c.dist2, fov: c.fov2 }), o2, st);
               const k = ease(t);
               out.pos.lerp(o2.pos, k);
               out.look.lerp(o2.look, k);
@@ -582,6 +584,8 @@
       const face = head.clone().addScaledVector(up, headR * 0.9);
       const top = head.clone().addScaledVector(up, headR * 2.1);
       pts.push(head, chest, hips, top, f.pos.clone());
+      // a halo is part of the silhouette: a full shot keeps it in the frame
+      if (f.halo && f.halo.visible) pts.push(f.halo.position.clone().add(new V3(0, 0.05, 0)));
       const min = pts[0].clone(), max = pts[0].clone();
       for (const p of pts) {
         min.min(p);
@@ -603,7 +607,7 @@
     },
 
     /** A semantic shot: the lens placed from the subject's body this frame. Writes out.pos/look/fov. */
-    frameShot(ctx, c, out) {
+    frameShot(ctx, c, out, st) {
       const f = Cinema.actor(ctx, c.subject);
       if (!f) return false;
       const B = Cinema.body(f);
@@ -654,7 +658,10 @@
           const bb = focus === 'full' ? G.centre : G.chest.clone().lerp(G.face, 0.5);
           const mk = (sd) => Cinema.twoShot(a, bb, { fov, side: sd, height: c.height === undefined ? 0.15 : c.height, lookUp: 0, pad: c.pad === undefined ? 1.2 : c.pad, minDist: 2.5 });
           let ts;
-          if (c.side === undefined) {
+          // the side is chosen once per shot (st): picked again every frame, the lens jumped across the
+          // line whenever one of them turned mid-shot
+          if (c.side === undefined && st && st.twoSide) ts = mk(st.twoSide);
+          else if (c.side === undefined) {
             // no side given: the one their faces are on (a two-shot of two backs shows nobody), the subject first
             const flat = (x) => {
               const v = x.forward ? x.forward.clone().setY(0) : new V3(0, 0, 1);
@@ -665,7 +672,9 @@
               return d.dot(flat(f)) + 0.6 * d.dot(flat(g));
             };
             const t1 = mk(1), t2 = mk(-1);
-            ts = score(t1) >= score(t2) ? t1 : t2;
+            const first = score(t1) >= score(t2);
+            ts = first ? t1 : t2;
+            if (st) st.twoSide = first ? 1 : -1;
           } else ts = mk(side);
           out.pos.copy(ts.pos);
           out.look.copy(ts.look);
@@ -729,8 +738,8 @@
       m.shot(
         (t, out, el) => {
           const c = typeof spec === 'function' ? spec(t, el) : spec;
-          if (!Cinema.frameShot(ctx, c, out)) return;
           if (!states.has(c)) states.set(c, {});
+          if (!Cinema.frameShot(ctx, c, out, states.get(c))) return;
           const subj = Cinema.subjectOf(ctx, c, null);
           if (subj) Cinema.safe(ctx, out, subj, states.get(c));
         },

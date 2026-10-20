@@ -46,6 +46,43 @@
     return out;
   }
 
+  /**
+   * A lathe (profile [[r, y], ...], y rising) whose vertices `push(v)` moves in place: one continuous surface with
+   * shape where a plain lathe is round (a chest contour, thigh muscles). The seam is put at the back (phiStart π) and
+   * the normals are averaged across it, so no crease shows down the front.
+   */
+  function shapedLathe(pts, segs, push) {
+    const g = new THREE.LatheGeometry(pts.map(([r, y]) => new THREE.Vector2(r, y)), segs, Math.PI);
+    const p = g.attributes.position, v = new THREE.Vector3();
+    for (let i = 0; i < p.count; i++) {
+      v.fromBufferAttribute(p, i);
+      push(v);
+      p.setXYZ(i, v.x, v.y, v.z);
+    }
+    return weldNormals(g);
+  }
+  /** Normals from the moved surface, averaged where a seam doubles a vertex (no crease along it). */
+  function weldNormals(g) {
+    const p = g.attributes.position, v = new THREE.Vector3();
+    g.computeVertexNormals();
+    const n = g.attributes.normal, same = new Map();
+    for (let i = 0; i < p.count; i++) {
+      const k = Math.round(p.getX(i) * 1e4) + ',' + Math.round(p.getY(i) * 1e4) + ',' + Math.round(p.getZ(i) * 1e4);
+      (same.get(k) || same.set(k, []).get(k)).push(i);
+    }
+    for (const ids of same.values()) {
+      if (ids.length < 2) continue;
+      v.set(0, 0, 0);
+      for (const i of ids) v.x += n.getX(i), v.y += n.getY(i), v.z += n.getZ(i);
+      v.normalize();
+      for (const i of ids) n.setXYZ(i, v.x, v.y, v.z);
+    }
+    return g;
+  }
+  /** A profile with each span split into `n` (a finer lathe keeps the same outline). */
+  const finer = (pts, n) => pts.flatMap((q, i) => (i === 0 ? [q] : Array.from({ length: n }, (_, j) => { const t = (j + 1) / n, a = pts[i - 1]; return [a[0] + (q[0] - a[0]) * t, a[1] + (q[1] - a[1]) * t]; })));
+  const smooth = (t) => t * t * (3 - 2 * t);
+
   const CHEST_PTS = [[0.0, -0.07], [0.135, -0.065], [0.165, 0.0], [0.195, 0.1], [0.212, 0.19], [0.205, 0.25], [0.165, 0.3], [0.09, 0.335], [0.0, 0.345]];
   const ABS_PTS = [[0.0, -0.05], [0.118, -0.045], [0.128, 0.03], [0.134, 0.13], [0.15, 0.22], [0.0, 0.25]];
   const G = {
@@ -60,6 +97,13 @@
         return g;
       }),
     /** Tapered tube hanging down, top at y=0. */
+    /** A flat-sided band (n faces, one face to the front: the silhouette is the polygon), hanging from its top like G.tube. */
+    prism: (rt, rb, h, n) =>
+      geo('prism' + f3(rt) + f3(rb) + f3(h) + n, () => {
+        const g = new THREE.CylinderGeometry(rt, rb, h, n, 1, false, Math.PI / n);
+        g.translate(0, -h / 2, 0);
+        return g;
+      }),
     tube: (rt, rb, h, open = false) =>
       geo('tube' + f3(rt) + f3(rb) + f3(h) + open, () => {
         const g = new THREE.CylinderGeometry(rt, rb, h, 16, 1, open);
@@ -73,7 +117,71 @@
         return g;
       }),
     box: () => geo('box', () => new THREE.BoxGeometry(1, 1, 1)),
+    // a unit cylinder standing on its base (a hat's crown: Dr. Gero's)
+    cyl: () =>
+      geo('cylUp', () => {
+        const g = new THREE.CylinderGeometry(1, 1, 1, 18);
+        g.translate(0, 0.5, 0);
+        return g;
+      }),
+    // a flat triangle facing +z, point down (a three-sided prism: an emblem cut from cloth or plate)
+    tri: () =>
+      geo('tri', () => {
+        const g = new THREE.CylinderGeometry(1, 1, 1, 3);
+        g.rotateX(Math.PI / 2);
+        return g;
+      }),
     torus: (R, r) => geo('torus' + f3(R) + f3(r), () => new THREE.TorusGeometry(R, r, 8, 28)),
+    /**
+     * A lock of hair: a tapered spike of unit length that curves through `bend` radians as it grows (up its +Y,
+     * bending toward +Z), its root a little swollen — the hair styles' `bend` (Broly's manes). Scaled like a spike
+     * ([r, l, r * flat]), so a flat lock reads as a strand, not a horn. With `th` (radius / length) the curve keeps its
+     * true shape instead: the ring is th thick and the lock is scaled evenly by its length (a `curl` extra: an antenna
+     * that hooks over, which the [r, l, r] scale would straighten).
+     */
+    lock: (bend, th) =>
+      geo('lock' + f3(bend) + (th ? 'c' + f3(th) : ''), () => {
+        const RINGS = th ? 14 : 9, SIDES = 7, pos = [], idx = [], b = Math.abs(bend) < 1e-3 ? 1e-3 : bend;
+        const at = (t) => [0, Math.sin(b * t) / b, (1 - Math.cos(b * t)) / b];
+        for (let i = 0; i <= RINGS; i++) {
+          const t = i / RINGS, c = at(t), rr = i === RINGS ? 0 : (th || 1) * (1 - t) * (1 + 0.25 * Math.sin(Math.PI * Math.min(1, t * 2.5)));
+          // the ring lies across the curve: its tangent is (0, cos bt, sin bt)
+          const ty = Math.cos(b * t), tz = Math.sin(b * t);
+          for (let k = 0; k <= SIDES; k++) {
+            const a = (k / SIDES) * Math.PI * 2, x = Math.cos(a) * rr, n = Math.sin(a) * rr;
+            pos.push(c[0] + x, c[1] - n * tz, c[2] + n * ty);
+          }
+        }
+        for (let i = 0; i < RINGS; i++)
+          for (let k = 0; k < SIDES; k++) {
+            const p0 = i * (SIDES + 1) + k, p1 = p0 + SIDES + 1;
+            idx.push(p0, p1, p0 + 1, p0 + 1, p1, p1 + 1);
+          }
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+        g.setAttribute('uv', new THREE.Float32BufferAttribute(new Array((pos.length / 3) * 2).fill(0), 2));
+        g.setIndex(idx);
+        return weldNormals(g);
+      }),
+    /**
+     * A ring of fur hanging down from its top (y = 0, radius r): n pointed tufts, their tips flared out to rt at -len and
+     * the notches between them at a third of the way down — the ragged edge where a pelt ends (Super Saiyan 4's wrists).
+     */
+    fringe: (r, rt, len, n) =>
+      geo('fringe' + f3(r) + f3(rt) + f3(len) + n, () => {
+        const pos = [], idx = [], k = n * 2;
+        for (let i = 0; i <= k; i++) {
+          const a = (i / k) * Math.PI * 2, tip = i % 2 === 0;
+          const rb = tip ? rt : (r + rt) * 0.5, yb = tip ? -len : -len * 0.32;
+          pos.push(Math.sin(a) * r, 0, Math.cos(a) * r, Math.sin(a) * rb, yb, Math.cos(a) * rb);
+          if (i < k) idx.push(i * 2, i * 2 + 1, i * 2 + 2, i * 2 + 2, i * 2 + 1, i * 2 + 3);
+        }
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+        g.setAttribute('uv', new THREE.Float32BufferAttribute(new Array((pos.length / 3) * 2).fill(0), 2));
+        g.setIndex(idx);
+        return weldNormals(g);
+      }),
     circle: () => geo('circle', () => new THREE.CircleGeometry(1, 24)),
     hemi: () => geo('hemi', () => new THREE.SphereGeometry(1, 20, 12, 0, Math.PI * 2, 0, Math.PI * 0.55)),
     /** V-tapered upper torso (chest joint space), unit width 0.2. */
@@ -85,6 +193,93 @@
       geo('absLathe', () =>
         new THREE.LatheGeometry(ABS_PTS.map(([r, y]) => new THREE.Vector2(r, y)), 22)
       ),
+    /**
+     * build.bustShape (k, about 1): the chest itself carries the bust — the front pushed forward in two overlapping
+     * soft lobes (fuller below the centre, a long slope above), so the top and chest stay one surface. Opt-in (Kefla).
+     */
+    chestBust: (k) =>
+      geo('chestBust' + f3(k), () =>
+        shapedLathe(finer(CHEST_PTS, 4), 40, (v) => {
+          if (v.z <= 0) return;
+          const fy = v.y - 0.165, sy = fy > 0 ? 0.062 : 0.036;
+          const lobe = Math.exp(-(fy * fy) / (2 * sy * sy)) * Math.exp(-((Math.abs(v.x) - 0.066) ** 2) / (2 * 0.05 * 0.05));
+          const front = Math.min(1, v.z / 0.12);
+          v.z += k * 0.04 * lobe * front * front;
+        })
+      ),
+    /**
+     * face.headShape = { taper, drop, fwd, nape }: one skull surface with the face built in — the lower half narrowing
+     * toward the chin (taper), the front of it drawn down (drop) and forward (fwd) into a chin, the back of it eased in
+     * toward the neck (nape). Replaces the skull sphere and the separate jaw sphere, so cheeks, jaw and chin are one
+     * surface with no seam. A unit sphere (the skull's own scale is applied by the mesh). Opt-in (Kefla).
+     */
+    // h.crown: the upper half narrowing toward the top as well, a skull that runs up into what grows out of it (Super
+    // Buu's antenna); 0 keeps the round crown
+    headShaped: (h) =>
+      geo('headShaped' + [h.taper, h.drop, h.fwd, h.nape || 0, h.crown || 0].join('_'), () => {
+        const g = new THREE.SphereGeometry(1, 30, 22);
+        const p = g.attributes.position, v = new THREE.Vector3();
+        for (let i = 0; i < p.count; i++) {
+          v.fromBufferAttribute(p, i);
+          const t = smooth(Math.min(1, Math.max(0, -v.y)));
+          const front = Math.min(1, Math.max(0, (v.z + 0.2) / 1.2));
+          if (h.crown) {
+            const k = 1 - h.crown * smooth(Math.min(1, Math.max(0, v.y)));
+            v.x *= k;
+            v.z *= k;
+          }
+          v.x *= 1 - h.taper * t;
+          v.y *= 1 + h.drop * t * front;
+          v.z += h.fwd * t * t * front;
+          if (v.z < 0) v.z *= 1 - (h.nape || 0) * t;
+          p.setXYZ(i, v.x, v.y, v.z);
+        }
+        return weldNormals(g);
+      }),
+    /** A circular arc of tube (radius R, thickness r) through angle a, in the XY plane from +X anticlockwise. */
+    arc: (R, r, a) => geo('arc' + f3(R) + f3(r) + f3(a), () => new THREE.TorusGeometry(R, r, 6, 18, a)),
+    /**
+     * A shell: a slice of the unit sphere `w` radians round (centred on +Z) from the top pole down through `t` radians —
+     * pointed at the top, convex toward +Z, hollow toward the centre. `inside`: the same slice facing into the hollow
+     * (its lining).
+     */
+    shell: (w, t, inside) =>
+      geo('shell' + f3(w) + f3(t) + (inside ? 'in' : ''), () => {
+        const g = new THREE.SphereGeometry(1, 18, 12, Math.PI / 2 - w / 2, w, 0, t);
+        if (!inside) return g;
+        const ix = g.index.array, n = g.attributes.normal;
+        for (let i = 0; i < ix.length; i += 3) [ix[i], ix[i + 2]] = [ix[i + 2], ix[i]];
+        for (let i = 0; i < n.count; i++) n.setXYZ(i, -n.getX(i), -n.getY(i), -n.getZ(i));
+        return g;
+      }),
+    /**
+     * build.thighShape = { top, mid, knee, quad, ham }: a thigh hanging from its joint, full near the hip (top × r),
+     * easing through the middle (mid × r) and tapering to the knee (knee × shinR, passed in as rk), with the
+     * quadriceps (front) and the two hamstring heads (back) raised out of the same surface. Opt-in (Kefla).
+     */
+    thighShaped: (r, rk, len, sh) =>
+      geo('thighShaped' + f3(r) + f3(rk) + f3(len) + [sh.top, sh.mid, sh.quad, sh.ham].join('_'), () => {
+        const keys = [[0, sh.top * 0.95 * r], [0.14, sh.top * r], [0.5, sh.mid * r], [1, rk]];
+        const R = (t) => {
+          let i = 1;
+          while (i < keys.length - 1 && t > keys[i][0]) i++;
+          const [t0, r0] = keys[i - 1], [t1, r1] = keys[i];
+          return r0 + (r1 - r0) * smooth(Math.min(1, Math.max(0, (t - t0) / (t1 - t0))));
+        };
+        const pts = [], capB = rk * 0.7, r0 = R(0), capT = r0 * 0.55;
+        for (let i = 0; i <= 5; i++) { const a = -Math.PI / 2 + (i / 5) * (Math.PI / 2); pts.push([rk * Math.cos(a), -len + capB * Math.sin(a)]); }
+        for (let i = 19; i >= 1; i--) { const t = i / 20; pts.push([R(t), -t * len]); }
+        for (let i = 0; i <= 5; i++) { const a = (i / 5) * (Math.PI / 2); pts.push([r0 * Math.cos(a), capT * Math.sin(a)]); }
+        const bump = (t, c, s) => Math.exp(-((t - c) ** 2) / (2 * s * s));
+        return shapedLathe(pts, 28, (v) => {
+          const th = Math.atan2(v.x, v.z), t = Math.min(1, Math.max(0, -v.y / len));
+          const quad = sh.quad * Math.exp(-(th * th) / (2 * 0.8 * 0.8)) * bump(t, 0.42, 0.2);
+          const dh = Math.abs(th) - (Math.PI - 0.42);
+          const ham = sh.ham * Math.exp(-(dh * dh) / (2 * 0.4 * 0.4)) * bump(t, 0.32, 0.18);
+          v.x *= 1 + quad + ham;
+          v.z *= 1 + quad + ham;
+        });
+      }),
   };
 
   const BUILD = {
@@ -140,6 +335,11 @@
     closed: { brow: 0.1, browY: 0, mouthH: 0.8, mouthW: 0.9, eyeH: 0.06, lash: 0.12 },
     // made up his mind (Uub stepping up): brows down and together, eyes WIDE open, the jaw set
     determined: { brow: 0.4, browY: -0.004, mouthH: 0.9, mouthW: 0.82, eyeH: 1.04, mouthRot: -0.04, lash: 0.3 },
+    // stoic disgust (Gogeta looking down at Janemba): brows level and low, lids lowered to a hard line,
+    // the mouth shut and pulled down a touch at one corner — no anger, no feeling at all
+    cold: { brow: 0.22, browY: -0.003, mouthH: 0.7, mouthW: 0.84, eyeH: 0.58, mouthRot: -0.08, lash: 0.28 },
+    // a warm, confident smile: the brows ease, the eyes soften, the mouth lifts (no teeth)
+    warm: { brow: -0.06, browY: 0.003, mouthH: 1.3, mouthW: 1.24, eyeH: 0.68, mouthRot: 0.16, lash: 0.04 },
   };
 
   class Spring {
@@ -199,13 +399,41 @@
           m = new THREE.MeshBasicMaterial({ color, transparent: !!opts.opacity || !!opts.map, opacity: opts.opacity || 1, map: opts.map || null, depthWrite: !opts.opacity });
           m.userData.basic = true;
         } else {
-          m = SL.Toon.makeMat(color, { rim: { color: this.rimColor.getHex(), strength: this.rimStrength } });
+          // appearance.metal (0..1): a metal body (Metal Cooler) — a dark reflected band and a hard highlight, so the
+          // metal never reads as painted skin (SL.Toon.addRim)
+          // appearance.metalOnly: only those colours are metal (Metal Cooler's plate), the rest of the body keeps its own matte
+          const metal = this.app.metalOnly && !this.app.metalOnly.includes(color) ? 0 : this.app.metal || 0;
+          m = SL.Toon.makeMat(color, { rim: { color: this.rimColor.getHex(), strength: this.rimStrength, metal, fur: this._isFur(color) ? 1 : 0, ribs: this._ribs(color), stripes: this._stripes(color), slime: this._slime(color) } });
           m.userData.baseEmissive = new THREE.Color(0, 0, 0);
           if (color === this.app.skin) m.userData.skin = true;
         }
         this.mats.set(key, m);
       }
       return m;
+    }
+
+    /** outfit.fur = { color }: every part in that colour (default the arms') is a pelt — see SL.Toon.addRim, G.fringe. */
+    _isFur(color) {
+      const o = this.app.outfit || {};
+      return !!o.fur && color === (o.fur.color !== undefined ? o.fur.color : o.arms);
+    }
+
+    /** outfit.ribs = { color, every }: every part in that colour is segmented (rings `every` world metres apart, at the fighter's own size): SL.Toon.addRim. */
+    _ribs(color) {
+      const r = (this.app.outfit || {}).ribs;
+      return r && color === r.color ? r.every || 0.06 : 0;
+    }
+
+    /** outfit.slime = { color, w, h }: every part in `color` is slimed — drips and a wet shine (SL.Toon.addRim's rim.slime). */
+    _slime(color) {
+      const s = (this.app.outfit || {}).slime;
+      return s && color === s.color ? { w: s.w, h: s.h, k: s.k } : null;
+    }
+
+    /** outfit.stripes = { color, with, every }: every part in `color` is striped with `with` (`every` metres a band pair). */
+    _stripes(color) {
+      const s = (this.app.outfit || {}).stripes;
+      return s && color === s.color ? { color: s.with, every: s.every || 0.05 } : null;
     }
 
     add(parent, geometry, color, o = {}) {
@@ -255,29 +483,62 @@
       const harem = o.pantsStyle === 'harem';
       const baggy = o.pantsStyle === 'gi' || harem;
       this.add(hips, S, pants, { pos: [0, -0.02, 0], scale: [b.pelvisW * (harem ? 1.16 : baggy ? 1.08 : 1), b.pelvisH * (harem ? 1.08 : 1), b.pelvisD * (harem ? 1.18 : baggy ? 1.1 : 1)] });
+      // build.seat (about 1): a fuller seat — two soft forms on the back of the pelvis in the trousers' colour
+      // (Android 18). Opt-in: every other body is unchanged
+      if (b.seat) for (const s of [1, -1]) this.add(hips, S, pants, { pos: [s * b.pelvisW * 0.4, -0.05, -b.pelvisD * 0.5], scale: [b.pelvisW * 0.5 * b.seat, b.pelvisH * 0.78 * b.seat, b.pelvisD * 0.56 * b.seat], outline: 0.4, name: 'seat' });
       // the gi is tracked so a story state can tear it off (see setTorn); the belly band stays
       // on unless the outfit's `torn` look says otherwise
       this.gi = { torso: [], trim: [], sleeves: [], abs: null, trap: null };
+      // a gi always can; any other top only when its outfit's `torn` says what is under it (Vegeta's Super suit)
+      const tearable = o.topStyle === 'gi' || !!(o.torn && o.torn.chest !== undefined);
       // a loose top (outfit.loose, e.g. 1.14): the shirt stands off the body — Videl's oversized T-shirt
       const loose = (this._loose = o.loose || 1);
       const absMesh = this.add(spine, G.abs(), o.abs !== undefined ? o.abs : top, { pos: [0, 0, 0], scale: [(b.waistW / 0.13) * loose, b.absLen / 0.2, (b.waistD / 0.13) * 0.95 * loose] });
       this.absMesh = absMesh;
-      if (o.topStyle === 'gi') this.gi.abs = absMesh;
-      this.chestMesh = this.add(chest, G.chest(), top, { pos: [0, 0, 0.004], scale: [(b.chestW / 0.2) * loose, 1, (b.chestD / 0.2) * 1.02 * loose] });
+      if (tearable) this.gi.abs = absMesh;
+      // build.bustShape: the chest's own surface carries the bust (G.chestBust); the bust spheres below are skipped
+      this.chestMesh = this.add(chest, b.bustShape ? G.chestBust(b.bustShape) : G.chest(), top, { pos: [0, 0, 0.004], scale: [(b.chestW / 0.2) * loose, 1, (b.chestD / 0.2) * 1.02 * loose] });
       // a round belly out in front of the waist (Majin Buu): outfit.belly = its colour, or true for skin
       if (o.belly) this.bellyMesh = this.add(spine, S, o.belly === true ? skin : o.belly, { pos: [0, 0.07, b.waistD * 0.28], scale: [b.waistW * 1.02, b.absLen * 0.78, b.waistD * 1.02] });
-      if (o.topStyle === 'gi') this.gi.torso.push(this.chestMesh);
+      if (tearable) this.gi.torso.push(this.chestMesh);
+      // outfit.vee = { chest, abs }, each { color, at, slope }: a V painted on the front of that part (SL.Toon.addRim's
+      // rim.vee) — the Pride Troopers' suit. Its own material, kept with the others so rim and flash still reach it
+      if (o.vee) {
+        for (const [k, mesh, c] of [['chest', this.chestMesh, top], ['abs', absMesh, o.abs !== undefined ? o.abs : top]]) {
+          if (!o.vee[k]) continue;
+          const key = c + 'vee' + k;
+          let m = this.mats.get(key);
+          if (!m) {
+            // a pelt keeps its fur strokes round the painted V (Super Saiyan 4 Gogeta's bare chest inside his vest)
+            m = SL.Toon.makeMat(c, { rim: { color: this.rimColor.getHex(), strength: this.rimStrength, vee: o.vee[k], fur: this._isFur(c) ? 1 : 0 } });
+            m.userData.baseEmissive = new THREE.Color(0, 0, 0);
+            this.mats.set(key, m);
+          }
+          mesh.material = m;
+        }
+      }
       // a woman's chest (build.bust, about 1): two soft forms on the front of the chest in the top's
       // colour, part of the top (they recolour and tear with it)
-      if (b.bust) {
+      if (b.bust && !b.bustShape) {
         const k = b.bust, sx = (b.chestW / 0.2) * loose, dz = (b.chestD / 0.2) * loose;
         this.bust = [];
-        for (const s2 of [1, -1]) this.bust.push(this.add(chest, S, top, { pos: [s2 * 0.064 * sx, 0.17, 0.212 * dz * 0.86], scale: [0.05 * k * sx, 0.044 * k, 0.042 * k], outline: 0.5 }));
-        if (o.topStyle === 'gi') this.gi.torso.push(...this.bust);
+        // outfit.bustSoft / outfit.bandeau: no separate outline round each form (they read as part of the top), and
+        // under a bandeau they take its colour (Caulifla, Kefla). Default off: every other body is unchanged
+        const soft = !!(o.bustSoft || o.bandeau);
+        const bc = o.bandeau ? o.bandeau.color : top;
+        for (const s2 of [1, -1]) this.bust.push(this.add(chest, S, bc, { pos: [s2 * 0.064 * sx, 0.17, 0.212 * dz * 0.86], scale: [0.05 * k * sx, 0.044 * k, 0.042 * k], outline: soft ? 0 : 0.5 }));
+        if (tearable) this.gi.torso.push(...this.bust);
+      }
+      // outfit.bandeau = { color, top, h }: a strapless band wrapped round the chest with a straight horizontal neckline
+      // (Caulifla); the rest of the chest, the shoulders and the midriff stay whatever `top` / `abs` say (skin). Off by default
+      if (o.bandeau) {
+        const B = o.bandeau, sx = (b.chestW / 0.2) * loose, dz = (b.chestD / 0.2) * 1.02 * loose;
+        this.bandeauMesh = this.add(chest, G.tube(0.207, 0.214, B.h || 0.13), B.color, { pos: [0, B.top === undefined ? 0.255 : B.top, 0.004], scale: [sx * 1.04, 1, dz * 1.06], outline: 0.5 });
       }
       if (o.topStyle === 'bare' || o.pecs) {
         const pc = o.pecs || skin;
-        for (const s of [1, -1]) this.add(chest, S, pc, { pos: [s * 0.075, 0.16, b.chestD * 0.62], scale: [0.075, 0.055, 0.045], outline: 0.4 });
+        // (kept: a form's bulk swells them with the chest — see setForm; they used to sink into a heavier form's chest)
+        this.pecMeshes = [1, -1].map((s) => this.add(chest, S, pc, { pos: [s * 0.075, 0.16, b.chestD * 0.62], scale: [0.075, 0.055, 0.045], outline: 0.4 }));
       }
       this.add(neck, G.limb(b.neckR, b.neckLen + 0.05), skin, { pos: [0, b.neckLen + 0.04, 0], outline: 0.7 });
       // outfit.choker: a band hugging the bottom of the neck, just over the collar (Beerus' gold choker);
@@ -289,7 +550,7 @@
       const girth = (this.girth = []);
       const grow = (m, y) => (m && girth.push({ mesh: m, x: m.scale.x, y: m.scale.y, z: m.scale.z, gy: y || 0 }), m);
       grow(trapMesh, 0.6);
-      if (o.topStyle === 'gi') {
+      if (tearable) {
         this.gi.torso.push(trapMesh);
         this.gi.trap = trapMesh;
       }
@@ -305,24 +566,33 @@
           this.gi.trim.push(this.add(chest, G.box(), o.under, { pos: [0, 0.3 - 0.015 * t, (0.118 + 0.01 * t) * dz], rot: [-0.62 + 0.12 * t, 0, Math.PI / 4], scale: [0.1 * (1 + 0.3 * t), 0.1 * (1 + 0.3 * t), 0.014], outline: 0.4 }));
           for (const s of [1, -1]) this.gi.trim.push(this.add(chest, G.box(), top, { pos: [s * (0.042 + 0.008 * t), 0.272 - 0.01 * t, (0.136 + 0.007 * t) * dz], rot: [-0.5 + 0.08 * t, -s * 0.1, -s * 0.46], scale: [0.03, 0.15 + 0.04 * t, 0.016], outline: 0.5 }));
         }
-        if (o.belt !== undefined) {
-          const belt = this.add(spine, G.torus(1, 0.2), o.belt, { pos: [0, -0.005, 0], rot: [Math.PI / 2, 0, 0], scale: [b.waistW * 1.02, b.waistD * 1.08, 0.13], outline: 0.6 });
+        // beltKnot: false — a gi worn with its own belt (beltStyle) and no knotted sash under it (Dabura's)
+        if (o.belt !== undefined && o.beltKnot !== false) {
+          // (2026-10-16, the owner's collage: Goku's obi is a broad flat band wound close round the waist, the knot a
+          // little to his left with two tails to mid-thigh. It was a round tube standing a fifth of the waist off the
+          // body — a hoop — with short stub tails)
+          const belt = this.add(spine, G.torus(1, 0.085), o.belt, { pos: [0, -0.008, 0], rot: [Math.PI / 2, 0, 0], scale: [b.waistW * 1.06, b.waistD * 1.12, 0.42], outline: 0.6 });
           belt.castShadow = false;
-          this.add(spine, G.box(), o.belt, { pos: [0.02, -0.02, b.waistD * 1.12], scale: [0.05, 0.04, 0.03], outline: 0.5 });
+          this.add(spine, G.box(), o.belt, { pos: [0.026, -0.016, b.waistD * 1.17], scale: [0.054, 0.05, 0.026], outline: 0.5 });
           const tails = new THREE.Group();
-          tails.position.set(0.028, -0.035, b.waistD * 1.12);
+          tails.position.set(0.032, -0.03, b.waistD * 1.17);
           spine.add(tails);
-          this.add(tails, G.box(), o.belt, { pos: [0.004, -0.055, 0], rot: [0, 0, -0.18], scale: [0.028, 0.11, 0.012], outline: 0.5 });
-          this.add(tails, G.box(), o.belt, { pos: [0.026, -0.048, -0.004], rot: [0, 0, -0.42], scale: [0.024, 0.095, 0.012], outline: 0.5 });
+          // leaning out over the gi trousers' fullness at the hips, so they hang in front of it
+          this.add(tails, G.box(), o.belt, { pos: [0.006, -0.081, 0.028], rot: [-0.34, 0, -0.14], scale: [0.034, 0.17, 0.012], outline: 0.5 });
+          this.add(tails, G.box(), o.belt, { pos: [0.032, -0.069, 0.02], rot: [-0.3, 0, -0.36], scale: [0.03, 0.145, 0.012], outline: 0.5 });
           this.cloth.push({ node: tails, sx: new Spring(40, 5), sz: new Spring(40, 5), amount: 1.6 });
         }
       }
       // a plain belt on trousers (casual clothes); a gi's sash is the knotted one above
       if ((o.beltStyle === 'belt' || o.beltStyle === 'sash') && o.belt !== undefined) {
         // 'belt': a strap with a buckle on trousers; 'sash': a wide cloth band (over armor when there is some)
-        const sash = o.beltStyle === 'sash', over = o.armor ? 1.14 : 1;
-        this.add(spine, G.torus(1, sash ? 0.3 : 0.2), o.belt, { pos: [0, sash ? 0.0 : -0.02, 0], rot: [Math.PI / 2, 0, 0], scale: [b.waistW * 1.03 * over, b.waistD * 1.07 * over, sash ? 0.2 : 0.1], outline: 0.5, shadow: false });
-        if (!sash) this.add(spine, G.box(), o.buckle !== undefined ? o.buckle : 0xc8b070, { pos: [0, -0.02, b.waistD * 1.06], scale: [0.034, 0.026, 0.012], outline: 0.4 });
+        // beltAt / beltFit: a belt worn lower and tighter than the waist (Majin Buu's sits under the belly, round the top
+        // of the trousers)
+        const sash = o.beltStyle === 'sash', over = (o.armor ? 1.14 : 1) * (o.beltFit || 1), by = o.beltAt !== undefined ? o.beltAt : sash ? 0.0 : -0.02;
+        // (2026-10-16: the same height as before, but lying closer on the body — the round tube stood a fifth to almost a
+        // third of the waist off it, a hoop; the owner's collage shows Future Trunks' belt flat on his trousers)
+        this.add(spine, G.torus(1, sash ? 0.15 : 0.11), o.belt, { pos: [0, by, 0], rot: [Math.PI / 2, 0, 0], scale: [b.waistW * 1.06 * over, b.waistD * 1.1 * over, sash ? 0.4 : 0.18], outline: 0.5, shadow: false });
+        if (!sash) this.add(spine, G.box(), o.buckle !== undefined ? o.buckle : 0xc8b070, { pos: [0, by, b.waistD * 1.21 * over], scale: [0.034, 0.026, 0.012], outline: 0.4 });
         // a knot at one hip with two long tails hanging past the thigh (the Metamoran sash):
         // sashTails = { len (metres, default 0.34), side (1 his left, -1 his right) }
         if (sash && o.sashTails) {
@@ -338,7 +608,7 @@
           this.cloth.push({ node: tails, sx: new Spring(28, 4), sz: new Spring(28, 4), amount: 2.2 });
         }
         // a buckle with a coloured centre (Future Trunks' red on white)
-        if (!sash && o.buckleCore !== undefined) this.add(spine, G.box(), o.buckleCore, { pos: [0, -0.02, b.waistD * 1.06 + 0.007], scale: [0.02, 0.014, 0.006], outline: 0, shadow: false });
+        if (!sash && o.buckleCore !== undefined) this.add(spine, G.box(), o.buckleCore, { pos: [0, by, b.waistD * 1.21 * over + 0.007], scale: [0.02, 0.014, 0.006], outline: 0, shadow: false });
       }
       // a cloth panel hanging from the belt, in front (and behind with apron.back): Beerus' tabard.
       // apron = { color, trim, len (metres, default 0.3), width (default 0.11), back }
@@ -420,7 +690,7 @@
       if (o.strap) this._buildStrap(chest, o.strap);
       if (o.collar !== undefined) this._buildCollar(chest, o);
       if (o.tail) this._buildTail(spine, hips, o);
-      if (o.cape !== undefined) this._buildCape(chest, o.cape);
+      if (o.cape !== undefined) this._buildCape(chest, o.cape, o.capeOff, o.capeSize);
 
       // arms
       for (const s of [1, -1]) {
@@ -432,7 +702,10 @@
         const sleeveColor = o.sleeveColor !== undefined ? o.sleeveColor : o.under !== undefined ? o.under : top;
         const upperColor = sleeves === 'long' ? sleeveColor : o.arms !== undefined ? o.arms : skin;
         const deltColor = sleeves === 'none' ? (o.arms !== undefined ? o.arms : skin) : sleeveColor;
-        grow(this.add(sh, S, deltColor, { pos: [s * 0.01, -0.01, 0], scale: [b.delt * 1.05, b.delt, b.delt * 1.02] }), 0.6);
+        const delt = grow(this.add(sh, S, deltColor, { pos: [s * 0.01, -0.01, 0], scale: [b.delt * 1.05, b.delt, b.delt * 1.02] }), 0.6);
+        // (a long sleeve's shoulder cap is part of the sleeve: torn.sleeves repaints it too — it stayed suit-red on
+        // Jiren's and Toppo's bare arms)
+        if (sleeves === 'long') (this.sleeveMeshes = this.sleeveMeshes || []).push(delt);
         // long sleeves can be loose cloth (sleeveBulk), wider than the arm inside them
         const bulk = sleeves === 'long' ? o.sleeveBulk || 1 : 1;
         const upperArm = grow(this.add(sh, G.limb(b.upperArmR * bulk, b.upperArmLen), upperColor, {}));
@@ -441,7 +714,8 @@
         if (sleeves !== 'long') grow(this.add(sh, S, upperColor, { pos: [0, -b.upperArmLen * 0.45, 0.012], scale: [b.upperArmR * 1.02, b.upperArmLen * 0.28, b.upperArmR * 1.12], outline: 0.4 }));
         // outfit.armBands: a band round each upper arm under the shoulder (Beerus' gold armlets); armBandAt is
         // how far down the upper arm (0 the shoulder, 1 the elbow), armBandW its width
-        if (o.armBands !== undefined) this.add(sh, G.tube(b.upperArmR * (o.armBandR || 1.2), b.upperArmR * ((o.armBandR || 1.2) + 0.04), o.armBandW || 0.03), o.armBands, { pos: [0, -b.upperArmLen * (o.armBandAt === undefined ? 0.3 : o.armBandAt), 0.004], outline: 0.6 });
+        // (bands, cuffs and gloves grow with a form's heavier arms — look.muscle — instead of sinking into them)
+        if (o.armBands !== undefined) grow(this.add(sh, G.tube(b.upperArmR * (o.armBandR || 1.2), b.upperArmR * ((o.armBandR || 1.2) + 0.04), o.armBandW || 0.03), o.armBands, { pos: [0, -b.upperArmLen * (o.armBandAt === undefined ? 0.3 : o.armBandAt), 0.004], outline: 0.6 }));
         if (sleeves === 'short') {
           const sl = this.add(sh, G.tube(b.upperArmR * 1.35, b.upperArmR * 1.22, b.upperArmLen * 0.42), sleeveColor, { pos: [0, 0.02, 0], outline: 0.8 });
           sl.userData.side = side;
@@ -451,18 +725,35 @@
         const foreArm = grow(this.add(el, G.limb(b.foreArmR * (1 + (bulk - 1) * 0.8), b.foreArmLen), foreColor, {}));
         if (sleeves === 'long') this.sleeveMeshes.push(foreArm);
         if (o.gloves !== undefined && o.gloves !== null) {
-          this.add(el, G.tube(b.foreArmR * 1.22, b.foreArmR * 1.12, b.foreArmLen * 0.55), o.gloves, { pos: [0, -b.foreArmLen * 0.45, 0], outline: 0.8 });
+          // gloveLen: how far up the forearm the glove's cuff reaches (a fraction; default 0.55 — 18's short gloves 0.22)
+          const gl = o.gloveLen || 0.55;
+          (this.gloveCuffs = this.gloveCuffs || []).push(grow(this.add(el, G.tube(b.foreArmR * 1.22, b.foreArmR * 1.12, b.foreArmLen * gl), o.gloves, { pos: [0, -b.foreArmLen * (1 - gl), 0], outline: 0.8 })));
         }
         if (o.wrist !== undefined && o.wrist !== null) {
           // wristLen: a longer guard up the forearm (Bardock's), ending at the same place at the wrist
           const wl = o.wristLen || 0.085;
           // wristFlare: a bracer that widens toward the hand (Beerus' gold cuffs)
           const wf = o.wristFlare ? [1.22, 1.36] : [1.3, 1.24];
-          this.add(el, G.tube(b.foreArmR * wf[0], b.foreArmR * wf[1], wl), o.wrist, { pos: [0, -b.foreArmLen * 0.7 - (0.085 - wl), 0], outline: 0.8 });
+          const wy = -b.foreArmLen * 0.7 - (0.085 - wl);
+          grow(this.add(el, G.tube(b.foreArmR * wf[0], b.foreArmR * wf[1], wl), o.wrist, { pos: [0, wy, 0], outline: 0.8 }));
+          // wristTrim: a thin ring of another colour round each end of the band (the Buus' gold-edged black bands)
+          if (o.wristTrim !== undefined) {
+            for (const [y, k] of [[wy + 0.004, wf[0]], [wy - wl + 0.014, wf[1]]]) grow(this.add(el, G.tube(b.foreArmR * (k + 0.06), b.foreArmR * (k + 0.06), 0.018), o.wristTrim, { pos: [0, y, 0], outline: 0.5 }));
+          }
+        }
+        // a pelt (outfit.fur): ragged layers of it down the arm — under the shoulder, above the elbow, and where it ends
+        // over the wristband or the glove
+        if (this._isFur(foreColor)) {
+          const ur = b.upperArmR, fr = b.foreArmR, gl = o.gloves !== undefined && o.gloves !== null, wr = o.wrist !== undefined && o.wrist !== null;
+          this.add(sh, G.fringe(ur * 1.06, ur * 1.32, 0.05, 9), foreColor, { pos: [0, -b.delt * 0.55, 0], outline: 0.5, name: 'fur:shoulder' });
+          this.add(sh, G.fringe(ur * 1.0, ur * 1.24, 0.045, 9), foreColor, { pos: [0, -b.upperArmLen * 0.62, 0], outline: 0.5, name: 'fur:elbow' });
+          this.add(el, G.fringe(fr * 1.04, fr * (gl ? 1.4 : wr ? 1.5 : 1.26), 0.07, 8), foreColor, { pos: [0, -b.foreArmLen * (gl ? 0.4 : wr ? 0.6 : 0.78), 0], outline: 0.5, name: 'fur:wrist' });
         }
         const handColor = o.gloves !== undefined && o.gloves !== null ? o.gloves : skin;
         // fingerless gloves (Videl's): the glove is the palm and the back of the hand, the fingers are bare
         this._buildHand(hand, s, handColor, side, o.fingerless ? skin : handColor);
+        // gloved hands: every piece of them, for a torn suit that loses its gloves
+        if (handColor !== skin) hand.traverse((n) => n.isMesh && !n.userData.isOutline && (this.gloveHands = this.gloveHands || []).push(n));
       }
       if (o.emblem && o.emblem.sleeve) {
         // a patch on the outside of the left upper arm, over the sleeve
@@ -481,7 +772,11 @@
         // width over the lower leg (× shinR), where its middle is and where the cuff gathers it (fractions of the shin)
         const hm = harem && o.harem ? Object.assign({ thigh: 1.5, balloon: 2.2, at: 0.4, cuff: 0.9 }, o.harem) : null;
         const pw = hm ? hm.thigh : harem ? 1.5 : baggy ? 1.38 : 1;
-        grow(this.add(th, G.limb(b.thighR * pw, b.thighLen), pants, {}));
+        // build.thighShape: a shaped thigh (G.thighShaped) for fitted legs; trousers with fullness keep the capsule
+        const tsh = b.thighShape && !baggy ? b.thighShape : null;
+        // outfit.thighs: the thigh in its own colour — bare legs under a pair of shorts (the Ginyu Force's bodysuits stop
+        // at the hip: the pelvis stays `pants`); default the trousers
+        grow(this.add(th, tsh ? G.thighShaped(b.thighR, b.shinR * (tsh.knee || 1.1), b.thighLen, tsh) : G.limb(b.thighR * pw, b.thighLen), o.thighs !== undefined ? o.thighs : pants, {}));
         if (hm) {
           // one bell from the hip to the gather: the thigh flaring into a balloon over the knee and the shin, drawn
           // into a cuff with a rolled edge; below it bare leg (outfit.legs, or skin) down into the boot
@@ -494,16 +789,31 @@
           // the balloon: full over the knee and the shin, then drawn in to the ankle (the band is bootTrim)
           this.add(kn, S, pants, { pos: [0, -b.shinLen * 0.4, 0.008], scale: [b.shinR * 2.2, b.shinLen * 0.5, b.shinR * 2.1] });
           this.add(kn, G.tube(b.shinR * 1.9, b.shinR * 1.18, b.shinLen * 0.32), pants, { pos: [0, -b.shinLen * 0.58, 0] });
-        } else if (baggy) this.add(kn, G.tube(b.shinR * 1.55, b.shinR * 1.15, b.shinLen * 0.6), pants, { pos: [0, 0.03, 0] });
-        else this.add(kn, G.limb(b.shinR, b.shinLen), o.legs !== undefined ? o.legs : pants, {});
+        } else if (baggy) {
+          this.add(kn, G.tube(b.shinR * 1.55, b.shinR * 1.15, b.shinLen * 0.6), pants, { pos: [0, 0.03, 0] });
+          // the trouser leg goes on down to a low shoe (2026-10-15 visual pass: with a shoe or an ankle boot under gi
+          // trousers the ankles were missing and the feet floated — Roshi, Garlic Jr., Uub and others)
+          const lowBoot = o.bootTop !== undefined ? o.bootTop < 0.45 : o.bootStyle === 'shoe';
+          if (lowBoot) this.add(kn, G.limb(b.shinR * 1.02, b.shinLen), o.legs !== undefined ? o.legs : pants, {});
+        }
+        else {
+          this.add(kn, G.limb(b.shinR, b.shinLen), o.legs !== undefined ? o.legs : pants, {});
+          // outfit.crop: cropped trousers (capris) — the trouser leg goes this far down the shin (a fraction) and ends in a
+          // rolled cuff; below it the leg is `legs` (Android 18's Buu Saga jeans)
+          if (o.crop) {
+            this.add(kn, G.tube(b.shinR * 1.1, b.shinR * 1.06, b.shinLen * o.crop + 0.03), pants, { pos: [0, 0.03, 0], outline: 0.6 });
+            this.add(kn, G.torus(1, 0.22), pants, { pos: [0, -b.shinLen * o.crop + 0.012, 0], rot: [Math.PI / 2, 0, 0], scale: [b.shinR * 1.16, b.shinR * 1.16, b.shinR * 0.9], outline: 0.5, shadow: false });
+          }
+        }
         const boots = o.boots !== undefined ? o.boots : 0x333333;
         // outfit.bootTop overrides the style's height (a fraction of the shin: Beerus' ankle boots)
         const bootTop = o.bootTop !== undefined ? o.bootTop : o.bootStyle === 'saiyan' ? 0.62 : o.bootStyle === 'shoe' ? 0.16 : 0.5;
         this.add(kn, G.tube(b.shinR * 1.32, b.shinR * 1.12, b.shinLen * bootTop + 0.03), boots, { pos: [0, -b.shinLen * (1 - bootTop), 0] });
         // bootTrimAt: how far below the boot's rim its band sits (Beerus' gold band a little way down the shaft)
         if (o.bootTrim !== undefined) this.add(kn, G.tube(b.shinR * 1.38, b.shinR * 1.36, 0.028), o.bootTrim, { pos: [0, -b.shinLen * (1 - bootTop) + 0.012 - (o.bootTrimAt || 0), 0], outline: 0.6 });
-        // a sock showing over the top of the boot (Videl's)
-        if (o.socks !== undefined) this.add(kn, G.tube(b.shinR * 1.2, b.shinR * 1.17, 0.07), o.socks, { pos: [0, -b.shinLen * (1 - bootTop) + 0.062, 0], outline: 0.6 });
+        // a sock showing over the top of the boot (Videl's); socksH its height (default 0.07 m — 18's slouch socks taller)
+        const sh2 = o.socksH || 0.07;
+        if (o.socks !== undefined) this.add(kn, G.tube(b.shinR * 1.2, b.shinR * 1.17, sh2), o.socks, { pos: [0, -b.shinLen * (1 - bootTop) + sh2 - 0.008, 0], outline: 0.6 });
         if (o.legBands !== undefined) this.add(kn, G.tube(b.shinR * 1.18, b.shinR * 1.16, 0.05), o.legBands, { pos: [0, -0.06, 0], outline: 0.6 });
         const fl = b.footLen;
         // outfit.shoes: the foot in its own colour under wraps or a boot shaft (Gogeta's black shoes under blue wraps)
@@ -558,6 +868,13 @@
       if (pr.pos) g.position.set(pr.pos[0], pr.pos[1], pr.pos[2]);
       if (pr.rot) g.rotation.set(pr.rot[0], pr.rot[1], pr.rot[2]);
       if (pr.scale) g.scale.setScalar(pr.scale);
+      // pr.cape: part of the cape (its padded shoulders, its collar) — it goes with the cape (Fighter, 'dropCape')
+      if (pr.cape) g.userData.cape = true;
+      // pr.forms: worn only in those forms (setForm shows and hides it — Cooler's final-form plates)
+      if (pr.forms) {
+        g.userData.forms = pr.forms;
+        g.visible = false;
+      }
       parent.add(g);
       const L = pr.length || 0.78;
       if (pr.shape === 'katana') {
@@ -634,6 +951,17 @@
           this.add(g, G.sphereLo(), pr.ribbon, { pos: [0, sz[1] + 0.02, 0], scale: [0.05, 0.03, 0.05], outline: 0.4 });
         }
         if (pr.squares) for (let i = 1; i < pr.squares; i++) this.add(g, G.box(), pr.groove || 0x3a1c10, { pos: [0, sz[1] * 1.001, -sz[2] / 2 + (i / pr.squares) * sz[2]], scale: [sz[0] * 0.96, 0.006, 0.008], outline: 0 });
+      } else if (pr.shape === 'tri') {
+        // a flat triangle, point down (the Grand Priest's chest mark); size [half-width, half-height, thickness]
+        this.add(g, G.tri(), pr.color === undefined ? 0xe8801e : pr.color, { scale: pr.size || [0.04, 0.04, 0.01], outline: pr.outline === undefined ? 0.4 : pr.outline });
+        // pr.mark 'majin': the Majin "M" inked on the plate (the Buus' belt plates) — two legs and the V between them, in the
+        // plate's wide upper half, scaled with it
+        if (pr.mark === 'majin') {
+          const s = pr.size || [0.04, 0.04, 0.01], k = s[0] / 0.075, z = s[2] * 0.62, ink = pr.ink === undefined ? 0x141414 : pr.ink;
+          for (const [x, y, w, h, r] of [[-0.024, 0.004, 0.0075, 0.03, 0], [0.024, 0.004, 0.0075, 0.03, 0], [-0.012, 0.009, 0.0065, 0.027, 0.93], [0.012, 0.009, 0.0065, 0.027, -0.93]]) {
+            this.add(g, G.box(), ink, { pos: [x * k, y * k, z], rot: [0, 0, r], scale: [w * k, h * k, 0.004], outline: 0, shadow: false });
+          }
+        }
       } else if (pr.shape === 'potara') {
         // a Potara earring held between the fingers: a gold ring and the bead that hangs from it
         this.add(g, G.torus(1, 0.28), pr.ring || 0xf2c82a, { pos: [0, 0.02, 0], scale: [0.022, 0.022, 0.03], outline: 0.4, shadow: false });
@@ -654,6 +982,31 @@
         g.userData.tip = L + W * 4;
         grow.scale.y = 0.001;
         grow.visible = false;
+      } else if (pr.shape === 'dimSword') {
+        // SUPER JANEMBA'S SWORD: condensed dimensional energy pulled out of the spike on his head — a
+        // long jagged blade in zig-zag segments with barbs at every joint, a hot red core running its
+        // length, a short wrapped grip. Drawn along +Y; `setPropFill` grows it out of the hand
+        // (materialising), and fill 0 hides it (the blade shattered).
+        const grip = pr.grip || 0x3a1a3a, blade = pr.blade || 0x9a0e2a, core = pr.core || 0xff4a6a;
+        this.add(g, G.tube(0.02, 0.02, 0.2), grip, { pos: [0, 0.04, 0], outline: 0.5 });
+        this.add(g, G.box(), pr.guard || 0x5a2a5a, { pos: [0, 0.15, 0], scale: [0.1, 0.03, 0.05], outline: 0.5 });
+        const grow = new THREE.Group();
+        grow.position.y = 0.16;
+        g.add(grow);
+        const N = 7, seg = L / N;
+        for (let i = 0; i < N; i++) {
+          const w = 0.075 - i * 0.004, s = i % 2 ? 1 : -1;
+          this.add(grow, G.box(), blade, { pos: [s * 0.018, seg * (i + 0.5), 0], rot: [0, 0, s * 0.16], scale: [w, seg * 1.12, 0.018], outline: 0.5 });
+          if (i > 0) this.add(grow, G.cone(), blade, { pos: [-s * 0.05, seg * i, 0], rot: [0, 0, s * 1.9], scale: [0.016, 0.06, 0.008], outline: 0.4 });
+        }
+        this.add(grow, G.cone(), blade, { pos: [0, L + 0.06, 0], scale: [0.03, 0.14, 0.009], outline: 0.5 });
+        const coreMat = new THREE.MeshBasicMaterial({ color: core, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false });
+        this.add(grow, G.box(), coreMat, { pos: [0, L / 2, 0], scale: [0.022, L * 0.96, 0.024], outline: 0, shadow: false });
+        g.userData.fill = grow;
+        g.userData.tip = 0.16 + L + 0.13;
+        const k = pr.fill === undefined ? 1 : pr.fill;
+        grow.scale.y = Math.max(0.001, k);
+        grow.visible = k > 0.01;
       } else if (pr.shape === 'staff') {
         // WHIS' STAFF: a long silver shaft along the prop's +Y, a gold collar, and a clear blue orb at the
         // top with a thin ring floating round it. userData.orb is the orb (its world position is where the
@@ -675,12 +1028,108 @@
       } else if (pr.shape === 'hoop') {
         // a ring hanging in a vertical plane (an earring): radius, thick
         this.add(g, G.torus(1, pr.thick || 0.18), pr.color || 0xe2b440, { pos: [0, -(pr.radius || 0.02), 0], rot: [0, Math.PI / 2, 0], scale: pr.radius || 0.02, outline: 0.3, shadow: false });
+      } else if (pr.shape === 'spike') {
+        // a horn or spike standing out of the body along the prop's +Y (Omega Shenron's knees, a bracer's point);
+        // size [base radius, length, depth squash]
+        const sz = pr.size || [0.03, 0.1, 1];
+        this.add(g, G.cone(), pr.color === undefined ? 0x1e1e24 : pr.color, { scale: [sz[0], sz[1], sz[0] * (sz[2] || 1)], outline: pr.outline === undefined ? 0.6 : pr.outline });
+      } else if (pr.shape === 'claws') {
+        // talons in a row across the prop's X, each pointing along +Y and hooked toward +Z (a monster's hand or foot):
+        // count, length, radius, spread (metres between the outer two), hook (radians)
+        const n = pr.count || 3, L = pr.length || 0.08, r = pr.radius || 0.014, sp = pr.spread || 0.06;
+        for (let i = 0; i < n; i++) {
+          const x = n > 1 ? -sp / 2 + (sp * i) / (n - 1) : 0;
+          this.add(g, G.cone(), pr.color === undefined ? 0x2a2a2e : pr.color, { pos: [x, 0, 0], rot: [pr.hook === undefined ? 0.35 : pr.hook, 0, -x * 2.5], scale: [r, L, r], outline: 0.5 });
+        }
+      } else if (pr.shape === 'arc') {
+        // a curved horn or blade: an arc of tube of radius `radius` through `angle` radians in the prop's XY plane,
+        // from +X anticlockwise, `thick` thick (Cooler's shoulder guards and forearm blades)
+        this.add(g, G.arc(1, (pr.thick || 0.025) / (pr.radius || 0.1), pr.angle || 1.6), pr.color === undefined ? 0xf0f0f0 : pr.color, { scale: [pr.radius || 0.1, pr.radius || 0.1, (pr.radius || 0.1) * (pr.flat || 1)], outline: pr.outline === undefined ? 0.6 : pr.outline });
+      } else if (pr.shape === 'crescent') {
+        // a flat crescent blade in the prop's XY plane, its back curve centred on +Y: `radius`, `angle` radians from tip to
+        // tip, `width` (share of the radius) across its middle, tapering to the two points; `thick` metres deep (young
+        // Chi-Chi's helmet blade)
+        const R = pr.radius || 0.1, A = pr.angle || 2.4, w = pr.width || 0.3, d = (pr.thick || 0.01) / R;
+        const cg = geo('crescent' + f3(A) + f3(w) + f3(d), () => {
+          const sh = new THREE.Shape(), N = 18, a0 = Math.PI / 2 - A / 2;
+          for (let i = 0; i <= N; i++) {
+            const a = a0 + (A * i) / N;
+            sh[i ? 'lineTo' : 'moveTo'](Math.cos(a), Math.sin(a));
+          }
+          for (let i = N - 1; i > 0; i--) {
+            const a = a0 + (A * i) / N, r = 1 - w * Math.sin((Math.PI * i) / N);
+            sh.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+          }
+          const eg = new THREE.ExtrudeGeometry(sh, { depth: d, bevelEnabled: true, bevelThickness: d * 0.3, bevelSize: d * 0.3, bevelSegments: 1 });
+          eg.translate(0, 0, -d / 2);
+          eg.computeVertexNormals();
+          return eg;
+        });
+        this.add(g, cg, pr.color === undefined ? 0xe0e4ec : pr.color, { scale: R, outline: pr.outline === undefined ? 0.5 : pr.outline });
+      } else if (pr.shape === 'cuff') {
+        // a band of plate round a limb, hanging from the prop's origin along -Y (a bracer, a shin guard): radius top and
+        // bottom, length
+        // pr.sides: a flat-sided plate band of that many faces (Cooler's bracers and shin guards) instead of a round one
+        const cr = pr.radius || 0.06, cb = pr.radiusBottom || pr.radius || 0.06, cl = pr.length || 0.1;
+        this.add(g, pr.sides ? G.prism(cr, cb, cl, pr.sides) : G.tube(cr, cb, cl), pr.color === undefined ? 0xf0f0f0 : pr.color, { outline: pr.outline === undefined ? 0.6 : pr.outline });
+      } else if (pr.shape === 'shell') {
+        // a hollow shell cupped round a joint (Baby Vegeta's shoulder guards): G.shell scaled by size [x, y, z], `spread`
+        // radians round and `drop` radians down from its pointed top, its top leaning `lean` radians toward its convex side
+        // before the prop's own rotation; `inner` lines the hollow in its own colour
+        const sz = pr.size || [0.1, 0.2, 0.1], w = pr.spread || 2.4, t = pr.drop || 2, rot = [pr.lean || 0, 0, 0];
+        this.add(g, G.shell(w, t), pr.color === undefined ? 0xe0b030 : pr.color, { rot, scale: sz, outline: pr.outline === undefined ? 0.6 : pr.outline });
+        if (pr.inner !== undefined) this.add(g, G.shell(w, t, true), pr.inner, { rot, scale: sz.map((v) => v * 0.97), outline: 0 });
+      } else if (pr.shape === 'barrier') {
+        // a great ring of light standing behind the body (Fused Zamasu's barrier of light): an outer and an inner ring, a
+        // beam up and down through them and one across, four-pointed sparkles where the vertical beam ends, a soft glow —
+        // all unlit and additive, no ink. radius in metres; a story shows or hides it with setPropVisible(id, on)
+        const R = pr.radius || 0.4, col = pr.color || 0xfff2fa;
+        const lit = (opacity, c = col) => new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false });
+        const o = { outline: 0, shadow: false };
+        this.add(g, G.torus(1, 0.035), lit(0.9), Object.assign({ scale: R }, o));
+        this.add(g, G.torus(1, 0.03), lit(0.7), Object.assign({ scale: R * 0.62 }, o));
+        this.add(g, G.box(), lit(0.75), Object.assign({ scale: [R * 0.028, R * 3.6, 0.004] }, o));
+        this.add(g, G.box(), lit(0.6), Object.assign({ scale: [R * 3.4, R * 0.022, 0.004] }, o));
+        for (const y of [1.8, -1.8, 1, -1]) {
+          const k = Math.abs(y) > 1.2 ? 1 : 0.6;
+          this.add(g, G.box(), lit(0.95), Object.assign({ pos: [0, y * R, 0.002], rot: [0, 0, Math.PI / 4], scale: [R * 0.05 * k, R * 0.05 * k, 0.004] }, o));
+          this.add(g, G.box(), lit(0.85), Object.assign({ pos: [0, y * R, 0.003], scale: [R * 0.02 * k, R * 0.34 * k, 0.004] }, o));
+          this.add(g, G.box(), lit(0.85), Object.assign({ pos: [0, y * R, 0.003], scale: [R * 0.24 * k, R * 0.02 * k, 0.004] }, o));
+        }
+        const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: SL.Toon.tex.glow, color: pr.glow || 0xffb8e0, blending: THREE.AdditiveBlending, transparent: true, opacity: 0.35, depthWrite: false }));
+        glow.scale.setScalar(R * 2.6);
+        g.add(glow);
+      } else if (pr.shape === 'strip') {
+        // a strap laid along `path` (points in the joint's space, on the body's surface): a flat band `width` across
+        // and `thick` deep from point to point, its face turned to +Z (Super 17's harness)
+        const P = pr.path.map((p) => new THREE.Vector3(p[0], p[1], p[2])), X = new THREE.Vector3(1, 0, 0);
+        for (let i = 1; i < P.length; i++) {
+          const y = P[i].clone().sub(P[i - 1]), len = y.length();
+          y.normalize();
+          const z = new THREE.Vector3().crossVectors(X, y).normalize(), x = new THREE.Vector3().crossVectors(y, z);
+          const m = this.add(g, G.box(), pr.color === undefined ? 0x6a4424 : pr.color, { pos: P[i].clone().add(P[i - 1]).multiplyScalar(0.5).toArray(), scale: [pr.width || 0.03, len * 1.06, pr.thick || 0.01], outline: pr.outline === undefined ? 0.4 : pr.outline });
+          m.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, z));
+        }
+      } else if (pr.shape === 'ball') {
+        // a rounded plate or swelling laid on the body (a monster's chest plates, the ridges of a belly); size [x, y, z]
+        this.add(g, G.sphere(), pr.color === undefined ? 0x5a5a1a : pr.color, { scale: pr.size || [0.05, 0.05, 0.02], outline: pr.outline === undefined ? 0.5 : pr.outline });
       } else if (pr.shape === 'neckRing') {
-        // a ring floating round the neck, not touching it (Whis' and the angels' halo-collar)
-        this.add(g, G.torus(1, pr.thick || 0.11), pr.color || 0x2ab0b8, { pos: [0, 0, 0], rot: [Math.PI / 2, 0, 0], scale: [pr.radius || 0.13, pr.radius || 0.13, (pr.radius || 0.13) * 0.9], outline: 0.5 });
+        // a ring floating round the neck, not touching it (Whis' and the angels' halo-collar); pr.depth: front-to-back
+        // radius as a share of the width (an oval band round the waist: Perfect Cell's)
+        const nr = pr.radius || 0.13;
+        this.add(g, G.torus(1, pr.thick || 0.11), pr.color || 0x2ab0b8, { pos: [0, 0, 0], rot: [Math.PI / 2, 0, 0], scale: [nr, nr * (pr.depth || 1), nr * 0.9], outline: pr.outline === undefined ? 0.5 : pr.outline });
       }
+      // pr.ride: the prop rides out on the body when a form swells it (the Z-movie Broly's gold pieces): on the torso it
+      // follows the chest's bulk, on a limb its muscle (setForm); its own size stays
+      if (pr.ride) g.userData.ride = { p0: g.position.clone(), limb: !['chest', 'spine', 'hips', 'neck', 'head'].includes(pr.joint) };
       this.props[pr.id] = g;
       return g;
+    }
+
+    /** Is it wearing this? 'scouter', or a prop id ('sword'): a sequence step can need it (Animator.playSequence). */
+    wears(what) {
+      if (what === 'scouter') return !!(this.scouter && this.scouter[0].visible);
+      return !!(this.props && this.props[what]);
     }
 
     /** Shows or hides a prop by id (the sword leaving his hand for somebody else's). */
@@ -755,27 +1204,38 @@
       const b = this.b;
       const S = G.sphere();
       const F = b.fist;
+      // outfit.nails: dark nails on the fingertips, every hand shape (Kid Buu's, Dabura's, Omega Shenron's)
+      const nails = (this.app.outfit || {}).nails;
+      const knuckleNails = (grp) => {
+        if (nails !== undefined) for (let i = 0; i < 4; i++) this.add(grp, G.sphereLo(), nails, { pos: [(i - 1.5) * F * 0.42, -0.072 - F * 0.17, 0.03 + F * 0.2], scale: [F * 0.13, F * 0.07, F * 0.09], outline: 0, shadow: false });
+      };
+      const tipNail = (fg, len) => {
+        if (nails !== undefined) this.add(fg, G.sphereLo(), nails, { pos: [0, -len + 0.006, 0.007], scale: [0.0085, 0.011, 0.005], outline: 0, shadow: false });
+      };
       const fist = new THREE.Group();
       hand.add(fist);
       this.add(fist, S, color, { pos: [0, -0.04, 0.008], scale: [F * 0.92, F * 1.05, F * 1.08] });
       for (let i = 0; i < 4; i++) {
         this.add(fist, G.sphereLo(), fingers, { pos: [(i - 1.5) * F * 0.42, -0.072, 0.03], scale: [F * 0.27, F * 0.24, F * 0.3], outline: 0.25, shadow: false });
       }
+      knuckleNails(fist);
       this.add(fist, S, fingers, { pos: [-s * 0.035, -0.022, 0.035], scale: [0.02, 0.03, 0.02], outline: 0.4 });
 
       const open = new THREE.Group();
       hand.add(open);
       this.add(open, S, color, { pos: [0, -0.045, 0.004], scale: [F * 0.9, F * 1.02, F * 0.5] });
       for (let i = 0; i < 4; i++) {
-        const fg = this.add(open, G.limb(0.0105, 0.058 - Math.abs(i - 1.5) * 0.006), fingers, { pos: [(i - 1.5) * F * 0.4, -0.085, 0.004], rot: [0.12, 0, (i - 1.5) * 0.09], outline: 0.3, shadow: false });
+        const len = 0.058 - Math.abs(i - 1.5) * 0.006;
+        const fg = this.add(open, G.limb(0.0105, len), fingers, { pos: [(i - 1.5) * F * 0.4, -0.085, 0.004], rot: [0.12, 0, (i - 1.5) * 0.09], outline: 0.3, shadow: false });
         fg.userData.finger = true;
+        tipNail(fg, len);
       }
       this.add(open, G.limb(0.012, 0.05), fingers, { pos: [-s * F * 0.8, -0.03, 0.012], rot: [0.2, 0, -s * 0.85], outline: 0.3, shadow: false });
 
       const point = new THREE.Group();
       hand.add(point);
       this.add(point, S, color, { pos: [0, -0.04, 0.008], scale: [F * 0.92, F, F * 1.05] });
-      for (let i = 0; i < 2; i++) this.add(point, G.limb(0.0105, 0.06), fingers, { pos: [(i - 0.5) * F * 0.4 + s * F * 0.25, -0.085, 0.012], outline: 0.3, shadow: false });
+      for (let i = 0; i < 2; i++) tipNail(this.add(point, G.limb(0.0105, 0.06), fingers, { pos: [(i - 0.5) * F * 0.4 + s * F * 0.25, -0.085, 0.012], outline: 0.3, shadow: false }), 0.06);
       this.add(point, S, fingers, { pos: [-s * 0.035, -0.022, 0.035], scale: [0.02, 0.03, 0.02], outline: 0.4 });
 
       // the thumbs-up: the fist, the thumb standing out of it along the back of the curled fingers
@@ -786,6 +1246,7 @@
       for (let i = 0; i < 4; i++) {
         this.add(thumb, G.sphereLo(), fingers, { pos: [(i - 1.5) * F * 0.42, -0.072, 0.03], scale: [F * 0.27, F * 0.24, F * 0.3], outline: 0.25, shadow: false });
       }
+      knuckleNails(thumb);
       this.add(thumb, G.limb(0.013, 0.05), fingers, { pos: [-s * F * 0.55, -0.03, 0.03], rot: [-Math.PI / 2, 0, 0], outline: 0.35, shadow: false });
 
       open.visible = false;
@@ -811,7 +1272,7 @@
       const mat = SL.Toon.makeMat(col, { side: THREE.DoubleSide, rim: { color: this.rimColor.getHex(), strength: this.rimStrength } });
       mat.userData.baseEmissive = new THREE.Color(0, 0, 0);
       this.mats.set('hem', mat);
-      const rt = Math.max(b.pelvisW * 1.12, b.waistW * (this._loose || 1) * 1.12), rb = rt * (hm.flare || 1.22), len = hm.len || 0.16;
+      const rt = Math.max(b.pelvisW * 1.12, b.waistW * (this._loose || 1) * 1.12), rb = rt * (hm.flare || 1.22), len = hm.len || 0.16, arc = hm.arc, trim = hm.trim;
       this.hem = [];
       for (const [front, a0] of [[true, 0], [false, Math.PI]]) {
         const piv = new THREE.Group();
@@ -819,21 +1280,47 @@
         hips.add(piv);
         // each half wraps ~15° past the side so no wedge opens there when the legs swing the halves apart;
         // the back half sits a hair outside the front one where they overlap
-        const k = front ? 1 : 1.025, lap = 0.26;
-        const g = geo('hem' + f3(rt) + f3(rb) + f3(len) + front, () => {
-          const c = new THREE.CylinderGeometry(rt * k, rb * k, len, 16, 1, true, a0 - Math.PI / 2 - lap, Math.PI + 2 * lap);
-          c.translate(0, -len / 2, 0);
-          return c;
-        });
-        this.add(piv, g, mat, { scale: [1, 1, (b.pelvisD / b.pelvisW) * 1.08], outline: 0.6, name: front ? 'hem:front' : 'hem:back' });
+        // hm.arc (radians, each half): narrower panels leave the sides open (the Z films' Broly's red cloth, front and back)
+        const k = front ? 1 : 1.025, lap = arc !== undefined ? (arc - Math.PI) / 2 : 0.26;
+        // hm.open (radians): the front half parts down the middle, a coat's skirt open over the trousers (Fused Zamasu's)
+        const op = front && hm.open ? hm.open / 2 : 0;
+        const spans = op ? [[a0 + op, Math.PI / 2 + lap - op], [a0 - Math.PI / 2 - lap, Math.PI / 2 + lap - op]] : [[a0 - Math.PI / 2 - lap, Math.PI + 2 * lap]];
+        for (const [t0, tl] of spans) {
+          const g = geo('hem' + f3(rt) + f3(rb) + f3(len) + front + f3(t0) + f3(tl), () => {
+            const c = new THREE.CylinderGeometry(rt * k, rb * k, len, 16, 1, true, t0, tl);
+            c.translate(0, -len / 2, 0);
+            return c;
+          });
+          const hmesh = this.add(piv, g, mat, { scale: [1, 1, (b.pelvisD / b.pelvisW) * 1.08], outline: 0.6, name: front ? 'hem:front' : 'hem:back' });
+          // trim (outfit.hem.trim: a colour): a band along the bottom edge (Zamasu's gold-edged coat)
+          if (trim !== undefined) {
+            const tg = geo('hemTrim' + f3(rb) + f3(len) + front + f3(t0) + f3(tl), () => {
+              const c = new THREE.CylinderGeometry(rb * k * 1.012, rb * k * 1.014, 0.032, 16, 1, true, t0, tl);
+              c.translate(0, -len + 0.016, 0);
+              return c;
+            });
+            if (!this._hemTrimMat) {
+              this._hemTrimMat = SL.Toon.makeMat(trim, { side: THREE.DoubleSide, rim: { color: this.rimColor.getHex(), strength: this.rimStrength } });
+              this._hemTrimMat.userData.baseEmissive = new THREE.Color(0, 0, 0);
+              this.mats.set('hemTrim', this._hemTrimMat);
+            }
+            const tm = this.add(piv, tg, this._hemTrimMat, { scale: [1, 1, (b.pelvisD / b.pelvisW) * 1.08], outline: 0 });
+            if (this.girth) this.girth.push({ mesh: tm, x: tm.scale.x, y: tm.scale.y, z: tm.scale.z, gy: 0 });
+          }
+          // (the cloth widens with a form's heavier thighs — look.muscle — instead of vanishing inside them)
+          if (this.girth) this.girth.push({ mesh: hmesh, x: hmesh.scale.x, y: hmesh.scale.y, z: hmesh.scale.z, gy: 0 });
+        }
         this.hem.push({ node: piv, front });
       }
     }
 
-    _buildCape(chest, color) {
+    // off (outfit.capeOff, metres): the cape stands that much further off the back, so a broad back and baggy trousers
+    // stay behind it (Dabura's showed through); size (outfit.capeSize, [width, length] shares): a smaller body's cape
+    _buildCape(chest, color, off = 0, size) {
       const b = this.b;
       const cape = new THREE.Group();
-      cape.position.set(0, b.chestTop - 0.02, -b.chestD * 0.95);
+      cape.position.set(0, b.chestTop - 0.02, -b.chestD * 0.95 - off);
+      if (size) cape.scale.set(size[0], size[1], 1);
       chest.add(cape);
       this.capeNode = cape;
       const g = geo('capeShape', () => {
@@ -1070,7 +1557,8 @@
           const ya = Math.max(onChest(ra) + 0.012, y0 - (ra - r0) * 0.36), yb = Math.max(onChest(rb) + 0.012, y0 - (rb - r0) * 0.36);
           // one sloped band: an open frustum from ra (top) down and out to rb
           // (the seam of the band, where its normals do not quite meet, is put at the back, not under the jewel)
-          const geo = drape(new THREE.CylinderGeometry(ra, rb, Math.max(0.004, ya - yb), 44, drop ? 4 : 1, true, Math.PI, Math.PI * 2), (ya + yb) / 2);
+          // o.collarArc (radians): the front of it only — a chest piece rather than a collar (the Z films' Broly)
+          const geo = drape(new THREE.CylinderGeometry(ra, rb, Math.max(0.004, ya - yb), 44, drop ? 4 : 1, true, o.collarArc ? -o.collarArc / 2 : Math.PI, o.collarArc || Math.PI * 2), (ya + yb) / 2);
           (this.geos = this.geos || []).push(geo);
           parts.push(this.add(chest, geo, bands[i], { pos: [0, (ya + yb) / 2, 0.004], scale: [sx * 1.04, 1, dz], outline: i === n - 1 ? 0.7 : 0 }));
           // o.collarStripes = { color, count, bands: [index, ...], width (of each stripe's share, 0..1) }: short
@@ -1136,15 +1624,33 @@
     _buildJacket(chest, spine, jk) {
       const b = this.b;
       let mat = this.mats.get('jacket');
+      const fur = this._isFur(jk.color);
       if (!mat) {
         // drawn from both sides: the lining shows at the open front
-        mat = SL.Toon.makeMat(jk.color, { side: THREE.DoubleSide, rim: { color: this.rimColor.getHex(), strength: this.rimStrength } });
+        mat = SL.Toon.makeMat(jk.color, { side: THREE.DoubleSide, rim: { color: this.rimColor.getHex(), strength: this.rimStrength, fur: fur ? 1 : 0 } });
         mat.userData.baseEmissive = new THREE.Color(0, 0, 0);
         this.mats.set('jacket', mat);
       }
       // half the opening at the front, in radians: wider over the chest, narrower at the waist, so the
       // two shells meet in one line
-      const shell = (key, pts, seg, gap) => geo(key + f3(gap), () => new THREE.LatheGeometry(pts.map(([r, y]) => new THREE.Vector2(r, y)), seg, gap, Math.PI * 2 - gap * 2));
+      // a pelt's opening (outfit.fur: Super Saiyan 4) is ragged: every other row of the two front edges pulled into the
+      // gap, so the edge is a line of tufts pointing at the bare chest
+      const shell = (key, pts, seg, gap) =>
+        geo(key + f3(gap) + (fur ? 'fur' : ''), () => {
+          const fine = fur ? finer(pts, 3) : pts;
+          const g = new THREE.LatheGeometry(fine.map(([r, y]) => new THREE.Vector2(r, y)), seg, gap, Math.PI * 2 - gap * 2);
+          if (!fur) return g;
+          const p = g.attributes.position, rows = fine.length;
+          for (const [col, dir] of [[0, -1], [seg, 1]]) {
+            for (let j = 1; j < rows - 1; j += 2) {
+              const i = col * rows + j, r = fine[j][0];
+              if (r < 0.04) continue;
+              const phi = (dir < 0 ? gap : Math.PI * 2 - gap) + dir * Math.min(gap * 0.7, 0.032 / r);
+              p.setXYZ(i, Math.sin(phi) * r, p.getY(i) - 0.012, Math.cos(phi) * r);
+            }
+          }
+          return g;
+        });
       const open = jk.open || 1;
       this.jacket = [
         this.add(chest, shell('jacketChest', CHEST_PTS, 24, 0.46 * open), mat, { pos: [0, -0.01, 0.002], scale: [(b.chestW / 0.2) * 1.1, 1.0, (b.chestD / 0.2) * 1.16], outline: 0.8, name: 'jacket:chest' }),
@@ -1165,15 +1671,34 @@
       const S = G.sphere();
       // every piece is kept by name, so a story can crack it and break it away (damageArmor)
       const A = (this.armorParts = { chest, spine, pads: [], hips: [], colors: ar, cracks: [] });
-      A.plate = this.add(chest, G.chest(), ar.plate, { pos: [0, -0.005, 0.01], scale: [(b.chestW / 0.2) * 1.1, 0.96, (b.chestD / 0.2) * 1.18] });
+      // ar.pecs: the plate covers only the upper chest, a shelf over the pecs (Cooler's), the ribs below it bare
+      // ar.wrap (radians): the plate runs only that far round the front, to the armpits — the back is the suit (Baby Vegeta's)
+      // (a wrapped plate stands a little further off the chest, so the chest under its lower edge never shows through)
+      const plateGeo = ar.wrap ? geo('chestWrap' + f3(ar.wrap), () => new THREE.LatheGeometry(CHEST_PTS.map(([r, y]) => new THREE.Vector2(r, y)), 24, -ar.wrap / 2, ar.wrap)) : G.chest();
+      const wx = ar.wrap ? 1.05 : 1, wz = ar.wrap ? 1.07 : 1, wo = ar.wrap ? 0.004 : 0;
+      A.plate = ar.pecs
+        ? this.add(chest, plateGeo, ar.plate, { pos: [0, 0.14, 0.014 + wo], scale: [(b.chestW / 0.2) * 1.1 * wx, 0.56, (b.chestD / 0.2) * 1.12 * wz] })
+        : this.add(chest, plateGeo, ar.plate, { pos: [0, -0.005, 0.01 + wo], scale: [(b.chestW / 0.2) * 1.1 * wx, 0.96, (b.chestD / 0.2) * 1.18 * wz] });
       A.belly = this.add(spine, G.abs(), ar.belly !== undefined ? ar.belly : ar.plate, { pos: [0, 0.01, 0.004], scale: [(b.waistW / 0.13) * 1.1, (b.absLen / 0.2) * 0.98, (b.waistD / 0.13) * 1.1] });
-      if (ar.trim !== undefined) A.trim = this.add(spine, G.torus(1, 0.12), ar.trim, { pos: [0, 0.2, 0.004], rot: [Math.PI / 2, 0, 0], scale: [b.chestW * 0.9, b.chestD * 1.02, 0.15], outline: 0.4 });
+      // the trim edges the plate's lower rim (CHEST_PTS' [0.135, -0.065] at the plate's scale), on the chest so it moves and
+      // swells with the plate (2026-10-16: it was a ring fixed on the spine a hand above that rim and wider than the body
+      // there — a hoop floating round Vegeta's Whis armour, the Frieza Force's and the rest)
+      if (ar.trim !== undefined && !ar.pecs) {
+        const rimY = -0.005 - 0.065 * 0.96;
+        A.trim = this.add(chest, G.torus(1, 0.1), ar.trim, { pos: [0, rimY + 0.004, 0.01 + wo], rot: [Math.PI / 2, 0, 0], scale: [0.135 * (b.chestW / 0.2) * 1.1 * wx, 0.135 * (b.chestD / 0.2) * 1.18 * wz, 0.22], outline: 0.4 });
+      }
       const padStyle = ar.pads === undefined ? 'none' : ar.padStyle || 'up';
       if (padStyle === 'strap') {
         // no shoulder flaps: a band over each shoulder, front to back (later Frieza Force and Earth armor)
         // padScale widens them (Bardock's classic armor has broad green straps)
         const ps = ar.padScale || 1;
         for (const s of [1, -1]) A.pads.push(this.add(chest, G.box(), ar.pads, { pos: [s * b.chestW * 0.56, 0.283 - (ps - 1) * 0.012, 0], rot: [0, 0, s * 0.3], scale: [0.052 * ps, 0.024, b.chestD * (2.25 - (ps - 1) * 0.2)], outline: 0.5 }));
+      } else if (padStyle === 'saga') {
+        // 'saga': the Frieza Force's shoulder pads (the board p.12–18, the Ginyu Force): flat and pointed, wide where they
+        // sit on the shoulder, reaching well out past it and lifting a little at the tip — a seven-sided cone laid on its
+        // side (2026-10-16: they fell through to the generic small ellipsoid and read as nubs). padScale lengthens them
+        const ps = ar.padScale || 1;
+        for (const s of [1, -1]) A.pads.push(this.add(chest, G.cone(), ar.pads, { pos: [s * b.chestW * 0.55, b.shoulderY + 0.062, -0.004], rot: [-0.12, 0, -s * (Math.PI / 2 - 0.4)], scale: [0.06, (b.chestW * 0.68 + 0.1) * ps, 0.13], outline: 0.6 }));
       } else if (padStyle !== 'none') {
         // 'flap': the big shoulder flaps of the later Saiyan armor (Super-era Bardock)
         const flap = padStyle === 'flap';
@@ -1244,6 +1769,51 @@
       return out;
     }
 
+    /**
+     * One chip knocked out of the chest plate (blows the armour shrugs off: Pikkon on Super Janemba). The i-th
+     * of a fixed set of spots on the plate's front gets a jagged dark crack with a pale broken flake beside it
+     * — no glow — kept until repairArmor(). Returns the chip's point in world space (render space), or null
+     * with no plate.
+     */
+    chipArmor(i) {
+      const A = this.armorParts;
+      if (!A || !A.plate || !A.plate.visible) return null;
+      const b = this.b;
+      const sx = (b.chestW / 0.2) * 1.1, sz = (b.chestD / 0.2) * 1.18;
+      // [across the chest (unit width 0.2), up the plate, the crack's slant]
+      const SPOT = [[0.06, 0.17, 0.5], [-0.07, 0.12, -0.6], [0.02, 0.06, 1.1], [-0.03, 0.22, 0.2], [0.09, 0.09, -0.9], [-0.1, 0.18, 0.8], [0, 0.13, -0.3], [0.05, 0.23, 1.3]];
+      const [ux, y, a] = SPOT[i % SPOT.length];
+      // the plate's radius at that height (its lathe profile, scaled as _buildArmor lays it on)
+      const ly = (y + 0.005) / 0.96;
+      let R = 0;
+      for (let k = 1; k < CHEST_PTS.length; k++) {
+        const [r0, y0] = CHEST_PTS[k - 1], [r1, y1] = CHEST_PTS[k];
+        if (ly <= y1) {
+          R = r0 + ((r1 - r0) * (ly - y0)) / (y1 - y0);
+          break;
+        }
+      }
+      const x = ux * (b.chestW / 0.2);
+      const th = Math.asin(U.clamp(x / (R * sx), -0.95, 0.95));
+      const g = new THREE.Group();
+      g.position.set(x, y, R * sz * Math.cos(th) + 0.012);
+      g.rotation.set(0, th * 0.8, a);
+      A.chest.add(g);
+      const dark = this.mat(0x0c0a12, { basic: true });
+      // three jagged segments end to end, then the pale broken edge beside the first
+      let px = -0.07, py = 0;
+      for (const [len, turn] of [[0.06, 0], [0.055, 0.9], [0.045, -0.6]]) {
+        const ex = px + Math.cos(turn) * len, ey = py + Math.sin(turn) * len;
+        this.add(g, G.box(), dark, { pos: [(px + ex) / 2, (py + ey) / 2, 0], rot: [0, 0, turn], scale: [len, 0.017, 0.004], outline: 0, shadow: false });
+        px = ex;
+        py = ey;
+      }
+      this.add(g, G.box(), this.mat(0xd8c8ec, { basic: true }), { pos: [-0.04, 0.019, -0.001], rot: [0, 0, 0.35], scale: [0.04, 0.024, 0.004], outline: 0, shadow: false });
+      A.cracks.push(g);
+      this.root.updateMatrixWorld(true);
+      return g.getWorldPosition(new THREE.Vector3());
+    }
+
     /** Puts broken armor back (a new battle reuses nothing, but a scene restart can). */
     repairArmor() {
       const A = this.armorParts;
@@ -1272,13 +1842,23 @@
         const key = d.at.replace(/[LR]$/, '');
         const sz = d.size || [0.03, 0.03];
         let m;
+        // d.glow: unlit, full colour whatever the light (the Tree of Might's power burning in Turles' veins)
+        const basic = !!d.glow;
         if (dims[key] && d.t !== undefined) {
           const [len, r] = dims[key];
           const ang = d.ang || 0, rr = r * (d.lift || 1.03);
-          m = this.add(j, S, d.color, { pos: [Math.sin(ang) * rr, -d.t * len, Math.cos(ang) * rr], rot: [0, ang, d.tilt || 0], scale: [sz[0], sz[1], 0.006], outline: 0, shadow: false });
+          m = this.add(j, S, d.color, { pos: [Math.sin(ang) * rr, -d.t * len, Math.cos(ang) * rr], rot: [0, ang, d.tilt || 0], scale: [sz[0], sz[1], 0.006], outline: 0, shadow: false, basic });
         } else {
-          m = this.add(j, S, d.color, { pos: d.pos || [0, 0, 0], rot: d.rot || [0, 0, 0], scale: [sz[0], sz[1], sz[2] || 0.006], outline: 0, shadow: false });
+          m = this.add(j, S, d.color, { pos: d.pos || [0, 0, 0], rot: d.rot || [0, 0, 0], scale: [sz[0], sz[1], sz[2] || 0.006], outline: 0, shadow: false, basic });
         }
+        // d.hidden: drawn only when a state shows it (Broly's veins: the legendary mechanic, with the form)
+        if (d.hidden) m.visible = false;
+        // d.forms: drawn only in those forms (setForm shows and hides it)
+        if (d.forms) {
+          m.userData.forms = d.forms;
+          m.visible = false;
+        }
+        if (d.vein) (this.veinDecals = this.veinDecals || []).push(m);
         this.decalMeshes.push(m);
       }
     }
@@ -1287,6 +1867,7 @@
     _buildWings(chest, w) {
       const b = this.b;
       this.wingMeshes = [];
+      if (w.style === 'beetle') return this._buildBeetleWings(chest, w);
       for (const s of [1, -1]) {
         const g = new THREE.Group();
         g.position.set(s * (w.x || 0.07), b.chestTop - (w.drop || 0.02), -b.chestD * (w.back || 0.95));
@@ -1296,6 +1877,44 @@
         const m = this.add(g, G.cone(), w.color, { pos: [0, 0, 0], rot: [Math.PI, 0, 0], scale: [w.width, w.len, w.width * (w.flat || 0.2)], outline: 1 });
         this.wingMeshes.push(m);
         if (w.edge !== undefined) this.add(g, G.cone(), w.edge, { pos: [s * w.width * 0.35, 0, -0.004], rot: [Math.PI, 0, 0], scale: [w.width * 0.25, w.len * 0.85, w.width * 0.1], outline: 0 });
+      }
+    }
+
+    /**
+     * wings.style 'beetle' (Hirudegarn): two great wing cases spread out sideways from the tops of the shoulders — a
+     * dark shell (w.edge) over a ribbed under-layer (w.under, ribs in w.rib) framed at the front by the body's own plate
+     * colour (w.color) — and behind them two pairs of glassy membranes (w.membrane), fanned down and back.
+     * len / width in metres; lift raises the outer ends.
+     */
+    _buildBeetleWings(chest, w) {
+      const b = this.b, S = G.sphere(), len = w.len || 0.5, wd = w.width || 0.2;
+      // the wings move (tick): kept with their resting angles
+      this.beetle = { t: 0, open: new Spring(30, 8), cases: [], membranes: [] };
+      for (const s of [1, -1]) {
+        const g = new THREE.Group();
+        g.position.set(s * b.shoulderX * 0.55, b.chestTop + 0.01, -b.chestD * 0.55);
+        g.rotation.set(0.2, -s * 0.5, s * (w.lift === undefined ? 0.22 : w.lift));
+        chest.add(g);
+        this.beetle.cases.push({ node: g, s, rx: g.rotation.x, rz: g.rotation.z });
+        const at = s * len * 0.92;
+        this.wingMeshes.push(
+          this.add(g, S, w.edge, { pos: [at, 0, 0], scale: [len, 0.05, wd], outline: 1 }),
+          this.add(g, S, w.under, { pos: [at * 0.78, -0.022, 0.012], scale: [len * 0.72, 0.04, wd * 0.82], outline: 0.5 }),
+          this.add(g, S, w.color, { pos: [at * 0.6, 0.026, wd * 0.3], scale: [len * 0.62, 0.034, wd * 0.62], outline: 0.5 })
+        );
+        // the ribs across the under-layer
+        for (let i = 1; i <= 4; i++) this.add(g, G.box(), w.rib === undefined ? 0x3a3450 : w.rib, { pos: [at * (0.32 + i * 0.16), -0.05, 0], rot: [0, s * 0.1, 0], scale: [0.012, 0.012, wd * 1.3 * (1 - i * 0.12)], outline: 0, shadow: false });
+        // the membranes: thin, pale and half-clear, drawn without an ink line
+        if (w.membrane !== undefined) {
+          for (const [k, yaw, drop] of [[1, 0.25, 0.5], [0.8, 0.6, 0.9]]) {
+            const mg = new THREE.Group();
+            mg.position.set(s * b.shoulderX * 0.4, b.chestTop - 0.06, -b.chestD * 0.8);
+            mg.rotation.set(0.35, -s * yaw, s * drop);
+            chest.add(mg);
+            this.beetle.membranes.push({ node: mg, s, rz: mg.rotation.z });
+            this.wingMeshes.push(this.add(mg, S, w.membrane, { basic: true, opacity: 0.3, pos: [s * len * 0.7 * k, 0, 0], scale: [len * 0.75 * k, 0.006, wd * 0.6 * k], outline: 0, shadow: false }));
+          }
+        }
       }
     }
 
@@ -1318,12 +1937,13 @@
       // face.skull: the skull's own proportions (Beerus' tall sphinx head) as multiples of the default ellipsoid
       const sk = f.skull || [1, 1, 1];
       // face.skullY lifts the cranium off the jaw (a long, pointed lower face under broad temples: Beerus)
-      this.skull = this.add(hc, S, skin, { pos: [0, R * (f.skullY || 0), 0], scale: [R * SKULL[0] * sk[0], R * SKULL[1] * sk[1], R * SKULL[2] * sk[2]], skin: true });
+      // face.headShape: one shaped skull with the jaw and chin in it (G.headShaped); the jaw sphere below is skipped
+      this.skull = this.add(hc, f.headShape ? G.headShaped(f.headShape) : S, skin, { pos: [0, R * (f.skullY || 0), 0], scale: [R * SKULL[0] * sk[0], R * SKULL[1] * sk[1], R * SKULL[2] * sk[2]], skin: true });
       // the jaw and cheeks carry the face's age and build (all opt-in, 1 = as before): face.jaw
       // lengthens the chin (an adult, a hard face), face.jawW narrows it, face.cheeks rounds (>1),
       // flattens (<1) or drops (0) the cheekbones
       const jaw = f.jaw || 1, jawW = f.jawW || 1;
-      this.add(hc, S, skin, { pos: [0, -R * (0.42 + (jaw - 1) * 0.3), R * (0.12 + (jaw - 1) * 0.08)], scale: [R * 0.66 * jawW, R * 0.56 * jaw, R * 0.7], outline: f.jawLine || 0, skin: true });
+      if (!f.headShape) this.add(hc, S, skin, { pos: [0, -R * (0.42 + (jaw - 1) * 0.3), R * (0.12 + (jaw - 1) * 0.08)], scale: [R * 0.66 * jawW, R * 0.56 * jaw, R * 0.7], outline: f.jawLine || 0, skin: true });
       // cheekbones give the face a more angular anime shape
       const ck = f.cheeks === undefined ? 1 : f.cheeks;
       if (ck > 0) for (const s of [1, -1]) this.add(hc, S, skin, { pos: [s * R * 0.52 * Math.min(1, jawW + 0.04), -R * 0.2, R * 0.55], scale: [R * 0.3 * ck, R * 0.26 * ck, R * 0.3 * ck], outline: 0 });
@@ -1345,7 +1965,7 @@
       this.mats.set('pupil', this.face.pupilMat);
       const browColor = f.brow !== undefined ? f.brow : a.hair ? a.hair.color : 0x222222;
       this.face.browMat = SL.Toon.makeMat(browColor);
-      this.face.browMat.userData.baseEmissive = new THREE.Color();
+      this.face.browMat.userData.baseEmissive = new THREE.Color(0, 0, 0);
       this.mats.set('brow', this.face.browMat);
       const eyeX = f.eyeX || 0.043;
       const ew = f.eyeW || 1;
@@ -1365,6 +1985,9 @@
         const brow = this.add(hc, G.box(), this.face.browMat, { pos: [s * eyeX, 0.036 + this._browY, R * 0.93], rot: [0, s * 0.35, 0], scale: [0.042 * (f.browW || 1), 0.0105 * (f.browThick || 1), 0.014], outline: 0, shadow: false });
         // a flick at the outer corner of the lash line (face.lashWing): the lashes of a woman's eye
         if (f.lashWing) this.add(hc, G.box(), lashMat, { pos: [s * (eyeX + 0.019 * ew), 0.021, R * 0.925], rot: [0, s * 0.62, s * 0.62], scale: [0.013, 0.0042, 0.008], outline: 0, basic: true, shadow: false });
+        // where the pupil and its highlight sit looking straight ahead (setGaze moves them from here)
+        pup.userData.home = pup.position.clone();
+        hl.userData.home = hl.position.clone();
         this.face.eyes.push(eye);
         this.face.pupils.push(pup);
         this.face.lights.push(hl);
@@ -1377,6 +2000,14 @@
       this.face.mouth = this.add(hc, G.box(), f.mouthColor !== undefined ? f.mouthColor : 0x4a1616, { pos: [0, this._mouthY, this._mouthZ], scale: [0.03, 0.005, 0.01], outline: 0, shadow: false });
       this.face.teeth = this.add(hc, G.box(), this.mat(0xf6f2ea, { basic: true }), { pos: [0, this._mouthY + 0.004, this._mouthZ + R * 0.015], scale: [0.026, 0.0045, 0.006], outline: 0, basic: true, shadow: false });
       this.face.teeth.visible = false;
+      // face.smileArc (true or { z }): a closed smiling mouth is drawn as a shallow upturned arc instead of the straight
+      // line, so the smile lives in the mouth and follows the expression (setExpression); opt-in (Kefla, Caulifla)
+      if (f.smileArc) {
+        const A = 1.2, rho = 0.03 / (2 * Math.sin(A / 2));
+        this._smile = { A, rho, z: (f.smileArc.z === undefined ? 0.0015 : f.smileArc.z) };
+        this.face.smile = this.add(hc, G.arc(rho, 0.0024, A), f.mouthColor !== undefined ? f.mouthColor : 0x4a1616, { outline: 0, shadow: false });
+        this.face.smile.visible = false;
+      }
       if (f.scar) this.add(hc, G.box(), 0x9a4040, { pos: [0.068, -0.03, R * 0.82], rot: [0, 0.5, 0.35], scale: [0.004, 0.03, 0.006], outline: 0, shadow: false });
 
       const o = a.outfit || {};
@@ -1390,8 +2021,9 @@
         ];
       }
       if (o.headband !== undefined) {
-        this.add(hc, G.torus(R * 0.97, 0.013), o.headband, { pos: [0, 0.056, -0.006], rot: [Math.PI / 2 - 0.2, 0, 0], outline: 0.6 });
-        for (const s of [1, -1]) this.add(hc, G.box(), o.headband, { pos: [s * 0.025, 0.0, -R * 1.02], rot: [0.35, 0, s * 0.25], scale: [0.022, 0.13, 0.008], outline: 0.5 });
+        // (kept, so a form can take it off: look.headband false — the Z-movie Broly's circlet breaking)
+        this.headbandMeshes = [this.add(hc, G.torus(R * 0.97, 0.013), o.headband, { pos: [0, 0.056, -0.006], rot: [Math.PI / 2 - 0.2, 0, 0], outline: 0.6 })];
+        for (const s of [1, -1]) this.headbandMeshes.push(this.add(hc, G.box(), o.headband, { pos: [s * 0.025, 0.0, -R * 1.02], rot: [0.35, 0, s * 0.25], scale: [0.022, 0.13, 0.008], outline: 0.5 }));
       }
       if (o.turban !== undefined) {
         this.add(hc, S, o.turban, { pos: [0, R * 0.42, -R * 0.02], scale: [R * 1.1, R * 0.72, R * 1.12], outline: 0.9 });
@@ -1403,11 +2035,18 @@
         this.add(hc, G.box(), o.shades, { pos: [0, R * 0.14, R * 0.98], scale: [R * 0.2, R * 0.05, R * 0.04], outline: 0 });
       }
       if (o.cap !== undefined) {
-        // round child's cap, optionally crowned with an ornament (Kid Gohan's Dragon Ball)
-        this.add(hc, G.hemi(), o.cap, { pos: [0, R * 0.22, -R * 0.02], scale: [R * 1.12, R * 1.05, R * 1.14], outline: 0.8 });
+        // round child's cap, optionally crowned with an ornament (Kid Gohan's Dragon Ball); kept so a form can take it
+        // off (look.cap false: Super 13's cap is gone with the change)
+        // capTilt (radians, default 0.28): the cap sits tipped back on the head, its brim above the brows (2026-10-16, the
+        // owner's collage: Kid Gohan's hat shows his fringe and eyes; level, the brim jutted past the face at brow height
+        // and hid the eyes from the front)
+        const capG = new THREE.Group();
+        capG.rotation.x = -(o.capTilt !== undefined ? o.capTilt : 0.28);
+        hc.add(capG);
+        this.capMeshes = [this.add(capG, G.hemi(), o.cap, { pos: [0, R * 0.22, -R * 0.02], scale: [R * 1.12, R * 1.05, R * 1.14], outline: 0.8 })];
         if (o.capBall !== undefined) {
-          this.add(hc, S, o.capBall, { pos: [0, R * 1.3, 0], scale: R * 0.3, outline: 0.6 });
-          if (o.capStars) for (let i = 0; i < o.capStars; i++) this.add(hc, S, 0xd0201a, { pos: [(i % 2 ? 1 : -1) * R * 0.08, R * 1.3 + ((i >> 1) % 2 ? 1 : -1) * R * 0.08, R * 0.29], scale: R * 0.045, outline: 0, shadow: false });
+          this.add(capG, S, o.capBall, { pos: [0, R * 1.3, 0], scale: R * 0.3, outline: 0.6 });
+          if (o.capStars) for (let i = 0; i < o.capStars; i++) this.add(capG, S, 0xd0201a, { pos: [(i % 2 ? 1 : -1) * R * 0.08, R * 1.3 + ((i >> 1) % 2 ? 1 : -1) * R * 0.08, R * 0.29], scale: R * 0.045, outline: 0, shadow: false });
         }
       }
       if (o.helmet !== undefined) {
@@ -1440,9 +2079,14 @@
       // children is all that is needed
       for (let i = g.children.length - 1; i >= 0; i--) g.remove(g.children[i]);
       this._headExtras = list || null;
+      this.headSway = null;
       if (!list) return;
       const skin = this.app.skin;
-      for (const ex of list) this._spike(g, ex, ex.color !== undefined ? ex.color : skin, this.headExtraR);
+      for (const ex of list) {
+        // ex.sway: hair built as extras (Zangya's curls) — kept in one group that moves like hair (tick)
+        if (ex.sway && !this.headSway) g.add((this.headSway = new THREE.Group()));
+        this._spike(ex.sway ? this.headSway : g, ex, ex.color !== undefined ? ex.color : skin, this.headExtraR);
+      }
     }
 
     _spike(parent, sp, color, R) {
@@ -1453,8 +2097,13 @@
       // painted on the skin (the Majin mark); default extras are cones (horns, antennae, spikes)
       // 'line' is a painted stroke like 'bar' (a crease, a vein), kept apart so it is never taken for the mark
       const painted = sp.shape === 'bar' || sp.shape === 'line';
-      const geo = sp.shape === 'ball' ? G.sphere() : painted ? G.box() : G.cone();
-      const m = this.add(parent, geo, color, { scale: [sp.r, sp.l, sp.r * (sp.flat || 0.7)], outline: sp.outline === undefined ? (painted ? 0 : 0.8) : sp.outline, shadow: !painted });
+      // 'cyl': a cylinder standing on the anchor (a hat's crown)
+      // sp.bend (radians): a curved LOCK instead of a straight cone (G.lock), bending toward sp.toward (head space,
+      // default down — a lock falls) — layered, separated strands rather than solid spikes (Broly's manes)
+      // sp.curl (with bend): the lock keeps its true curve (G.lock's `th`), scaled evenly — Super Buu's and Kid Buu's antennae
+      const curl = sp.bend && sp.curl;
+      const geo = sp.shape === 'ball' ? G.sphere() : sp.shape === 'cyl' ? G.cyl() : painted ? G.box() : sp.bend ? G.lock(Math.round(sp.bend * 20) / 20, curl ? Math.round((sp.r / sp.l) * 100) / 100 : undefined) : G.cone();
+      const m = this.add(parent, geo, color, { scale: curl ? [sp.l, sp.l, sp.l] : [sp.r, sp.l, sp.r * (sp.flat || 0.7)], outline: sp.outline === undefined ? (painted ? 0 : 0.8) : sp.outline, shadow: !painted });
       if (painted) {
         // a stroke starts on the skin where `a` points and runs along it toward `d`: centred on the
         // skull's surface (not a sphere inside it) and turned flat to it, so neither end sinks into the
@@ -1476,6 +2125,16 @@
       }
       m.position.copy(anchor);
       m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+      if (sp.bend) {
+        // turn the lock about its own axis so that it bends toward `toward`
+        const tw = new THREE.Vector3(...(sp.toward || [0, -1, 0]));
+        const p = tw.addScaledVector(dir, -tw.dot(dir));
+        if (p.lengthSq() > 1e-6) {
+          p.normalize();
+          const z = new THREE.Vector3(0, 0, 1).applyQuaternion(m.quaternion);
+          m.rotateY(Math.atan2(dir.dot(new THREE.Vector3().crossVectors(z, p)), z.dot(p)));
+        }
+      }
       if (sp.twist) m.rotateY(sp.twist);
       return m;
     }
@@ -1527,7 +2186,7 @@
         if (def.mirror) {
           for (const sp of def.mirror) {
             spike(sp);
-            spike({ ...sp, a: [-sp.a[0], sp.a[1], sp.a[2]], d: [-sp.d[0], sp.d[1], sp.d[2]], twist: sp.twist ? -sp.twist : 0 });
+            spike({ ...sp, a: [-sp.a[0], sp.a[1], sp.a[2]], d: [-sp.d[0], sp.d[1], sp.d[2]], twist: sp.twist ? -sp.twist : 0, toward: sp.toward ? [-sp.toward[0], sp.toward[1], sp.toward[2]] : undefined });
           }
         }
         // hair gravity (style.gravity 0..1): how much a long mane resists turning with the head (Animator)
@@ -1561,6 +2220,15 @@
       if (extras !== this._headExtras) this._setHeadExtras(extras);
       // look.longTail false: a form that keeps its tail out of sight (Perfect Cell)
       if (this.longTailBase) this.longTailBase.visible = look.longTail !== false;
+      // look.headband false / look.cap false: a form without the band round the head, or without the cap
+      for (const m of this.headbandMeshes || []) m.visible = look.headband !== false;
+      for (const m of this.capMeshes || []) m.visible = look.cap !== false;
+      // look.collar false: a form without the outfit's collar (the Z films' Legendary Broly loses the gold chest piece);
+      // touched only when a form asks, so nobody else's collar is ever shown or hidden here
+      if (look.collar === false || this._collarOff) {
+        this._collarOff = look.collar === false;
+        for (const m of this.collarParts || []) m.visible = !this._collarOff;
+      }
       if ((look.pupilScale || 1) !== (this._pupilBase || 1)) {
         this._pupilBase = look.pupilScale || 1;
         if (this.face && this.face.pupils) this._applyEyes();
@@ -1585,10 +2253,61 @@
       }
       const lz = this._loose || 1;
       this.chestMesh.scale.set((this.b.chestW / 0.2) * this.formScale * lz, 1 + (this.formScale - 1) * 0.5, (this.b.chestD / 0.2) * 1.02 * this.formScale * lz);
+      // the neck rides the top of the chest as it swells (it stayed put, and a heavy form's chest rose over its own neck
+      // and chin — the Z films' Legendary Broly)
+      if (this.joints.neck) this.joints.neck.position.y = this.b.chestTop * (1 + (this.formScale - 1) * 0.5);
+      // the collar and a bare chest's pecs lie on the chest and swell with it (the Z films' Broly's gold chest piece and
+      // his Legendary chest, which read flat when the pecs stayed the base size inside it)
+      // (2026-10-16: an open jacket or robe swells with it too — Lord Slug's Giant form swallowed the robe's top)
+      for (const p of (this.collarParts || []).concat(this.pecMeshes || [], this.jacket || [])) {
+        const u = p.userData.c0 || (p.userData.c0 = { s: p.scale.clone(), p: p.position.clone() });
+        const fs = this.formScale, fy = 1 + (fs - 1) * 0.5;
+        p.scale.set(u.s.x * fs, u.s.y * fy, u.s.z * fs);
+        p.position.set(u.p.x * fs, u.p.y * fy, u.p.z * fs);
+      }
+      // the chest armour swells with the chest it sits on (a bulkier form used to bulge out round a plate that kept
+      // the base size: Broly's Wrathful and Super Saiyan states)
+      const A = this.armorParts;
+      if (A) {
+        for (const p of [A.plate, A.belly]) {
+          if (!p) continue;
+          const s0 = p.userData.s0 || (p.userData.s0 = p.scale.clone());
+          p.scale.set(s0.x * this.formScale, s0.y * (1 + (this.formScale - 1) * 0.5), s0.z * this.formScale);
+          // (a plate raised over the pecs rides up with the taller chest)
+          const p0 = p.userData.p0 || (p.userData.p0 = p.position.clone());
+          p.position.y = p0.y * (1 + (this.formScale - 1) * 0.5);
+        }
+        // the trim on the plate's rim widens with it (a torus lying flat: its x and y are the width and depth)
+        if (A.trim) {
+          const s0 = A.trim.userData.s0 || (A.trim.userData.s0 = A.trim.scale.clone());
+          const p0 = A.trim.userData.p0 || (A.trim.userData.p0 = A.trim.position.clone());
+          A.trim.scale.set(s0.x * this.formScale, s0.y * this.formScale, s0.z);
+          A.trim.position.y = p0.y * (1 + (this.formScale - 1) * 0.5);
+        }
+        // ...and the shoulder pieces ride out on it
+        for (const p of A.pads || []) {
+          const s0 = p.userData.s0 || (p.userData.s0 = p.scale.clone());
+          const p0 = p.userData.p0 || (p.userData.p0 = p.position.clone());
+          p.position.set(p0.x * this.formScale, p0.y, p0.z * this.formScale);
+          p.scale.set(s0.x * this.formScale, s0.y, s0.z * this.formScale);
+        }
+      }
       if (look.tint !== undefined) {
         this.tintColor.set(look.tint);
-        this.tintAmount = look.tintAmount || 0.3;
+        this.tintAmount = look.tintAmount !== undefined ? look.tintAmount : 0.3; // (0 means no tint: Perfect Cell clears Imperfect's)
       } else this.tintAmount = 0;
+      this._paint(look.paint, look.skin, look.swap);
+      // decals that belong to some forms only (decal.forms: Frieza's forearm and shin plates once the armour is gone)
+      for (const m of this.decalMeshes || []) if (m.userData.forms) m.visible = m.userData.forms.includes(form && form.id);
+      for (const id in this.props || {}) {
+        const g = this.props[id];
+        if (g.userData.forms) g.visible = g.userData.forms.includes(form && form.id);
+        const rd = g.userData.ride;
+        if (rd) {
+          const k = rd.limb ? look.muscle || 1 : this.formScale;
+          g.position.set(rd.p0.x * k, rd.p0.y * (rd.limb ? 1 : 1 + (k - 1) * 0.5), rd.p0.z * k);
+        }
+      }
       if (this._worn) this.setWorn(true);
       if (this._battered) this.setBattered(true);
       this._updateEmissive();
@@ -1630,17 +2349,29 @@
     setTorn(on) {
       if (!this.gi || this._torn === !!on) return;
       this._torn = !!on;
-      const skin = this.app.skin;
+      const skin = this.app.skin, o = this.app.outfit || {};
       // what is left under the gi is the outfit's to say (outfit.torn: chest / trap / abs colours,
-      // 'skin' for bare, and keepSleeve 'L' or 'R'); by default the chest is bare and the belly band stays
-      const t = (this.app.outfit && this.app.outfit.torn) || {};
+      // 'skin' for bare, 'under' / 'top' for the outfit's own, and keepSleeve 'L' or 'R'); by default the chest is
+      // bare and the belly band stays. torn.strip = { at, ...the same keys }: a second stage from that damage level
+      // on (the Tournament of Power gi: the orange top goes first, the undershirt later); gloves 'off': bare hands
+      let t = o.torn || {};
+      this._tornStage = !!(on && t.strip && (this._damageLevel || 0) >= (t.strip.at || 3));
+      if (this._tornStage) t = Object.assign({}, t, t.strip);
+      const col = (c) => (c === undefined || c === 'skin' ? skin : c === 'under' ? (o.under !== undefined ? o.under : skin) : c === 'top' ? (o.top !== undefined ? o.top : skin) : c);
       const paint = (m, c) => {
         if (!m) return;
         if (!m.userData.dressed) m.userData.dressed = m.material;
-        m.material = on ? this.mat(c === undefined || c === 'skin' ? skin : c) : m.userData.dressed;
+        m.material = on ? this.mat(col(c)) : m.userData.dressed;
       };
       for (const m of this.gi.torso) paint(m, m === this.gi.trap && t.trap !== undefined ? t.trap : t.chest);
-      if (t.abs !== undefined) paint(this.gi.abs, t.abs);
+      if (on && t.abs !== undefined) paint(this.gi.abs, t.abs);
+      else if (this.gi.abs && this.gi.abs.userData.dressed) this.gi.abs.material = this.gi.abs.userData.dressed;
+      for (const m of this.gloveHands || []) {
+        if (t.gloves !== 'off' && !m.userData.dressed) continue;
+        if (!m.userData.dressed) m.userData.dressed = m.material;
+        m.material = on && t.gloves === 'off' ? this.mat(skin) : m.userData.dressed;
+      }
+      for (const m of this.gloveCuffs || []) m.visible = !(on && t.gloves === 'off');
       // a jacket outfit: the jacket comes off (torn.jacket 'off'), and the sleeves were the jacket's
       if (t.jacket === 'off' && this.jacket) {
         for (const m of this.jacket) m.visible = !on;
@@ -1660,6 +2391,7 @@
       } else if (this.tintAmount === 0.16) {
         this.tintAmount = 0;
       }
+      if (this._rips) this.setDamage(this._damageLevel || 0);
       this._updateEmissive();
     }
 
@@ -1680,10 +2412,18 @@
     setDamage(level) {
       const L = Math.max(0, Math.min(3, level | 0));
       this._damageLevel = L;
+      const ts = this.app.outfit && this.app.outfit.torn && this.app.outfit.torn.strip;
+      if (this._torn && ts && this._tornStage !== L >= (ts.at || 3)) {
+        this._torn = null;
+        this.setTorn(true);
+      }
       const spec = this.app.outfit && this.app.outfit.damage;
       if (!spec || !spec.rips) return;
       if (!this._rips) this._rips = spec.rips.map((r) => this._buildRip(r)).filter(Boolean);
-      for (const r of this._rips) r.mesh.visible = L >= r.spec.level && L <= (r.spec.until === undefined ? 3 : r.spec.until) && !this._stoneMats && !this._spiritMats;
+      // a rip in the gi top (one that ends before the tear) goes with the gi when a scene tears it directly
+      const tearAt = spec.tearAt !== undefined ? spec.tearAt : 2;
+      const inGi = (s) => this._torn && (s.at === 'chest' || s.at === 'spine') && s.until !== undefined && s.until < tearAt;
+      for (const r of this._rips) r.mesh.visible = L >= r.spec.level && L <= (r.spec.until === undefined ? 3 : r.spec.until) && !inGi(r.spec) && !this._stoneMats && !this._spiritMats;
     }
 
     _ripParent(at) {
@@ -1707,8 +2447,9 @@
       const P = this._ripParent(r.at);
       if (!P || !P.node) return null;
       const o = this.app.outfit || {};
-      const fill = r.fill === 'under' ? (o.under !== undefined ? o.under : this.app.skin) : r.fill === undefined || r.fill === 'skin' ? this.app.skin : r.fill;
-      const cloth = r.cloth !== undefined ? r.cloth : r.at === 'chest' || r.at === 'spine' ? (o.top !== undefined ? o.top : this.app.skin) : o.pants !== undefined ? o.pants : this.app.skin;
+      const pick = (c) => (c === 'under' ? (o.under !== undefined ? o.under : this.app.skin) : c === 'top' ? (o.top !== undefined ? o.top : this.app.skin) : c === undefined || c === 'skin' ? this.app.skin : c);
+      const fill = pick(r.fill);
+      const cloth = r.cloth !== undefined ? pick(r.cloth) : r.at === 'chest' || r.at === 'spine' ? (o.top !== undefined ? o.top : this.app.skin) : o.pants !== undefined ? o.pants : this.app.skin;
       const map = tex || SL.Toon.ripTexture(fill, cloth, r.seed || (r.at.length * 7 + Math.round((r.y || r.t || 0) * 100)));
       const key = 'rip:' + map.uuid;
       let mat = this.mats.get(key);
@@ -1986,6 +2727,19 @@
       m.position.z = this._mouthZ === undefined ? R * 0.83 : this._mouthZ;
       m.rotation.z = e.mouthRot || 0;
       this.face.teeth.visible = !!e.teeth;
+      const sm = this.face.smile;
+      if (sm) {
+        // a closed mouth turned up at a corner (smirk, warm, cocky, soft) is the arc; open mouths stay the box
+        const rot = e.mouthRot || 0, on = !e.teeth && e.mouthH <= 1.4 && rot >= 0.08;
+        sm.visible = on;
+        m.visible = !on;
+        if (on) {
+          const S0 = this._smile, k = 0.7 + rot * 2.2;
+          sm.scale.set(e.mouthW, k, 1);
+          sm.rotation.set(0, 0, -Math.PI / 2 - S0.A / 2 + rot * 0.4);
+          sm.position.set(0, m.position.y + S0.rho * k, m.position.z + S0.z);
+        }
+      }
       this.face.teeth.position.y = m.position.y + 0.005 * e.mouthH * 0.35;
       this.face.teeth.position.z = m.position.z + R * 0.015;
       this.face.teeth.scale.x = 0.026 * e.mouthW;
@@ -2015,6 +2769,18 @@
     }
 
     /**
+     * Where the eyes look, in the face's own frame: x across (-1..1, +1 toward the eye built at +x), y up (-1..1);
+     * ±1 is as far as a pupil goes and stays on its white. 0, 0 is straight ahead, as built. A scene's look (S-FRZ-01).
+     */
+    setGaze(x = 0, y = 0) {
+      if (!this.face || !this.face.pupils) return;
+      for (const p of this.face.pupils.concat(this.face.lights)) {
+        const h = p.userData.home;
+        if (h) p.position.set(h.x + x * 0.012, h.y + y * 0.0035, h.z);
+      }
+    }
+
+    /**
      * Secondary motion, called once per simulation tick.
      * motion: { fwd, side, up } velocity in character space (m/s), turn rate (rad/s).
      */
@@ -2031,6 +2797,9 @@
         this._applyEyes();
         if (this.blinkT <= 0) this._applyEyes();
       }
+      // a slimed skin's drips crawl down (Bio-Broly): one wall clock for every slimed material, so two slimed fighters never
+      // run it twice as fast; it stands still while nothing ticks (a paused game)
+      if ((this.app.outfit || {}).slime) SL.Toon.slimeTime.value = (performance.now() / 1000) % 1000;
       const mo = motion || { fwd: 0, side: 0, up: 0, turn: 0 };
       const tx = U.clamp(-mo.fwd * 0.006 + mo.up * 0.004, -0.2, 0.16);
       const tz = U.clamp(mo.side * 0.006 + mo.turn * 0.03, -0.18, 0.18);
@@ -2038,6 +2807,19 @@
       const hz = this.hairSwayZ.step(tz, dt);
       const hg = this.currentHairGroup();
       if (hg) hg.rotation.set(hx, 0, hz);
+      if (this.headSway) {
+        // swaying head extras (Zangya's curls): they follow the hair's sway, bounce on a jump or a landing, breathe at
+        // rest, and when the head tips back they counter-turn part of the way so the cascade keeps hanging down her back
+        const H = this.headSway, ud = H.userData;
+        ud.t = (ud.t || 0) + dt;
+        ud.bob = ud.bob || new Spring(45, 4);
+        const bob = ud.bob.step(U.clamp(-mo.up * 0.02, -0.18, 0.18), dt);
+        this.joints.head.getWorldQuaternion((ud.q = ud.q || new THREE.Quaternion()));
+        const up = (ud.v = ud.v || new THREE.Vector3()).set(0, 0, 1).applyQuaternion(ud.q).y;
+        // (a dead zone: an idle chin held up does not move the mass off the shape it was built in)
+        const back = Math.max(0, Math.asin(U.clamp(up, 0, 1)) - 0.15) * 0.6;
+        H.rotation.set(hx + bob + back + Math.sin(ud.t * 1.6) * 0.015, 0, hz + Math.sin(ud.t * 1.1) * 0.012);
+      }
       if (this.tailSegs) {
         this.tailTime = (this.tailTime || 0) + dt;
         const tt = this.tailTime;
@@ -2046,15 +2828,33 @@
           sg.node.rotation.z = Math.sin(tt * 1.1 + sg.i * 0.7) * 0.16 + U.clamp(mo.turn * 0.02, -0.2, 0.2);
         }
       }
+      if (this.beetle) {
+        // beetle wings (Hirudegarn): the membranes shiver at rest and buzz as he moves, the cases lift off his back with
+        // his speed and settle again when he stops
+        const W = this.beetle;
+        W.t += dt;
+        const go = W.open.step(U.clamp((Math.abs(mo.fwd) + Math.abs(mo.side) + Math.abs(mo.up)) / 24, 0, 1), dt);
+        for (const c of W.cases) {
+          c.node.rotation.x = c.rx - 0.18 * go;
+          c.node.rotation.z = c.rz + c.s * (0.28 * go + 0.025 * Math.sin(W.t * 1.3));
+        }
+        W.membranes.forEach((m, i) => (m.node.rotation.z = m.rz + m.s * (0.05 * Math.sin(W.t * 2.2 + i) + go * (0.35 + 0.22 * Math.sin(W.t * 38 + i * 1.3)))));
+      }
       if (this.hem) {
         // a leg forward lifts the front half of the hem, a leg back lifts the back half
         const a = this.joints.thighL.rotation.x, b2 = this.joints.thighR.rotation.x;
         const fwd = Math.max(0, -Math.min(a, b2)), back = Math.max(0, Math.max(a, b2));
         for (const h of this.hem) h.node.rotation.x = h.front ? -fwd * 0.82 : back * 0.82;
       }
-      for (const c of this.cloth) {
-        const cx = c.sx.step(U.clamp(mo.fwd * 0.03 * c.amount + mo.up * 0.02, -0.9, 1.1), dt);
-        const cz = c.sz.step(U.clamp(-mo.side * 0.03 * c.amount, -0.8, 0.8), dt);
+      // model.wind (0..1, set by a scene: the energy wind of a technique being gathered): the cloth
+      // streams back and flutters
+      const w = this.wind || 0;
+      if (w) this.windT = (this.windT || 0) + dt;
+      for (const [i, c] of this.cloth.entries()) {
+        const gx = w ? w * (0.5 + 0.22 * Math.sin(this.windT * 13 + i * 1.7)) : 0;
+        const gz = w ? w * 0.28 * Math.sin(this.windT * 9 + i * 2.3) : 0;
+        const cx = c.sx.step(U.clamp(mo.fwd * 0.03 * c.amount + mo.up * 0.02 + gx, -0.9, 1.1), dt);
+        const cz = c.sz.step(U.clamp(-mo.side * 0.03 * c.amount + gz, -0.8, 0.8), dt);
         if (c.apron) {
           // the front tabard: a thigh swinging forward lifts it out of the way instead of passing through it
           const j = this.joints;
@@ -2092,16 +2892,89 @@
       for (const k of ['thighL', 'thighR']) if (j[k]) j[k].scale.setScalar(on ? 0.001 : 1);
     }
 
-    /** Rim light follows aura: color and strength (0..1.2). */
+    /** Rim light follows aura: color and strength (0..1.2). A cloaked body (setCloak) glints harder at its edge. */
     setRim(color, strength) {
       if (color !== undefined && color !== null) this.rimColor.set(color);
       this.rimStrength = strength;
+      const s = strength * (1 + 2.6 * (this._cloak || 0));
       for (const m of this.mats.values()) {
         const r = m.userData.rim;
         if (!r) continue;
         r.color.copy(this.rimColor);
-        r.strength.value = strength;
+        r.strength.value = s;
       }
+    }
+
+    /**
+     * Cloak, 0..1 (an invisible fighter — Mr. See-Through, Mechanics.invisible): the whole body fades to a glassy
+     * shimmer. Every material of this model turns nearly clear (5 % at a full cloak), the rim light rises so the
+     * silhouette's edge still glints (setRim), and the ink lines go past half. 0 gives the body back exactly as it was.
+     * Only this model's own materials are touched (Model.mat makes them per model); the shadow stays, as a cue.
+     */
+    setCloak(a) {
+      a = Math.max(0, Math.min(1, a));
+      if (Math.abs((this._cloak || 0) - a) < 0.004) return;
+      this._cloak = a;
+      for (const m of this.mats.values()) {
+        const u = m.userData;
+        if (u.cloakOpacity === undefined) {
+          u.cloakOpacity = m.opacity;
+          u.cloakTransparent = m.transparent;
+          u.cloakDepth = m.depthWrite;
+        }
+        const clear = a > 0.01;
+        const tr = clear || u.cloakTransparent;
+        if (m.transparent !== tr) {
+          m.transparent = tr;
+          m.needsUpdate = true;
+        }
+        // (depth stays written: only the front-most surface shows, so the parts inside do not pile up into an X-ray)
+        m.opacity = u.cloakOpacity * (1 - 0.95 * a);
+      }
+      for (const o of this.outlines) o.visible = this._outlinesOn !== false && a < 0.5;
+      this.setRim(null, this.rimStrength);
+    }
+
+    /**
+     * look.paint { color, amount }: the white of the body painted over (Golden Frieza: everything white goes gold,
+     * the coloured domes stay). An emissive tint cannot do it — white plus gold is still white. look.skin: the skin
+     * itself in another colour (God of Destruction Toppo's darkened hide). The original colours come back when a form
+     * without them is applied.
+     */
+    _paint(p, skin, swap) {
+      for (const [key, m] of this.mats) {
+        if (m.userData.basic || !m.color || key === 'pupil' || key === 'brow') continue;
+        const u = m.userData;
+        // look.swap { authoredHex: hex }: one authored colour becomes another in this form (Frieza's final form: the
+        // armour's purple trousers are white skin); the paint below then works on the swapped colour
+        const orig = u.unpainted || m.color;
+        const sw = swap ? swap[orig.getHex()] : undefined;
+        const c = sw !== undefined ? new THREE.Color(sw) : orig;
+        let to = null, amount = 1;
+        if (skin !== undefined && u.skin) to = skin;
+        else if (p) {
+          const hi = Math.max(c.r, c.g, c.b), lo = Math.min(c.r, c.g, c.b);
+          if (hi - lo <= 0.12 && lo >= 0.6) {
+            to = p.color;
+            amount = p.amount === undefined ? 0.8 : p.amount;
+          }
+        }
+        if (to !== null || sw !== undefined) {
+          if (!u.unpainted) u.unpainted = m.color.clone();
+          m.color.copy(c);
+          if (to !== null) m.color.lerp(new THREE.Color(to), amount);
+        } else if (u.unpainted) {
+          m.color.copy(u.unpainted);
+          u.unpainted = null;
+        }
+      }
+    }
+
+    /** A light cast over the whole body (a purification running through it); amount 0 takes it off. */
+    setTint(color, amount) {
+      this.tintColor.set(color);
+      this.tintAmount = amount;
+      this._updateEmissive();
     }
 
     setFlash(v) {
@@ -2123,7 +2996,7 @@
 
     setOutlines(on) {
       this._outlinesOn = on;
-      for (const o of this.outlines) o.visible = on;
+      for (const o of this.outlines) o.visible = on && !((this._cloak || 0) >= 0.5);
     }
 
     setVisible(v) {

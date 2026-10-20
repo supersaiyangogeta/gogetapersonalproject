@@ -76,9 +76,9 @@
     const STEPS = SL.data.fusionDance.STEPS;
     lineUp(b);
     b.switchPlayer(S.goku, { force: true }); // (lineUp scripted him: the seat hands the controls back)
-    m.shot((t, out) => {
+    m.shot((t, out, el) => {
       const mid = S.goku.chest().lerp(S.vegeta.chest(), 0.5);
-      out.pos.set(mid.x + Math.sin(t * 0.08) * 0.5, mid.y + 0.15, mid.z - 4.8);
+      out.pos.set(mid.x + Math.sin(el * 0.08) * 0.5, mid.y + 0.15, mid.z - 4.8);
       out.look.copy(mid).add(new V3(0, -0.05, 0));
       out.fov = 42;
     }, 999, { hold: true, cut: true, blendIn: 0 });
@@ -303,7 +303,7 @@
       }
       arm(m, gg);
       const fight = m.storyFight({ floors: [{ f: gg, at: GG.goldAt }] });
-      m.music('gogeta_theme', 1);
+      m.music('gogeta_z_arrival', 1);
       m.objective('gogeta', 'Defeat Gogeta', { icon: 'fist' });
       m.objective('both', 'Keep both of you standing', { icon: 'guard', optional: true });
       m.prompt('ggTf', 'transform', 'Transform', { always: true, when: () => b.player.formIndex === 0 && b.player.state === 'free' && b.player.ki >= 50, until: () => b.player.formIndex > 0 });
@@ -346,7 +346,7 @@
       b.aiLocked = false;
       yield () => gg.state !== 'transform';
       gg.ki = Math.max(gg.ki, 60);
-      m.music('gogeta_theme', 3);
+      m.music('gogeta_z_arrival', 3);
       const fight = m.storyFight({ floors: [{ f: gg, at: GG.beatenAt }] });
       const offKo = b.on('allyDown', () => m.failObjective('both'));
       m.onDispose(offKo);

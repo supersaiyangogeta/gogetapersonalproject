@@ -8,11 +8,13 @@
  *                 dot heading for a mesa — then a puff of dust on its face
  *   cg_rise       the fight leaves the ground: dead stops in mid-air, a blow, gone, somewhere else
  *   cg_kame_a     the climb, "KA... ME...", Cell daring him from the ring, Piccolo on the ridge
- *   cg_kame_b     "HA!" — two fingers — the sky is empty — in front of Cell's jaw — point-blank
- *   cg_regrow     the legs standing on their own; the rest grows back
+ *   cg_kame_b     "HA!" — two fingers — the sky is empty — in front of Cell's jaw — point-blank; the beam
+ *                 swallows him and a column of green vapour hangs where he stood
+ *   cg_regrow     a green light gathering inside the vapour; he steps out of it whole
  *   cg_forfeit    "I give up"; the Senzu Bean; the ridge, the rock, the hands behind the head
  *
- * Every death and wound here is on camera (owner: nothing cut away to a face and an offscreen bang).
+ * The blows land on camera; what they do to a body is not shown (owner's choice, 2026-10-14: the Cell
+ * Games are non-graphic — impact, light, smoke, the faces watching).
  * Dialogue is paraphrased English written for this project, following the owner's frame-by-frame brief.
  */
 (function () {
@@ -597,12 +599,12 @@
           b.vfx.ring(c.chest(), 5, 0xbfe4ff, 0.5);
           b.sfx('explosionHuge', c, { vol: 1.3, pitch: 0.9 });
           b.cameraTraumaAt(c.chest(), 1);
-          // the top half of him is simply gone: cut at the waist, the upper piece turned to green vapour
-          const hips = c.pos.clone().add(new V3(0, c.height * 0.5, 0));
-          const cut = CK().split(b, c, { at: hips, normal: new V3(0, 1, 0), centerA: hips.clone().add(new V3(0, 0.6, 0)), centerB: c.pos.clone().add(new V3(0, 0.45, 0)) });
-          st.cellCut = cut;
-          cut.hide(cut.a);
-          for (let i = 0; i < 3; i++) CK().burst(b, hips.clone().add(new V3(0, 0.4 + i * 0.45, 0)), 'cell', 0.55);
+          // the beam swallows him: a column of light and green vapour where he stood, and he is lost inside it
+          // (non-graphic, owner 2026-10-14 — nothing of him is shown torn away)
+          b.vfx.flash(c.chest(), 5, 0xdff2ff, 0.4, SL.Toon.tex.glow);
+          for (let i = 0; i < 3; i++) CK().burst(b, c.pos.clone().add(new V3(0, 0.6 + i * 0.6, 0)), 'cell', 0.7);
+          c.setHidden(true);
+          st.cellInSmoke = true;
           ctx.b.stage.crater(c.pos, 3.6, 0.5, null);
         },
         pose: [{ who: 'goku', pose: 'kameCrouchFire', face: 'shout', speed: 24, aura: 0.1 }],
@@ -611,7 +613,7 @@
         slow: { scale: 0.3, seconds: 1.2 },
         hold: 2.2,
       },
-      // 00:28 the smoke clears: a pair of legs and a waist, standing upright on the broken stone
+      // 00:28 the energy clears off the arena: where he stood, a column of green vapour hanging over a crater
       {
         call: (ctx) => {
           const st = story(ctx);
@@ -620,9 +622,9 @@
         },
         pose: [{ who: 'goku', pose: 'exhausted', face: 'hurt', speed: 4, aura: 0 }],
         music: { song: null, level: 0 },
-        cam: { from: { at: 'legs', off: [3.2, 0.6, 3] }, to: { at: 'legs', off: [2.4, 0.5, 2.2] }, look: { at: 'legs', off: [0, 0.5, 0] }, fov: 40 },
+        cam: { from: { at: 'legs', off: [4.2, 1.2, 4] }, to: { at: 'legs', off: [3.4, 1, 3.2] }, look: { at: 'legs', off: [0, 1, 0] }, fov: 42 },
         tick: (ctx) => {
-          if (ctx.b.frame % 6 === 0) ctx.b.vfx.dust(story(ctx).cell.pos.clone().add(new V3(0, 0.9, 0)), 0.6, 2, 0x8ad87a);
+          if (ctx.b.frame % 5 === 0) ctx.b.vfx.dust(story(ctx).cell.pos.clone().add(new V3(Math.sin(ctx.b.frame) * 0.4, 0.4 + (ctx.b.frame % 3) * 0.5, 0)), 0.9, 3, 0x8ad87a);
         },
         hold: 3.2,
       },
@@ -642,12 +644,9 @@
       st.goku.setHidden(false);
       CK().place(st.goku, ground(ctx, st.cell.pos.clone().addScaledVector(st.cell.forward.clone().setY(0).normalize(), 2.2)));
       faceTo(st.goku, st.cell.pos);
-      // the legs stay standing: the regrowth scene owns them (a skip lands with them still there)
-      if (!st.cellCut) {
-        const c = st.cell, hips = c.pos.clone().add(new V3(0, c.height * 0.5, 0));
-        st.cellCut = CK().split(b, c, { at: hips, normal: new V3(0, 1, 0), centerA: hips.clone().add(new V3(0, 0.6, 0)), centerB: c.pos.clone().add(new V3(0, 0.45, 0)) });
-        st.cellCut.hide(st.cellCut.a);
-      }
+      // he is still inside the vapour: the regrowth scene brings him out of it (a skip lands with him hidden there)
+      st.cell.setHidden(true);
+      st.cellInSmoke = true;
       ctx.m.flags.pointBlank = true;
     },
   };
@@ -659,37 +658,40 @@
     auraCap: 0.15,
     music: { song: null, level: 0 },
     events: [
-      // the waist starts to bubble; something green pushes up out of it
+      // inside the vapour, a green light gathering — something pulling itself back together. GC-S03 (Roadmap Three, the
+      // owner's Gemini research — a research draft, not checked against the footage): low by the foot of the column,
+      // the lens tilting slowly up it as the light climbs (nothing of him is shown re-forming: non-graphic)
       {
-        call: (ctx) => pt(ctx, 'legs', story(ctx).cell.pos),
+        call: (ctx) => {
+          pt(ctx, 'legs', story(ctx).cell.pos);
+          ctx.m.flags.regrowTilt = true;
+        },
         sfx: { name: 'regrow', at: { at: 'legs' }, vol: 1, pitch: 0.7 },
-        cam: { from: { at: 'legs', off: [1.8, 0.8, 1.8] }, look: { at: 'legs', off: [0, 0.9, 0] }, fov: 38 },
-        tick: (ctx) => {
-          if (ctx.b.frame % 4 === 0) ctx.b.vfx.streamInward(story(ctx).cell.pos.clone().add(new V3(0, 1, 0)), 1.2, 0x8ad87a, 3, 0.12, 0.4);
+        cam: { from: { at: 'legs', off: [2.4, 0.3, 2.4] }, to: { at: 'legs', off: [2.1, 0.25, 2.1] }, look: { at: 'legs', off: [0, 0.5, 0] }, look2: { at: 'legs', off: [0, 2, 0] }, fov: 46, fov2: 42, ease: 'inOut' },
+        tick: (ctx, t) => {
+          // the light climbs the column with the lens (from the foot up, as the body comes back)
+          const p = story(ctx).cell.pos.clone().add(new V3(0, 0.4 + U.easeInOutCubic(Math.min(1, t / 2)) * 1.6, 0));
+          if (ctx.b.frame % 4 === 0) ctx.b.vfx.streamInward(p, 1.4, 0x8ad87a, 3, 0.12, 0.4);
+          if (ctx.b.frame % 12 === 0) ctx.b.vfx.flash(p, 1.2, 0xbaff9a, 0.25, SL.Toon.tex.glow);
+          if (ctx.b.frame % 6 === 0) ctx.b.vfx.dust(story(ctx).cell.pos, 0.9, 2, 0x8ad87a);
         },
         hold: 2.2,
       },
-      // and the rest of him grows back out of it, from the waist up
+      // and he steps out of it, whole, in a burst of green light
       {
         call: (ctx) => {
-          const st = story(ctx), c = st.cell;
-          if (st.cellCut) {
-            st.cellCut.dispose();
-            st.cellCut = null;
-          }
+          const st = story(ctx), c = st.cell, b = ctx.b;
           c.setHidden(false);
+          st.cellInSmoke = false;
           ctx.base = c.model.root.scale.x;
           c.setState('scripted', { pose: 'cl_roar', expression: 'shout' });
+          b.vfx.flash(c.chest(), 3.4, 0xc8ffb0, 0.4, SL.Toon.tex.glow);
+          b.vfx.dust(c.pos, 2.2, 14, 0x8ad87a);
         },
         cam: { from: { at: 'legs', off: [2.8, 1.2, 3.2] }, look: { at: 'legs', off: [0, 1.1, 0] }, fov: 42 },
         tick: (ctx, t) => {
-          const c = story(ctx).cell, k = U.easeOutCubic(Math.min(1, t / 1.6));
-          c.model.root.scale.set(ctx.base, ctx.base * (0.5 + 0.5 * k), ctx.base);
-          if (ctx.b.frame % 3 === 0) ctx.b.vfx.sparks(c.chest(), 0xbaff9a, 4, 4, 0.08);
-          if (t >= 1.6 && !ctx.grown) {
-            ctx.grown = true;
-            c.model.root.scale.setScalar(ctx.base);
-          }
+          const c = story(ctx).cell;
+          if (ctx.b.frame % 3 === 0 && t < 1.2) ctx.b.vfx.sparks(c.chest(), 0xbaff9a, 4, 4, 0.08);
         },
         sfx: { name: 'regrow', who: 'cell', vol: 1.2, pitch: 0.9 },
         hold: 1.8,
@@ -715,10 +717,7 @@
     ],
     end(ctx) {
       const st = story(ctx), c = st.cell;
-      if (st.cellCut) {
-        st.cellCut.dispose();
-        st.cellCut = null;
-      }
+      st.cellInSmoke = false;
       c.setHidden(false);
       CK().swell(ctx.m, c, 1, 0);
       c.setState('scripted', { pose: 'cl_calm', expression: 'smirk' });
@@ -752,7 +751,8 @@
           ctx.b.sfx('kiUp', st.goku, { pitch: 0.6, vol: 0.6 });
         },
         pose: [{ who: 'goku', pose: 'handsDown', face: 'calm', speed: 4 }],
-        cam: { from: { at: 'goku', local: [0.35, 0.3, 1.4] }, look: { at: 'goku:head' }, fov: 32 },
+        // GC-S04 (research draft): a slow push-in on his face as he says it
+        cam: { from: { at: 'goku', local: [0.35, 0.3, 1.4] }, to: { at: 'goku', local: [0.28, 0.28, 1.0] }, look: { at: 'goku:head' }, fov: 32, fov2: 29 },
         say: { who: 'goku', line: 'I give up. You win, Cell. I forfeit.', duration: 3, style: 'quiet' },
         hold: 3.2,
       },

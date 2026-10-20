@@ -148,7 +148,8 @@
       jc.setState('free');
       m.lock(false);
       b.aiLocked = false;
-      m.music('battle', 3);
+      // the Ginyu Force's own theme (soundtrack PDF p.95, an original stand-in: superhero-show brass)
+      m.music('ginyu_force', 3);
       m.objective('burter', 'Put Burter on the ground', { icon: 'fist' });
       const catches = m.objective('catch', 'Hit Burter ' + CATCH_TARGET + ' times while he is stopped', { icon: 'fist', optional: true, target: CATCH_TARGET });
       let caught = 0, slipped = 0, blocked = 0, held = 0;

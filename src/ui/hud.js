@@ -58,6 +58,11 @@
       this.p1 = fighterPanel('p1');
       this.p2 = fighterPanel('p2');
       this.timer = el('div', { class: 'hud-timer' });
+      // a STORY CLOCK (a countdown the story owns: Veku's thirty minutes): a ring that empties, a time, a label
+      this.clockText = el('div', { class: 't' });
+      this.clockLabel = el('div', { class: 'l' });
+      this.clockEl = el('div', { class: 'hud-clock' }, [el('div', { class: 'ring' }), this.clockText, this.clockLabel]);
+      this.clockEl.hidden = true;
       this.objectives = el('div', { class: 'hud-objectives' });
       this.comboN = el('div', { class: 'n' });
       this.comboD = el('div', { class: 'd' });
@@ -112,7 +117,7 @@
       this.radialEl.hidden = true;
       this.radialSig = '';
       this.partyCards = [];
-      root.append(this.radarEl, this.p1.root, this.p2.root, this.timer, this.objectives, this.combo, this.banner, this.center, this.callout, this.skills, this.prompts, this.cueBox, this.lock, this.offArrow, this.crosshair, this.aimChip, this.flightHint, this.devOverlay, ...this.threatEls, this.markerLayer, this.dmgLayer, this.struggle, this.training, this.partyEl, this.radialEl, this.titleCard, this.fadeEl);
+      root.append(this.radarEl, this.p1.root, this.p2.root, this.timer, this.clockEl, this.objectives, this.combo, this.banner, this.center, this.callout, this.skills, this.prompts, this.cueBox, this.lock, this.offArrow, this.crosshair, this.aimChip, this.flightHint, this.devOverlay, ...this.threatEls, this.markerLayer, this.dmgLayer, this.struggle, this.training, this.partyEl, this.radialEl, this.titleCard, this.fadeEl);
       this.timer.hidden = !(battle.rules.timeLimit > 0);
       this.struggle.hidden = true;
       this.training.hidden = battle.mode !== 'training';
@@ -136,6 +141,16 @@
         if (this._subtitleOn(e)) SL.Subtitles.show(e.speaker, e.line, e.duration, { jp: e.jp, style: e.style });
       });
       b.on('clearSubtitles', () => SL.Subtitles.clear());
+      // { active, frac (1 full .. 0 out), text, label, color }
+      b.on('storyClock', (e) => {
+        this.clockEl.hidden = !e.active;
+        if (!e.active) return;
+        this.clockEl.style.setProperty('--frac', String(Math.max(0, Math.min(1, e.frac === undefined ? 1 : e.frac))));
+        if (e.color) this.clockEl.style.setProperty('--clock', e.color);
+        if (this.clockText.textContent !== e.text) this.clockText.textContent = e.text || '';
+        if (this.clockLabel.textContent !== (e.label || '')) this.clockLabel.textContent = e.label || '';
+        this.clockEl.classList.toggle('urgent', !!e.urgent);
+      });
       b.on('ready', () => this.showCenter('READY', 'show'));
       b.on('fightStart', () => this.showCenter('FIGHT!', 'show'));
       b.on('finishKO', (r) => this.showCenter(r.reason === 'time' ? 'TIME' : 'K.O.', 'hold'));
@@ -145,7 +160,8 @@
       b.on('special', (e) => this._onSpecial(e));
       b.on('formChanged', (e) => {
         const H = SL.Settings.data.hud;
-        if (e.fighter === b.player) {
+        // a form changed while a story scene holds the input is shown by the scene itself: no HUD popping up or banner over it
+        if (e.fighter === b.player && !b.inputLocked) {
           this._wake('skills', 'ki', 'hp');
           if (e.form.short && H.moveNames) this.showBanner(e.form.short, false);
         } else if (b.player && e.fighter.team !== b.player.team && (e.fighter.def.boss || (e.fighter.tags && e.fighter.tags.boss))) {
@@ -1074,7 +1090,7 @@
 
       if (!this.training.hidden) {
         const ts = this.trainingStats;
-        const dummy = b.fighters.find((f) => f !== p);
+        const dummy = b.fighters.find((f) => f.team !== p.team);
         this.training.innerHTML =
           'Last hit <b>' + U.fmtInt(ts.last) + '</b><br>Combo damage <b>' + U.fmtInt(p.combo.hits ? p.combo.damage : ts.combo) + '</b><br>Best combo <b>' + ts.best + '</b> hits' +
           (dummy ? '<br>Dummy <b>' + dummy.state + '</b>' : '') + '<br>' + SL.glyph('resetPos') + ' reset';

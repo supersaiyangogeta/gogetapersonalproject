@@ -206,7 +206,8 @@
       outfit: {
         topStyle: 'gi', top: 0x9a3a8e, sleeves: 'long', sleeveColor: 0x9a3a8e, wrist: 0xe6c24a,
         belt: 0xe6c24a, pants: 0x9a3a8e, pantsStyle: 'gi', boots: 0x3a2a24, bootStyle: 'gi',
-        cap: 0xd8452a, capBall: 0xffa21a, capStars: 4,
+        // (2026-10-16: no hat with Piccolo's gi — the hat with the Dragon Ball goes with the Raditz-arc tunic, the
+        // wardrobe outfit `kg_raditz` in src/data/wardrobe.js, which the Raditz mission dresses him in)
         tail: 0x6a3a1a,
         tailStyle: 'free', // his hangs loose and curls, the way a child wears it
       },

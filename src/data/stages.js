@@ -48,6 +48,32 @@
     thumb: 'linear-gradient(180deg,#3a8ae8 0%,#cfe6f6 55%,#7cb04e 56%,#5e9040 100%)',
   };
 
+  // Chapter 21 (Universe Survival, "The Park Ranger"): Android 17's island wildlife reserve. A STAND-IN: the grassland
+  // builder with the sea filling the low ground, thicker woods and fewer rock spires — not the episode's island. Story only.
+  S.reserve_island = {
+    id: 'reserve_island',
+    name: 'The Reserve',
+    subtitle: 'Earth · Age 780 · Android 17\'s island',
+    type: 'ground',
+    builder: 'wasteland',
+    storyOnly: true,
+    music: 'peaceful',
+    seed: 7817,
+    size: 560,
+    segments: 140,
+    arenaRadius: 175,
+    ceiling: 140,
+    sky: { top: 0x3a8ae8, horizon: 0xd8eef8, bottom: 0x9ac8a8, sunDir: [0.4, 0.7, 0.35] },
+    fog: { color: 0xcfe4ee, near: 180, far: 900 },
+    light: { sun: 0xfff4e0, sunIntensity: 0.76, sky: 0xc6e0ff, ground: 0x4a6a34, hemi: 0.54 },
+    terrain: { sand: 0x6aa84a, dirt: 0x548a3c, rock: 0x8a8478, scorch: 0x3a3228 },
+    rock: { bands: [0x9a948a, 0x8a8478, 0xaaa498, 0x7a746a], count: 5 },
+    mesas: { bands: [0x6c9a58, 0x5a8a4a, 0x7aa864], scale: 0.6 },
+    water: { level: -2.6, color: 0x3a9ac8, opacity: 0.82 },
+    trees: { count: 120, leaf: 0x3a7a30, trunk: 0x6a4a2a },
+    thumb: 'linear-gradient(180deg,#3a8ae8 0%,#d8eef8 55%,#6aa84a 56%,#3a9ac8 100%)',
+  };
+
   // Chapter 2: the wilderness where Piccolo leaves Gohan to survive (Age 761)
   S.wilderness = {
     id: 'wilderness',
@@ -488,6 +514,37 @@
     thumb: 'linear-gradient(180deg,#3a8ae8 0%,#cfe6f6 55%,#d8d2c4 56%,#9a9488 100%)',
   };
 
+  // Chapter 21 (Universe Survival, "The Tenth Warrior"): the Fortuneteller Crone's palace — her old stone fighting ring
+  // standing in a lake, hills round it. A STAND-IN built from the arena builder (the ring) with water; the palace
+  // itself is the mission's prop (us_frieza.js). Story only.
+  S.crone_palace = {
+    id: 'crone_palace',
+    name: 'The Crone\'s Palace',
+    subtitle: 'Earth · Age 780 · Fortuneteller Baba\'s arena',
+    type: 'ground',
+    builder: 'arena',
+    storyOnly: true,
+    music: 'battle',
+    seed: 7880,
+    size: 400,
+    segments: 120,
+    arenaRadius: 140,
+    ceiling: 110,
+    sky: { top: 0x4a7ac8, horizon: 0xe8d8c0, bottom: 0x9ab0a0, sunDir: [0.35, 0.6, 0.4] },
+    fog: { color: 0xd8dcd0, near: 160, far: 700 },
+    light: { sun: 0xfff0d8, sunIntensity: 0.74, sky: 0xc8dcf0, ground: 0x5a6a48, hemi: 0.52 },
+    terrain: { sand: 0x6a8a4a, dirt: 0x5a7440, rock: 0x7e7868, scorch: 0x3a342c },
+    rock: { bands: [0x8a8478, 0x7a7466, 0x9a9488, 0x6a6458], count: 0 },
+    water: { level: 0.9, color: 0x3a8a9a, opacity: 0.85 },
+    arena: {
+      half: 10, height: 2.2, rim: 0.5, tile: 2.5, noCrowd: true,
+      side: 0x8a8476, trim: 0xd8d0b8, post: 0xb8b09a,
+      topCss: '#c8c2b0', lineCss: '#a8a090', trimCss: '#e4dcc8', crackCss: '#5a5448',
+      dust: 0xc8c2b0, debris: 0xa89e8a,
+    },
+    thumb: 'linear-gradient(180deg,#4a7ac8 0%,#e8d8c0 55%,#3a8a9a 56%,#8a8476 100%)',
+  };
+
   // The badlands where Babidi's ship came down, Age 774: a dry canyon, and the ship
   // itself half buried in a crater at the far end (landmarks `ship`, `hatch`).
   S.babidi_crater = {
@@ -595,6 +652,91 @@
     mesas: { bands: [0xb0643a, 0x965430, 0xc8784a], scale: 1.35 },
     thumb: 'linear-gradient(180deg,#2f68b8 0%,#f2d2a0 55%,#c08a5a 56%,#864426 100%)',
   };
+
+  // THE ASSASSIN'S CONTRACT (Chapter 20): the empty rock country Goku picks so nobody else gets hurt — night, a deep
+  // blue sky with torn cloud, tall dark rock pillars (the owner's still of Blue Goku and Hit). Story only.
+  S.night_wastes = {
+    id: 'night_wastes',
+    name: 'The Empty Wastes',
+    subtitle: 'Earth · far from anyone',
+    type: 'ground',
+    builder: 'wasteland',
+    storyOnly: true,
+    music: 'battle',
+    seed: 7811,
+    size: 520,
+    segments: 130,
+    arenaRadius: 160,
+    ceiling: 130,
+    sky: { top: 0x061238, horizon: 0x2a4a8a, bottom: 0x1a2440, sunDir: [-0.4, 0.55, -0.3] },
+    fog: { color: 0x1a2a52, near: 90, far: 520 },
+    light: { sun: 0xb8c8ff, sunIntensity: 0.55, sky: 0x6a88d0, ground: 0x1a1e30, hemi: 0.55 },
+    terrain: { sand: 0x4a5070, dirt: 0x3a405c, rock: 0x2e3248, scorch: 0x14161e },
+    rock: { bands: [0x3e4460, 0x343a54, 0x4a5070, 0x2a2e44], count: 30, near: 18, far: 110, clearX: 16, clearZ: 22 },
+    mesas: { bands: [0x2e3450, 0x262a42, 0x3a4060], scale: 1.4 },
+    dust: 0x8a94b8,
+    thumb: 'linear-gradient(180deg,#061238 0%,#2a4a8a 55%,#4a5070 56%,#2a2e44 100%)',
+  };
+
+  // THE TOURNAMENT OF POWER (Chapter 22): the platform hanging in the void (stage_top.js, builder 'top'). Two skies:
+  // the magenta-violet void of the late fights, and the green void of the Universe 6 Saiyans' battle. Off the edge
+  // there is nothing: the ring-out rule calls it the moment you sink below the top.
+  const TOP_ARENA = {
+    half: 36, height: 4, rim: 0.8, tile: 4,
+    side: 0x8a8678, trim: 0xb8b2a2, post: 0xb8b2a2,
+    topCss: '#b0a48a', lineCss: '#948870', trimCss: '#c4b89e', crackCss: '#4a4234',
+    dust: 0xd0c8b8, debris: 0xa8a090,
+    noPosts: true, noSteps: true, noCrowd: true, noCliffs: true,
+  };
+  S.top_arena = {
+    id: 'top_arena',
+    name: 'The World of Void',
+    subtitle: 'The Tournament of Power',
+    ringOut: true,
+    type: 'ground',
+    builder: 'top',
+    music: 'battle',
+    seed: 7821,
+    size: 900,
+    arenaRadius: 220,
+    ceiling: 160,
+    sky: { top: 0x1a0638, horizon: 0xb03aa8, bottom: 0x2a0a4a, sunDir: [0.3, 0.75, 0.35] },
+    fog: { color: 0x4a1a6a, near: 260, far: 1500 },
+    light: { sun: 0xfff2ff, sunIntensity: 0.72, sky: 0xd8b0ff, ground: 0x4a3058, hemi: 0.52 },
+    terrain: { sand: 0xbcb6a6, dirt: 0xa29c8c, rock: 0x8a8678, scorch: 0x3a3428 },
+    rock: { bands: [0x9a9284, 0x8a8274, 0xb0a898, 0x6a6458], count: 0 },
+    dust: 0xd0c8b8,
+    arena: TOP_ARENA,
+    top: {
+      under: 0x5a4a5a, floating: 0x6a5a58, floating2: 0x3a4a3a,
+      nebula: [
+        { at: [-500, 160, -620], size: 900, color: 0xd040c0, opacity: 0.35 },
+        { at: [520, 260, -540], size: 760, color: 0x6a3ae0, opacity: 0.35 },
+        { at: [-420, -120, 520], size: 820, color: 0x3a6ae0, opacity: 0.3 },
+        { at: [600, -60, 380], size: 640, color: 0xff8a3a, opacity: 0.22 },
+      ],
+      stands: { a: 0x5a6a3a, b: 0xc8c060, wall: 0x3e4a34 },
+    },
+    thumb: 'radial-gradient(circle at 30% 30%,#d040c0 0%,#6a3ae0 30%,#1a0638 70%),linear-gradient(180deg,#1a0638 0%,#b03aa8 55%,#bcb6a6 56%,#5a4a5a 100%)',
+  };
+  S.top_green = Object.assign({}, S.top_arena, {
+    id: 'top_green',
+    name: 'The World of Void (green)',
+    storyOnly: true,
+    seed: 7822,
+    sky: { top: 0x062a14, horizon: 0x5ac86a, bottom: 0x0e3a1e, sunDir: [0.3, 0.75, 0.35] },
+    fog: { color: 0x2a6a3a, near: 260, far: 1500 },
+    light: { sun: 0xf2fff0, sunIntensity: 0.84, sky: 0xb8f0b8, ground: 0x2a4a30, hemi: 0.58 },
+    top: Object.assign({}, S.top_arena.top, {
+      under: 0x4a5a48,
+      nebula: [
+        { at: [-500, 160, -620], size: 900, color: 0x5ae06a, opacity: 0.3 },
+        { at: [520, 260, -540], size: 760, color: 0xb0f04a, opacity: 0.25 },
+        { at: [-420, -120, 520], size: 820, color: 0x2a8a5a, opacity: 0.3 },
+      ],
+    }),
+    thumb: 'radial-gradient(circle at 30% 30%,#5ae06a 0%,#2a8a5a 30%,#062a14 70%),linear-gradient(180deg,#062a14 0%,#5ac86a 55%,#bcb6a6 56%,#4a5a48 100%)',
+  });
 
   // Inside Majin Buu: pink, wet, breathing, and much bigger on the inside than it has any right to
   // be. The walls, the tubes and the pods are the mission's set (SL.data.vegitoKit.innards).
@@ -804,6 +946,222 @@
     light: { sun: 0xfff6e8, sunIntensity: 0.95, sky: 0x9ac0ff, ground: 0x2a4a8a, hemi: 0.5 },
     rock: { bands: [0x6a6a7a], count: 0 },
     thumb: 'radial-gradient(circle at 50% 130%,#9ad2ff 0%,#1a5ab8 30%,#081a48 55%,#000004 100%)',
+  };
+
+  // MOVIE: FUSION REBORN (not canon). The Other World round King Yemma's Check-In Station, with the Spirit
+  // Cleansing Machine on its own platform: a floor of yellow cloud under a gold sky — until Janemba warps it into
+  // a pastel playground (stage.setWarp 0..1, stage_otherworld.js). The crystal barrier over the station is
+  // stage.setBarrier; the tank is setTank / burstTank. Story only.
+  S.other_world = {
+    id: 'other_world',
+    name: 'The Other World',
+    subtitle: 'The Check-In Station · Fusion Reborn',
+    type: 'ground',
+    builder: 'wasteland',
+    storyOnly: true,
+    music: 'janemba_theme',
+    seed: 7741,
+    size: 400,
+    segments: 160,
+    arenaRadius: 130,
+    ceiling: 90,
+    otherworld: {
+      station: [0, -52], plant: [56, 30], field: [0, 18], spike: [-30, 4, 7], far: [-70, 80],
+      warp: 0, barrierStart: 0, barrierRadius: 21,
+      cloud: 0xf2d888, cloud2: 0xe2bf62, path: 0xd8cdb0,
+      pastel: [0xffb0d4, 0xa8dcff, 0xb8f4c4, 0xfff0a0, 0xd8bcff],
+      stone: 0xd8d0c0, stone2: 0xc2b8a4, wall: 0xf0ebe0, roof: 0x3a8a5a, pillar: 0xc8382a, gold: 0xe8b830,
+      desk: 0x7a4a2a, deskTop: 0x5a3220,
+      barrier: 0xd88aff, barrierEdge: 0xffd8ff,
+      metal: 0x8a8a98, metal2: 0x6a6a78,
+      clean: 0x6ad8ff, dirty: 0x8a3ad8, evil: 0x1a0a24,
+      spikeRock: 0x8a6aa8, spikeRock2: 0xb88ad8,
+      warpSky: { top: 0xb05ad8, horizon: 0xffb8e0, bottom: 0xffd8a8, fog: 0xf0c8f0, sun: 0xfff0f8, hemi: 0xffd0f0 },
+    },
+    sky: { top: 0xe89a3a, horizon: 0xffe8b0, bottom: 0xffd88a, sunDir: [0.3, 0.7, 0.4] },
+    fog: { color: 0xffe2a8, near: 160, far: 640 },
+    light: { sun: 0xfff4dc, sunIntensity: 0.78, sky: 0xffe6b0, ground: 0xd8a040, hemi: 0.58 },
+    terrain: { sand: 0xf2d888, dirt: 0xe2bf62, rock: 0xc8a050, scorch: 0x6a4a2a },
+    rock: { bands: [0xd8b860], count: 0 },
+    thumb: 'linear-gradient(180deg,#b05ad8 0%,#ffb8e0 55%,#ffb0d4 56%,#a8dcff 100%)',
+  };
+
+  // MOVIE: FUSION REBORN — the old capital where the dead Dictator parks his tanks (the city builder: stone-
+  // coloured blocks round a wide square for the armour to manoeuvre in). Story only.
+  S.old_capital = {
+    id: 'old_capital',
+    name: 'The Old Capital',
+    subtitle: 'Earth · the day the dead came back',
+    type: 'ground',
+    builder: 'city',
+    storyOnly: true,
+    music: 'dictator_march',
+    seed: 1812,
+    size: 440,
+    city: {
+      block: 40,
+      blocks: 7,
+      plazaRadius: 44,
+      minHeight: 10,
+      maxHeight: 24,
+      noSchool: true,
+      walls: [0xb8a688, 0xa89a80, 0xc0a478, 0x9a9488, 0xb0927a],
+      roof: 0x7a4a3a,
+      school: 0xb8a688,
+      clock: 0xf0ece0,
+      pavement: '#9a9488',
+      road: '#5a5856',
+      line: '#d8d0b8',
+    },
+    terrain: { sand: 0x9a9488, dirt: 0x7a766e, rock: 0x6a6a6c, scorch: 0x2a2a2c },
+    sky: { top: 0x4a7ac8, horizon: 0xd0dce8, bottom: 0xa8b0b8, sunDir: [0.35, 0.68, 0.3] },
+    fog: { color: 0xc8d4dc, near: 200, far: 640 },
+    light: { sun: 0xfff2e0, sunIntensity: 0.74, sky: 0xc6dcff, ground: 0x5a564e, hemi: 0.5 },
+    thumb: 'linear-gradient(180deg,#4a7ac8 0%,#d0dce8 55%,#9a9488 56%,#5a5856 100%)',
+  };
+
+  /* ---------------- MOVIE 2 · DRAGON BALL SUPER: BROLY — builder in src/game/stage_broly.js ---------------- */
+
+  // THE GLACIER: Earth, the far north. A blinding white snowfield ringed by ice walls, a channel of black sea
+  // along the north shore, Frieza's round ship landed on the ice. Kept a little below full brightness: a white
+  // stage under the default light washes the fighters out.
+  S.broly_glacier = {
+    id: 'broly_glacier',
+    name: 'The Glacier',
+    subtitle: 'Earth · the far north',
+    type: 'ground',
+    builder: 'wasteland',
+    music: 'broly_theme',
+    seed: 7801,
+    // 2.25 m cells: a crater a body lies in has to be a smooth bowl, not two triangles over his face
+    size: 540,
+    segments: 240,
+    arenaRadius: 165,
+    ceiling: 150,
+    glacier: {
+      field: 110, wall: 150, ship: [-50, 56], shipR: 13, ledge: [34, 62],
+      channel: { z: -124, half: 18, floor: -5, level: -1.6 },
+      snow: 0xf0f5fa, shade: 0xd0e0ee, ice: 0x9cc4e2, deep: 0x4a76a6, seabed: 0x0c1a2a, water: 0x0a1826,
+      hull: 0xe6e8ee, hullBand: 0x98a0ae, window: 0x2ab0f0, crack: 0x3a5a7a, maxCracks: 16,
+    },
+    sky: { top: 0x6aa6de, horizon: 0xe4f0f8, bottom: 0xf6faff, sunDir: [0.42, 0.4, 0.3] },
+    fog: { color: 0xdeeaf6, near: 170, far: 780 },
+    light: { sun: 0xfff4e6, sunIntensity: 0.6, sky: 0xd4e6ff, ground: 0x8aa0b8, hemi: 0.44 },
+    // terrain.sand is the colour of every dust cloud the engine raises here: a blue-grey powder, never white on white
+    terrain: { sand: 0xa6bccf, dirt: 0xd0e0ee, rock: 0x9cc4e2, scorch: 0x6a94b8 },
+    // the colour of dust nobody gave a colour to (landings, charging, transformations): snow powder
+    dust: 0xa6bccf,
+    rock: { bands: [0xd8ecf8, 0xa8d0ea, 0xeaf6fe, 0x8abcde], count: 12, near: 62, far: 132, clearX: 24, clearZ: 24 },
+    thumb: 'linear-gradient(180deg,#6aa6de 0%,#e4f0f8 55%,#f0f5fa 56%,#9cc4e2 100%)',
+  };
+
+  // THE LAVA WASTELAND: the same glacier after Super Saiyan Broly's eruption melted it to the rock (setMelt 1 from
+  // the start): black basalt, glowing rivers, a sea of lava where the channel was, a red sky, rising embers.
+  S.broly_lava = Object.assign({}, S.broly_glacier, {
+    id: 'broly_lava',
+    name: 'The Lava Wasteland',
+    subtitle: 'Earth · the glacier, melted to the rock',
+    music: 'broly_wrath',
+    melt: 1,
+    thumb: 'linear-gradient(180deg,#140404 0%,#b8401a 55%,#2a1a14 56%,#ff6a18 100%)',
+  });
+
+  // PLANET VEGETA (Movie 2 prologue): the Saiyans' home world on its last day — a city of domed houses with ring
+  // windows round an open square, the palace on its rise, the launch pad with the round pods; red rock under an
+  // orange sky. Story only.
+  S.planet_vegeta = {
+    id: 'planet_vegeta',
+    name: 'Planet Vegeta',
+    subtitle: 'The Saiyans\' world · Age 737',
+    type: 'ground',
+    builder: 'wasteland',
+    storyOnly: true,
+    music: 'saiyan_home',
+    seed: 7370,
+    size: 560,
+    segments: 160,
+    arenaRadius: 165,
+    ceiling: 140,
+    saiyanCity: { domes: 30, palace: [10, 118], pad: [-38, -14], gate: [30, -30], overlook: [-70, 60], pods: 6 },
+    sky: { top: 0x5a1610, horizon: 0xf09050, bottom: 0xc06030, sunDir: [-0.3, 0.35, 0.5] },
+    fog: { color: 0xd88050, near: 150, far: 720 },
+    light: { sun: 0xffd0a0, sunIntensity: 0.68, sky: 0xffb080, ground: 0x6a2a1a, hemi: 0.5 },
+    terrain: { sand: 0xb0644a, dirt: 0x8a4a38, rock: 0x6a3a2c, scorch: 0x2a1410 },
+    dust: 0xb07a60,
+    rock: { bands: [0x8a4a38, 0x7a4030, 0x9a5a44, 0x6a3a2c], count: 10, near: 80, far: 165 },
+    mesas: { bands: [0x7a4030, 0x6a3a2c, 0x5a2c20], scale: 1.2 },
+    thumb: 'linear-gradient(180deg,#5a1610 0%,#f09050 55%,#b0644a 56%,#6a3a2c 100%)',
+  };
+
+  // VAMPA: the dead planet Broly grew up on. A harsh, prehistoric waste under a sickly green-yellow sky: crater
+  // walls, acid lakes in the hollows, bone-white thorn stalks, a dead beast's ribs, Broly's cave (stage_broly.js).
+  // Story only.
+  S.vampa = {
+    id: 'vampa',
+    name: 'Vampa',
+    subtitle: 'A dead world at the edge of the universe',
+    type: 'ground',
+    builder: 'wasteland',
+    storyOnly: true,
+    music: 'broly_theme',
+    seed: 7802,
+    size: 560,
+    segments: 140,
+    arenaRadius: 165,
+    ceiling: 130,
+    sky: { top: 0x6a7a2a, horizon: 0xd8d470, bottom: 0xa89a4a, sunDir: [0.3, 0.6, 0.4] },
+    fog: { color: 0xc8c070, near: 120, far: 620 },
+    light: { sun: 0xfff0b0, sunIntensity: 0.7, sky: 0xe0e090, ground: 0x5a4a2a, hemi: 0.5 },
+    terrain: { sand: 0x8a7a4a, dirt: 0x6a5a38, rock: 0x5a4a30, scorch: 0x2a2418 },
+    rock: { bands: [0x6a5a3a, 0x5a4a30, 0x7a6a44, 0x4a3e28], count: 18 },
+    mesas: { bands: [0x6a5a3a, 0x5a4a30, 0x4a3e28], scale: 1.4 },
+    water: { level: -3, color: 0x8ad83a, opacity: 0.85 },
+    dust: 0x9a8a5a,
+    vampa: { cave: [-62, 46], ribs: [44, -40], crash: [26, 30], ridge: [-30, -60], lake: [70, 60], stalks: 44 },
+    thumb: 'linear-gradient(180deg,#6a7a2a 0%,#d8d470 55%,#8a7a4a 56%,#5a4a30 100%)',
+  };
+
+  // UNIVERSE 6 (Chapter 18): Champa's arena on the Nameless Planet, a dead world in the space between the twin
+  // universes — a grey-violet flat under a black, star-filled sky, the planet-sized Super Dragon Balls hanging in the
+  // void, a big stone ring and the two universes' boxes at its sides (stage_u6.js, def.cosmos). Tournament rules in
+  // Free Battle (ringOut).
+  S.u6_arena = {
+    id: 'u6_arena',
+    name: 'Nameless Planet',
+    ringOut: true,
+    subtitle: 'The tournament of Universes 6 and 7',
+    type: 'ground',
+    builder: 'arena',
+    music: 'battle',
+    seed: 7806,
+    size: 420,
+    segments: 120,
+    arenaRadius: 140,
+    ceiling: 90,
+    sky: { top: 0x020208, horizon: 0x1c1430, bottom: 0x2a2236, sunDir: [0.35, 0.72, 0.3] },
+    // a dark, thin haze: the dead ground fades into the black, never into a lilac wall
+    fog: { color: 0x120e1c, near: 320, far: 1300 },
+    light: { sun: 0xf4f0ff, sunIntensity: 0.82, sky: 0xb8b0e0, ground: 0x4a4258, hemi: 0.56 },
+    terrain: { sand: 0x5e566e, dirt: 0x4c465c, rock: 0x3e3a4c, scorch: 0x221e2a },
+    rock: { bands: [0x5a546a, 0x4a4458, 0x6a6478, 0x3e3a4a], count: 0 },
+    dust: 0xb0a8c0,
+    arena: {
+      half: 15, height: 1.3, rim: 0.6, tile: 2.5,
+      side: 0x8a8498, trim: 0xd8d4e2, post: 0xc4c0d2,
+      topCss: '#aaa6b8', lineCss: '#888398', trimCss: '#dcd8e6', crackCss: '#4a4458',
+      dust: 0xd0ccdc, debris: 0xa8a2b8,
+      // an open horizon: nothing between the ring and the void (no cliff wall)
+      noPosts: true, noCrowd: true, noCliffs: true, fallAway: 150,
+    },
+    cosmos: {
+      stone: 0x8a8498, trim: 0xe0c060, u7Awning: 0x2a5ad8, u6Awning: 0xc8364a, boxOff: 16,
+      balls: [
+        { at: [-420, 260, -520], r: 90, stars: 4 },
+        { at: [380, 330, -600], r: 120, stars: 7 },
+        { at: [560, 180, 260], r: 70, stars: 2 },
+      ],
+    },
+    thumb: 'radial-gradient(circle at 70% 25%,#ffb04a 0%,#c8641a 9%,#1c1430 10%,#020208 60%),linear-gradient(180deg,#020208 0%,#1c1430 55%,#aaa6b8 56%,#7a7088 100%)',
   };
 
 })();

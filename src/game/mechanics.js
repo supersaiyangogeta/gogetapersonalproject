@@ -452,7 +452,7 @@
             f.battle.emit('mechanic', { fighter: f, kind: 'regen' });
           }
           // green motes rising off the body: the player can see it working
-          if (f.frame % 6 === 0) f.battle.vfx.sparks(f.chest(), 0x9aff7a, 2, 3, 0.08);
+          if (f.frame % 6 === 0) f.battle.vfx.sparks(f.chest(), (f.def.mechanic && f.def.mechanic.color) || 0x9aff7a, 2, 3, 0.08);
         } else m.regenerating = false;
       },
       on(f, ev) {
@@ -625,6 +625,44 @@
     },
     hud(f) {
       return { value: f.mech.desperate ? 1 : Math.max(0, 1 - (f.hpFrac - 0.4) / 0.6), label: 'SURVIVOR', active: f.mech.desperate, color: '#ffb84a' };
+    },
+  };
+
+  /**
+   * MR. SEE-THROUGH — Invisible (2026-10-15). He cannot be seen, only read:
+   *   - his body is a faint glassy shimmer (Model.setCloak: nearly clear, the rim glinting at the edge, no ink lines);
+   *     his shadow stays on the ground, and dust kicks up where his feet go;
+   *   - every wind-up shows him half-way (a strike, a rush, a throw, a charge: the attack itself is the telegraph);
+   *   - he flickers into full view for a moment when he is hit, when he lands a blow or has one blocked.
+   * Lock-on, collision and hit detection are untouched: he is all there, only hard to see. The CPU fights him exactly
+   * as it fights anybody (it reads positions, not pixels).
+   */
+  const SEEN_STATES = { attack: 1, rush: 1, specialThrow: 1, throw: 1, charge: 1, beamCharge: 1, beamFire: 1, recoverSpecial: 1, transform: 1 };
+  const REVEALED_STATES = { hitstun: 1, stagger: 1, guardBreak: 1, held: 1 };
+  Mechanics.invisible = {
+    init(f) {
+      f.mech = { reveal: 0, cloak: 1, step: 0 };
+    },
+    update(f) {
+      const m = f.mech;
+      if (m.reveal > 0) m.reveal--;
+      const target = !f.alive || m.reveal > 0 || REVEALED_STATES[f.state] ? 0 : SEEN_STATES[f.state] ? 0.5 : 1;
+      // in quickly, out slowly: a reveal reads, then the shimmer closes again
+      m.cloak += (target - m.cloak) * (target < m.cloak ? 0.35 : 0.1);
+      if (f.model && f.model.setCloak) f.model.setCloak(m.cloak);
+      const b = f.battle;
+      if (m.cloak > 0.6 && f.grounded && f.vel.x * f.vel.x + f.vel.z * f.vel.z > 4 && ++m.step % 12 === 0 && b.vfx && b.vfx.dust) {
+        b.vfx.dust(f.pos, 0.45, 3, b.stage && b.stage.def && b.stage.def.terrain ? b.stage.def.terrain.sand : undefined);
+      }
+    },
+    on(f, ev) {
+      if (ev === 'hitTaken') f.mech.reveal = Math.max(f.mech.reveal, 40);
+      else if (ev === 'blocked') f.mech.reveal = Math.max(f.mech.reveal, 20);
+      else if (ev === 'hitDealt' || ev === 'armoredHit') f.mech.reveal = Math.max(f.mech.reveal, 16);
+    },
+    hud(f) {
+      const c = f.mech.cloak;
+      return { value: c, label: c > 0.55 ? 'UNSEEN' : 'SEEN', active: c > 0.55, color: '#bfe8ff' };
     },
   };
 
@@ -1115,6 +1153,437 @@
       if (me.apart) return { value: me.apart.t / me.apart.total, label: 'REFORMING', active: true, color: '#ff9ac8' };
       const ph = this.phaseOf(f);
       return { value: me.heals && me.heals.length ? 1 : 0, label: me.heals && me.heals.length ? 'HEALING' : ph.label || 'MAJIN', active: !!(me.heals && me.heals.length), color: '#ff9ac8' };
+    },
+  });
+
+  /**
+   * DIMENSIONAL (Janemba, Fusion Reborn): a body that does not have to obey where it is. Built on
+   * the boss controller (phases, poise, entry techniques). def.dimension switches its parts on:
+   *   portal  { redirectMul, front, max }  THE FRONT DOOR. While a portal stands open in front of him
+   *           (the technique `portalGuard` opens it: a giggle, both palms out, a swirling ring between
+   *           him and you — the tell), a blow or a blast that comes in from the FRONT goes through it
+   *           and lands on the attacker's own back out of a second portal (redirectMul of its damage).
+   *           From the side, from behind or from above it lands on him as normal — that is the
+   *           counter the player learns: stop, or go round. Ultimates go through regardless.
+   *   elastic { squash, bounce }           a rubber body: heavy blows squash him, and he bounces
+   *           when he hits the ground in a knockback (exaggerated, never extra damage)
+   *   phantom { repeat, combo, cooldown }  PUNISHES THE PREDICTABLE: the same strike `repeat` times
+   *           in a row, or a string `combo` hits long, and he comes apart into floating cubes and
+   *           reassembles behind you (technique `phantomShift`), already swinging
+   *   doors   true                         teleport strikes (moves' `teleport`) leave through one
+   *           portal and arrive through another
+   * Events: 'portalRedirect' { fighter, attacker, count }, 'phantomEvade' { fighter, attacker }.
+   */
+  Mechanics.dimensional = Object.assign(Object.create(Mechanics.boss), {
+    init(f) {
+      Mechanics.boss.init(f);
+      Object.assign(f.mech, { door: null, doorUntil: 0, redirects: 0, doorHits: 0, seen: [], phantomAt: -999, phantoms: 0, lastHits: 0, bounced: false });
+    },
+    // a story can change what he is allowed to do for a while (f.dimensionOverride): Gogeta is too much for his tricks
+    cfg(f) {
+      return f.dimensionOverride || f.def.dimension || {};
+    },
+    /** Opens the front door for `frames` (portalGuard calls this). */
+    openDoor(f, frames) {
+      const me = f.mech, b = f.battle;
+      this.closeDoor(f);
+      const at = f.chest().addScaledVector(f.forward, f.radius + 0.5 * f.scale);
+      me.door = SL.Dimension.portal(b, at, f.forward, { radius: 0.75 * f.scale, open: 8 });
+      me.doorUntil = b.frame + frames;
+      me.doorHits = 0;
+      b.emit('portalDoor', { fighter: f, open: true });
+    },
+    closeDoor(f) {
+      const me = f.mech;
+      if (me.door) me.door.close();
+      me.door = null;
+      me.doorUntil = 0;
+    },
+    doorOpen(f) {
+      const me = f.mech;
+      return !!(me && me.door && me.door.alive && f.battle.frame < me.doorUntil);
+    },
+    /** Fighter.takeHit asks first: a hit can go somewhere else entirely. */
+    intercept(f, hit, att) {
+      const C = this.cfg(f), me = f.mech, b = f.battle;
+      if (!att || att === f || !hit || (hit.type !== 'melee' && hit.type !== 'ki')) return undefined;
+      // THE FRONT DOOR
+      if (C.portal && this.doorOpen(f) && !hit.ultimate) {
+        const to = att.pos.clone().sub(f.pos).setY(0);
+        if (to.lengthSq() > 0.0001) to.normalize();
+        if (f.forward.dot(to) > (C.portal.front === undefined ? 0.15 : C.portal.front)) {
+          const key = hit.type === 'melee' ? att.sd : hit.point;
+          if (me.redirectKey === key) return 'miss';
+          me.redirectKey = key;
+          const back = att.forward.clone().setY(0);
+          if (back.lengthSq() < 0.001) back.copy(to).negate();
+          back.normalize();
+          const exit = att.chest().addScaledVector(back, -(att.radius + 0.55)).add(new THREE.Vector3(0, 0.25 * att.height, 0));
+          SL.Dimension.portal(b, exit, back, { radius: 0.5 * att.scale, life: 22, open: 4, vol: 0.6 });
+          b.vfx.flash(hit.point || f.chest(), 1.4, SL.Dimension.COLORS.inner, 0.15, SL.Toon.tex.glow);
+          me.redirects++;
+          me.doorHits++;
+          att.takeHit(f, {
+            type: 'melee', damage: Math.round((hit.damage || 400) * (C.portal.redirectMul || 0.75)),
+            knock: (hit.impact || 1) >= 3 ? 'heavy' : 'push', knockSpeed: (hit.impact || 1) >= 3 ? 22 : 12, hitstun: 30, impact: Math.max(2, hit.impact || 1),
+            dir: back.clone(), point: exit.clone(), pose: 'hitBack', sfx: 'punchHeavy', name: 'Dimension Door',
+          });
+          b.emit('portalRedirect', { fighter: f, attacker: att, count: me.redirects, type: hit.type });
+          if (me.doorHits >= (C.portal.max || 2)) this.closeDoor(f);
+          return hit.type === 'ki' ? 'portal' : 'miss';
+        }
+      }
+      // PHANTOM SHIFT: read a pattern, and be somewhere else when it lands
+      const P = C.phantom;
+      if (P && hit.type === 'melee' && f.alive && ['free', 'guard', 'dash', 'recover', 'attack'].includes(f.state) && b.frame - me.phantomAt > (P.cooldown || 90)) {
+        const id = att.sd && att.sd.move ? att.sd.move.id : '?';
+        me.seen.push({ id, frame: b.frame });
+        me.seen = me.seen.filter((s) => b.frame - s.frame < (P.window || 150));
+        const last = me.seen.slice(-(P.repeat || 3));
+        const repeated = last.length >= (P.repeat || 3) && last.every((s) => s.id === id);
+        const long = att.combo && att.combo.hits >= (P.combo || 5);
+        if ((repeated || long) && SL.Techniques.phantomShift) {
+          const spec = Object.assign({ frames: 22, appearAt: 16, dist: 1.8, recovery: 4 }, P.spec || {}, { mode: 'behind', from: att });
+          if (SL.Techniques.phantomShift.start(f, spec, 'evade', 0)) {
+            me.phantomAt = b.frame;
+            me.phantoms++;
+            me.seen.length = 0;
+            me.punish = att;
+            if (att.state === 'attack') att.sd.whiffPenalty = 18;
+            b.emit('phantomEvade', { fighter: f, attacker: att, why: repeated ? 'repeat' : 'combo' });
+            return 'vanished';
+          }
+        }
+      }
+      return undefined;
+    },
+    update(f, dt) {
+      Mechanics.boss.update(f);
+      const C = this.cfg(f), me = f.mech, b = f.battle;
+      // the door follows him while it is open, and shuts when its time is up
+      if (me.door) {
+        if (!this.doorOpen(f) || !f.alive || f.hidden || f.state === 'hitstun' || f.state === 'knockback' || f.state === 'knockdown') this.closeDoor(f);
+        else me.door.set(f.chest().addScaledVector(f.forward, f.radius + 0.5 * f.scale), f.forward);
+      }
+      const E = C.elastic;
+      if (E) {
+        const hits = f.stats.hitsTaken;
+        if (hits > me.lastHits) f.anim.squash = Math.max(f.anim.squash || 0, E.squash || 0.4);
+        me.lastHits = hits;
+        if ((f.state === 'knockback' || f.state === 'knockdown') && f.grounded && !me.bounced && b.stage.hasGround) {
+          me.bounced = true;
+          f.vel.y = E.bounce || 7;
+          f.grounded = false;
+          f.anim.squash = Math.max(f.anim.squash || 0, (E.squash || 0.4) * 1.2);
+          b.sfx('stretch', f, { pitch: 0.7, vol: 0.7 });
+          b.vfx.dust(f.pos.clone(), 1.2 * f.scale, 8, b.stage.def.terrain.sand);
+        }
+        if (f.state === 'free') me.bounced = false;
+      }
+    },
+    on(f, ev, data) {
+      if (ev === 'teleportStrike' && this.cfg(f).doors && data) {
+        const b = f.battle;
+        SL.Dimension.portal(b, data.from.clone().add(new THREE.Vector3(0, f.height * 0.5, 0)), f.forward, { radius: 0.7 * f.scale, life: 12, open: 3 });
+        SL.Dimension.portal(b, data.to.clone().add(new THREE.Vector3(0, f.height * 0.5, 0)), f.forward.clone().negate(), { radius: 0.7 * f.scale, life: 14, open: 3, sfx: false });
+      }
+    },
+    hud(f) {
+      const me = f.mech || {};
+      if (this.doorOpen(f)) return { value: Math.max(0, (me.doorUntil - f.battle.frame) / 100), label: 'PORTAL — GO ROUND', active: true, color: '#d24aff' };
+      return Mechanics.boss.hud.call(this, f);
+    },
+  });
+
+  /**
+   * BLIMP (Veku, the failed fusion): a body that cannot fight and will not stay still. A dodge is not
+   * a vanish: it is a big hop (def.blimp.bounce up, .push across) in a direction even he cannot
+   * predict — away from the nearest threat, thrown off to one side by his own wobble — and he is
+   * invulnerable while airborne (.iframes). Land at speed and he may trip (.trip, deterministic from
+   * the frame count, never Math.random). Events: 'blimpBounce' { fighter }, 'blimpTrip' { fighter }.
+   */
+  Mechanics.blimp = {
+    init(f) {
+      f.mech = { next: 0, air: false, bounces: 0, trips: 0 };
+    },
+    update(f) {
+      const B = f.def.blimp || {}, me = f.mech, b = f.battle;
+      // a dodge becomes the bounce
+      if (f.state === 'dodge' && f.stateFrame <= 1 && b.frame >= me.next) {
+        const foes = b.enemiesOf(f).filter((e) => e.alive && !e.hidden);
+        const near = foes.sort((a, c) => a.pos.distanceTo(f.pos) - c.pos.distanceTo(f.pos))[0];
+        const away = near ? f.pos.clone().sub(near.pos).setY(0) : f.forward.clone().negate();
+        if (away.lengthSq() < 0.01) away.set(1, 0, 0);
+        away.normalize();
+        // the wobble: a sideways throw that changes every bounce
+        const k = Math.sin(me.bounces * 2.39 + b.frame * 0.013);
+        const side = new THREE.Vector3(away.z, 0, -away.x).multiplyScalar(k * 0.9);
+        const dir = away.add(side).normalize();
+        f.setState('free');
+        f.vel.set(dir.x * (B.push || 9), B.bounce || 9.5, dir.z * (B.push || 9));
+        f.grounded = false;
+        f.invuln = Math.max(f.invuln, B.iframes || 22);
+        f.anim.squash = 0.5;
+        me.air = true;
+        me.bounces++;
+        me.next = b.frame + (B.cooldown || 26);
+        b.sfx('boing', f, { pitch: 0.9 + (me.bounces % 3) * 0.12 });
+        b.vfx.dust(f.pos.clone(), 0.9, 6, b.stage.def.terrain ? b.stage.def.terrain.sand : 0xd8d0c0);
+        b.emit('blimpBounce', { fighter: f });
+        return;
+      }
+      if (me.air && f.grounded) {
+        me.air = false;
+        f.anim.squash = 0.45;
+        const fast = Math.hypot(f.vel.x, f.vel.z) > 5;
+        // a trip, about one landing in three — never on two landings in a row
+        if (fast && !me.tripped && ((me.bounces * 7 + b.frame) % 10) / 10 < (B.trip === undefined ? 0.35 : B.trip)) {
+          me.tripped = true;
+          me.trips++;
+          // a comic stumble, never a death sentence: he is too busy flailing to be hit cleanly
+          f.setState('stagger', { frames: 20 });
+          f.invuln = Math.max(f.invuln, 20);
+          f.anim.play('vk_stumble', 30, { restart: true });
+          b.sfx('stretch', f, { pitch: 0.6 });
+          b.emit('blimpTrip', { fighter: f });
+        } else me.tripped = false;
+      }
+    },
+    costMul(f, action) {
+      return action === 'dodge' ? 0.4 : 1;
+    },
+    hud(f) {
+      const me = f.mech || {};
+      return { value: Math.max(0, 1 - (me.next - f.battle.frame) / ((f.def.blimp || {}).cooldown || 26)), label: 'BOUNCE', active: me.air, color: '#f08a24' };
+    },
+  };
+
+  /**
+   * BROLY — LEGENDARY ADAPTATION (Movie 2 · Super Broly): the boss that learns. Built on the boss mechanic
+   * (patterns, poise HUD), but his PHASE follows his FORM (def.boss.phases[i].form): the story changes his
+   * form, never his health.
+   *   READS     every strike that reaches him is counted by its move id (once per swing, landed or blocked).
+   *             A move he has seen `learnAt` times (form.legendary) is CAUGHT the next time, when he is free
+   *             to act: his hand closes on the fist (a Perfect Guard — the attacker staggers, his counter
+   *             window opens) and the CPU answers at once (AIHooks.broly). Familiarity fades: a move not seen
+   *             for `forget` frames loses a count.
+   *   SWATS     ki blasts that have reached him `blastAt` times are batted aside before they land.
+   *   ADAPTS    what he sees and reads raises his stage — WATCHING → LEARNING → MATCHING → SURPASSING —
+   *             each a little faster and harder; at MATCHING he takes the strike you used most and throws it
+   *             back (movesOverride: your own poses drive his rig).
+   *   RAGES     a meter the story reads: it fills on the blows he takes (heavy ones and beams more). The
+   *             Wrathful state is a story event; this is what calls it.
+   *   BODY      the form's state: the veins (form.legendary.veins) pulse, the chest armour shatters (shatterArmor).
+   * A mission tunes it with f.legendaryOverride (merged over the form's numbers; stageCap, learnAt 0 = off) and
+   * listens: 'brolyRead' { fighter, attacker, id, count }, 'brolySwat', 'brolyStage' { stage, label },
+   * 'brolyCopy' { move }, 'brolyRage' { value }.
+   */
+  const LEG_STAGES = [{ at: 0, label: 'WATCHING' }, { at: 8, label: 'LEARNING' }, { at: 20, label: 'MATCHING' }, { at: 36, label: 'SURPASSING' }];
+  const LEG_READY = { free: 1, guard: 1, dash: 1, charge: 1, land: 1, recover: 1 };
+  Mechanics.legendary = Object.assign(Object.create(Mechanics.boss), {
+    STAGES: LEG_STAGES,
+    init(f) {
+      Mechanics.boss.init(f);
+      Object.assign(f.mech, { seen: {}, blasts: 0, blastAt: 0, xp: 0, stage: 0, reads: 0, swats: 0, catchAt: -999, swatAt: -999, rage: 0, rageCount: 0, lastSd: null, copied: null, formSeen: -1, punish: null, hudMode: 'adapt', armorShattered: false });
+    },
+    cfg(f) {
+      const base = (f.form && f.form.legendary) || {};
+      return f.legendaryOverride ? Object.assign({}, base, f.legendaryOverride) : base;
+    },
+    phaseOf(f) {
+      const B = f.def.boss;
+      if (!B || !B.phases || !B.phases.length) return Mechanics.boss.phaseOf.call(this, f);
+      return B.phases[f.mech.phase] || B.phases[0];
+    },
+    /** Adaptation from what he has seen; returns the stage. */
+    gain(f, xp) {
+      const me = f.mech, C = this.cfg(f), b = f.battle;
+      me.xp += xp;
+      let st = 0;
+      for (let i = 0; i < LEG_STAGES.length; i++) if (me.xp >= LEG_STAGES[i].at) st = i;
+      if (C.stageCap !== undefined) st = Math.min(st, C.stageCap);
+      if (st > me.stage) {
+        me.stage = st;
+        b.emit('brolyStage', { fighter: f, stage: st, label: LEG_STAGES[st].label });
+        b.vfx.ring(f.chest(), 2.6 * f.scale, 0x7aff9a, 0.35);
+        if (st === 2) this.copy(f);
+      }
+      return me.stage;
+    },
+    /** THE CATCH: a move he knows stops in his hand, and he answers. */
+    catchIt(f, att, hit, id, count) {
+      const me = f.mech, b = f.battle;
+      me.catchAt = b.frame;
+      me.reads++;
+      me.punish = att;
+      f.yaw = f.prevYaw = Math.atan2(att.pos.x - f.pos.x, att.pos.z - f.pos.z);
+      f.setState('guard', {});
+      const dir = f.pos.clone().sub(att.pos).setY(0);
+      if (dir.lengthSq() < 1e-6) dir.copy(f.forward).negate();
+      dir.normalize();
+      const r = f._perfectGuard(att, hit, dir, true);
+      f.anim.play('br_catch', 60, { restart: true });
+      const hand = f.handPos ? f.handPos('R') : f.chest();
+      b.vfx.sparks(hand, 0xd8ffe0, 14, 6, 0.08);
+      b.vfx.ring(hand, 0.9, 0x9affb8, 0.22);
+      b.sfx('block', f, { pitch: 0.45, vol: 1.3 });
+      b.slowmo(0.45, 0.22);
+      b.cameraTraumaAt(hand, 0.18);
+      this.gain(f, 3);
+      b.emit('brolyRead', { fighter: f, attacker: att, id, count, reads: me.reads });
+      return r;
+    },
+    /** MATCHING: the strike you used most comes back at you — your own poses on his body, his strength in it. */
+    copy(f) {
+      const me = f.mech;
+      if (me.copied || !f.target) return;
+      const att = f.target;
+      let best = null, bn = 0;
+      for (const [id, s] of Object.entries(me.seen)) if (s.n > bn && s.move) {
+        best = s;
+        bn = s.n;
+      }
+      if (!best) return;
+      const src = best.move;
+      const mine = Object.assign({}, src, { id: 'copied_' + src.id, damage: Math.round((src.damage || 400) * 1.3), lunge: (src.lunge || 10) * 1.1, cancel: src.cancel || 8, sfx: 'punchHeavy' });
+      const pose = mine.pose || {};
+      for (const k of [pose.wind, pose.strike, pose.follow]) {
+        if (!k || f.poses[k] || !(att.poses && att.poses[k])) continue;
+        f.poses[k] = att.poses[k];
+        if (f.anim.poses !== f.poses) f.anim.poses[k] = att.poses[k];
+      }
+      const lights = ((f.form && f.form.moves && f.form.moves.light) || f.def.moves.light).slice();
+      lights[0] = mine;
+      f.movesOverride = Object.assign({}, f.movesOverride || {}, { light: lights });
+      me.copied = mine;
+      f.battle.emit('brolyCopy', { fighter: f, attacker: att, move: mine, source: src });
+    },
+    /** A blast he has learned: the back of a hand, and it is gone off to the side. */
+    swat(f, p) {
+      const me = f.mech, b = f.battle;
+      me.swats++;
+      me.swatAt = b.frame;
+      const side = new THREE.Vector3(f.forward.z, 0, -f.forward.x).multiplyScalar(me.swats % 2 ? 1 : -1);
+      p.vel.copy(side.add(new THREE.Vector3(0, 0.5, 0)).normalize().multiplyScalar(p.speed || 40));
+      p.deflected = true;
+      p.owner = f;
+      p.team = f.team;
+      p.target = null;
+      p.life = Math.min(p.life, 0.6);
+      f.anim.play('br_back', 40, { restart: true });
+      b.vfx.impact(p.pos, 1.6, 0xd8ffe0);
+      b.sfx('block', f, { pitch: 0.6, vol: 1 });
+      b.emit('brolySwat', { fighter: f, swats: me.swats });
+    },
+    intercept(f, hit, att) {
+      const me = f.mech, b = f.battle, C = this.cfg(f);
+      if (!att || att === f || !hit || C.learnAt === 0) return undefined;
+      if (hit.type === 'melee' && att.state === 'attack' && att.sd && att.sd.move) {
+        const id = att.sd.move.id || '?';
+        const s = (me.seen[id] = me.seen[id] || { n: 0, at: 0, move: att.sd.move });
+        if (me.lastSd === att.sd) return undefined; // the same swing, a second hit window
+        me.lastSd = att.sd;
+        const known = s.n >= (C.learnAt || 3);
+        s.n++;
+        s.at = b.frame;
+        this.gain(f, C.gain || 1);
+        if (known && LEG_READY[f.state] && f.alive && !f.hidden && b.frame - me.catchAt > (C.cooldown || 60) && !hit.ultimate && !f.legendaryHold) return this.catchIt(f, att, hit, id, s.n);
+        return undefined;
+      }
+      if (hit.type === 'ki' && !hit.ultimate) {
+        me.blasts++;
+        me.blastAt = b.frame;
+      }
+      return undefined;
+    },
+    update(f) {
+      const me = f.mech, b = f.battle, C = this.cfg(f);
+      const B = f.def.boss;
+      // the phase follows the form
+      if (me.formSeen !== f.formIndex) {
+        me.formSeen = f.formIndex;
+        if (B && B.phases) {
+          const i = B.phases.findIndex((p) => p.form === f.form.id);
+          if (i >= 0 && i !== me.phase) {
+            me.phase = i;
+            b.emit('bossPhase', { fighter: f, phase: B.phases[i], index: i });
+          }
+        }
+        // a new form fights its own way: what he copied belongs to the old one
+        if (me.copied) {
+          f.movesOverride = null;
+          me.copied = null;
+        }
+        const veins = !!C.veins;
+        for (const v of (f.model && f.model.veinDecals) || []) v.visible = veins;
+        if (C.shatterArmor && !me.armorShattered && f.model && f.model.damageArmor) {
+          me.armorShattered = true;
+          for (const pc of f.model.damageArmor(4)) {
+            const p = pc.pos.sub(f.object.position).add(f.pos);
+            b.vfx.rock(p, new THREE.Vector3(Math.sin(pc.size * 40) * 6, 7, Math.cos(pc.size * 40) * 6), pc.size * 0.6, pc.color);
+          }
+        }
+      }
+      // the veins pulse with his heartbeat
+      const vd = f.model && f.model.veinDecals;
+      if (vd && vd.length && vd[0].visible) {
+        const k = 1 + Math.max(0, Math.sin(b.frame * 0.16)) * 0.35;
+        for (const v of vd) v.scale.x = (v.userData.sx || (v.userData.sx = v.scale.x)) * k;
+      }
+      // forgetting: a move not seen for a while loses a count
+      const forget = C.forget || 420;
+      for (const s of Object.values(me.seen)) if (s.n > 0 && b.frame - s.at > forget) {
+        s.n--;
+        s.at = b.frame;
+      }
+      if (me.blasts > 0 && b.frame - me.blastAt > forget) {
+        me.blasts--;
+        me.blastAt = b.frame;
+      }
+      // blasts he has learned are batted aside before they land
+      const blastAt = C.blastAt || 4;
+      if (me.blasts >= blastAt && LEG_READY[f.state] && f.alive && !f.hidden && !f.legendaryHold && b.frame - me.swatAt > 8) {
+        const c = f.chest();
+        for (const p of b.projectiles.list) {
+          if (!p.alive || p.team === f.team || p.kind !== 'blast' || p.deflected) continue;
+          if (p.pos.distanceTo(c) > f.radius + 1.8 * f.scale) continue;
+          this.swat(f, p);
+          break;
+        }
+      }
+      // the rage he carries (the story reads it): it sinks slowly when nobody is hurting him
+      if (me.rage > 0 && b.frame % 6 === 0) me.rage = Math.max(0, me.rage - (C.rageCool === undefined ? 0.15 : C.rageCool));
+    },
+    on(f, ev, data) {
+      const me = f.mech, C = this.cfg(f);
+      if (ev !== 'hitTaken' && ev !== 'armoredHit') return;
+      const hit = ev === 'armoredHit' ? data && data.hit : data;
+      const imp = (hit && hit.impact) || 1;
+      const add = (hit && hit.type === 'beam' ? 7 : imp >= 3 ? 5 : imp >= 2 ? 2.5 : 1) * (C.rageGain === undefined ? 1 : C.rageGain);
+      me.rage = Math.min(100, me.rage + add);
+      if (me.rage >= 100 && !me.rageFull) {
+        me.rageFull = true;
+        me.rageCount++;
+        f.battle.emit('brolyRage', { fighter: f, value: me.rage, count: me.rageCount });
+      } else if (me.rage < 70) me.rageFull = false;
+    },
+    // light blows do not stop him once he is angry (form.legendary.armor: blows up to that impact)
+    armor(f, hit) {
+      const a = this.cfg(f).armor || 0;
+      return a > 0 && hit && hit.type !== 'throw' && (hit.impact || 1) <= a;
+    },
+    damageOut(f, hit) {
+      return Mechanics.boss.damageOut.call(this, f, hit) * (1 + 0.06 * f.mech.stage);
+    },
+    speedMul(f) {
+      return Mechanics.boss.speedMul.call(this, f) * (1 + 0.04 * f.mech.stage);
+    },
+    hud(f) {
+      const me = f.mech || {};
+      if (me.hudMode === 'rage') return { value: Math.min(1, (me.rage || 0) / 100), label: 'RAGE', active: (me.rage || 0) > 70, color: '#3aff6a' };
+      const st = me.stage || 0, next = LEG_STAGES[st + 1];
+      const lo = LEG_STAGES[st].at, hi = next ? next.at : lo + 1;
+      return { value: next ? Math.min(1, (me.xp - lo) / (hi - lo)) : 1, label: LEG_STAGES[st].label, active: st >= 2, color: '#5aff7a' };
     },
   });
 
