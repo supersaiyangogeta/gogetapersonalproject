@@ -548,6 +548,10 @@
       { a: [-0.42, 0.88, 0.3], d: [-0.55, 0.95, 0.04], l: 0.18, r: 0.058 },
       { a: [0.3, -0.1, -0.9], d: [0.34, -0.55, -0.8], l: 0.12, r: 0.05 },
       { a: [-0.3, -0.12, -0.9], d: [-0.36, -0.55, -0.78], l: 0.12, r: 0.05 },
+      // two short front locks over the temples, framing the peak (the bare forehead corners on either side of it
+      // read as pale holes in the hair)
+      { a: [0.36, 0.72, 0.58], d: [0.32, -0.62, 0.62], l: 0.11, r: 0.05, depth: 0.98, flat: 0.55 },
+      { a: [-0.36, 0.72, 0.58], d: [-0.32, -0.62, 0.62], l: 0.11, r: 0.05, depth: 0.98, flat: 0.55 },
       GOGETA_BANG,
     ],
   };

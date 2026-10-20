@@ -435,16 +435,20 @@
         upperArmR: 0.067, foreArmR: 0.058, fist: 0.064, thighR: 0.096, shinR: 0.072, neckR: 0.068, neckLen: 0.058, headR: 0.124, footLen: 1.06,
       },
       hair: { style: 'gogeta', color: 0x121216 },
-      face: { pupil: 0x121218, eyeW: 0.98, eyeH: 0.9, browThick: 1.25, jaw: 1.06, jawW: 1.0, cheeks: 0.6 },
+      // sharp, narrow, slightly slanted eyes ringed in black under heavy brows set low on them; a firm jaw line
+      face: { pupil: 0x121218, eyeW: 1.1, eyeH: 0.82, eyeTilt: 0.14, eyeRim: 0x141010, browThick: 1.3, browY: -0.004, jaw: 1.14, jawW: 0.96, jawLine: 0.45, cheeks: 0.6 },
       outfit: {
-        // the Metamoran outfit (Fusion Reborn colours): the open vest over the bare chest
-        topStyle: 'bare', top: SKIN, arms: SKIN,
-        jacket: { color: VEST, open: 1.45 },
+        // the Metamoran outfit (Fusion Reborn colours). To the owner's model sheet: a SHORT vest, cropped at the bottom
+        // of the chest and open wide, so the whole chest and the abs show in front and it ends mid-back behind; the
+        // bare torso drawn in planes (muscles: pec plates, six abs)
+        topStyle: 'bare', top: SKIN, arms: SKIN, muscles: { size: 1.3 },
+        jacket: { color: VEST, open: 2.0, short: true },
         paddedCollar: { color: COLLAR, size: 1.12 },
         wrist: BAND, wristLen: 0.1,
         belt: SASH, beltStyle: 'sash', sashTails: { len: 0.36, side: 1 },
-        pants: WHITE, pantsStyle: 'gi',
-        boots: WRAP, shoes: BAND, bootStyle: 'gi',
+        // huge baggy trousers: a bell from the hip into a balloon over the knee and shin, gathered over the wraps
+        pants: WHITE, pantsStyle: 'harem', harem: { thigh: 1.5, balloon: 2.7, at: 0.3, cuff: 0.62 }, legs: WRAP,
+        boots: WRAP, wrapLines: 0x1c3a6a, shoes: BAND, bootStyle: 'gi',
       },
       portraitColor: '#f08a24',
     },

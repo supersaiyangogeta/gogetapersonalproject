@@ -275,7 +275,8 @@
         for (const s2 of [1, -1]) this.bust.push(this.add(chest, S, top, { pos: [s2 * 0.064 * sx, 0.17, 0.212 * dz * 0.86], scale: [0.05 * k * sx, 0.044 * k, 0.042 * k], outline: 0.5 }));
         if (o.topStyle === 'gi') this.gi.torso.push(...this.bust);
       }
-      if (o.topStyle === 'bare' || o.pecs) {
+      if (o.muscles && o.topStyle === 'bare') this._buildMuscles(chest, spine, o.muscles === true ? {} : o.muscles, o.pecs || skin);
+      else if (o.topStyle === 'bare' || o.pecs) {
         const pc = o.pecs || skin;
         for (const s of [1, -1]) this.add(chest, S, pc, { pos: [s * 0.075, 0.16, b.chestD * 0.62], scale: [0.075, 0.055, 0.045], outline: 0.4 });
       }
@@ -502,6 +503,12 @@
         this.add(kn, G.tube(b.shinR * 1.32, b.shinR * 1.12, b.shinLen * bootTop + 0.03), boots, { pos: [0, -b.shinLen * (1 - bootTop), 0] });
         // bootTrimAt: how far below the boot's rim its band sits (Beerus' gold band a little way down the shaft)
         if (o.bootTrim !== undefined) this.add(kn, G.tube(b.shinR * 1.38, b.shinR * 1.36, 0.028), o.bootTrim, { pos: [0, -b.shinLen * (1 - bootTop) + 0.012 - (o.bootTrimAt || 0), 0], outline: 0.6 });
+        // outfit.wrapLines: cloth wound round the boot shaft (Gogeta's shin wraps) — thin rings in a darker colour,
+        // alternately tilted, so the wraps read as wound cloth and not as a plain tube
+        if (o.wrapLines !== undefined) {
+          const top = b.shinLen * (1 - bootTop), n = 4;
+          for (let k = 0; k < n; k++) this.add(kn, G.torus(1, 0.16), o.wrapLines, { pos: [0, -top - (b.shinLen * bootTop * (k + 0.6)) / (n + 0.4), 0], rot: [Math.PI / 2 + (k % 2 ? 0.16 : -0.16), 0, 0], scale: [b.shinR * 1.3 - k * 0.002, b.shinR * 1.24 - k * 0.002, b.shinR * 0.9], outline: 0, shadow: false });
+        }
         // a sock showing over the top of the boot (Videl's)
         if (o.socks !== undefined) this.add(kn, G.tube(b.shinR * 1.2, b.shinR * 1.17, 0.07), o.socks, { pos: [0, -b.shinLen * (1 - bootTop) + 0.062, 0], outline: 0.6 });
         if (o.legBands !== undefined) this.add(kn, G.tube(b.shinR * 1.18, b.shinR * 1.16, 0.05), o.legBands, { pos: [0, -0.06, 0], outline: 0.6 });
@@ -1133,6 +1140,36 @@
      * the belly with the front left open, so the shirt (outfit.top) shows down the middle, and a
      * collar standing round the back of the neck. The sleeves are the outfit's long sleeves.
      */
+    /**
+     * A FIGHTER'S BARE TORSO (outfit.muscles, with topStyle 'bare'): the chest and belly drawn in planes, not as a
+     * smooth tube. Broad pec plates sized by the chest's own width and seated ON its surface (the old pec balls sat
+     * inside wide chests and vanished), and the six blocks of the abdomen, each a soft lump in the skin colour whose
+     * ink outline draws the line between the muscles the way an anime cel does. m = { abs: rows (default 3), size }.
+     */
+    _buildMuscles(chest, spine, m, color) {
+      const b = this.b, S = G.sphere();
+      const at = (pts, y) => {
+        for (let i = 0; i < pts.length - 1; i++) {
+          const [ra, ya] = pts[i], [rb, yb] = pts[i + 1];
+          if ((y >= ya && y <= yb) || (y <= ya && y >= yb)) return ra + ((rb - ra) * (y - ya)) / ((yb - ya) || 1);
+        }
+        return pts[0][0];
+      };
+      const k = m.size || 1;
+      // the pecs: in chest space, the chest lathe scaled (chestW / 0.2, 1, chestD / 0.2 * 1.02)
+      const sx = b.chestW / 0.2, sz = (b.chestD / 0.2) * 1.02 * (this._loose || 1);
+      const py = 0.185, front = at(CHEST_PTS, py) * sz;
+      this.pecMeshes = [];
+      for (const s of [1, -1]) this.pecMeshes.push(this.add(chest, S, color, { pos: [s * 0.062 * sx, py, front - 0.02 * k], rot: [-0.12, s * 0.32, 0], scale: [0.07 * sx * k, 0.052 * k, 0.034 * k], outline: 0.5 }));
+      // the abs: in spine space, the belly lathe scaled (waistW / 0.13, absLen / 0.2, waistD / 0.13 * 0.95)
+      const ax = b.waistW / 0.13, ay = b.absLen / 0.2, az = (b.waistD / 0.13) * 0.95;
+      const rows = m.abs === undefined ? 3 : m.abs;
+      for (let r = 0; r < rows; r++) {
+        const yu = 0.02 + r * 0.066, y = yu * ay, z = at(ABS_PTS, yu) * az;
+        for (const s of [1, -1]) this.add(spine, S, color, { pos: [s * 0.029 * ax, y, z - 0.006 * k], scale: [0.026 * ax * k, 0.029 * ay * k, 0.016 * k], outline: 0.4 });
+      }
+    }
+
     _buildJacket(chest, spine, jk) {
       const b = this.b;
       let mat = this.mats.get('jacket');
