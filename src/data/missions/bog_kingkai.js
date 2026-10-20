@@ -20,6 +20,7 @@
 (function () {
   'use strict';
   const V3 = THREE.Vector3;
+  const U = SL.util;
   const K = () => SL.data.bogKit;
   const S = (SL.data.scenes = SL.data.scenes || {});
   const A = () => SL.data.bogAwaken;
@@ -34,6 +35,8 @@
 
   function setup(battle) {
     const b = battle, KKP = A().KKP;
+    // Goku of the Super era: his own transformation lines, not Namek's
+    K().superVoice(b);
     const goku = b.spawn({ charId: 'goku', player: true, team: 0, pos: KKP.goku.clone(), startKi: 100 });
     const beerus = b.spawn({ charId: 'beerus', team: 1, pos: KKP.goku.clone().add(new V3(0, 0, -7)), tags: { boss: true } });
     const whis = b.spawn({ charId: 'whis', team: 0, pos: new V3(8, 0, -9) });
@@ -48,8 +51,6 @@
     goku.cannotDie = true;
     // the forms come by the story's cinematics, not the transform button (see transformCine)
     goku.lockedForms = { kaioken: true, ssj: true, ssj2: true, ssj3: true, god: true, godki: true };
-    // Battle of Gods' Goku, not Namek's: no "I won't let you hurt anyone else!" when the gold comes
-    b.lineOverride = { goku_ssj: null, goku_ssj2: null, goku_ssj3: null };
     const house = K().kkHouse(b, KKP.house);
     b.story = { goku, beerus, whis, kingkai, bubbles, house };
   }
@@ -244,9 +245,12 @@
       m.clearObjectives();
       K().clearCombat(b);
       K().toForm(g, 'ssj3');
-      const C = stage(m);
-      m.space(g, 'ground', { pos: C.clone().add(new V3(0, 0, -4)), face: C });
-      m.space(bs, 'ground', { pos: C.clone().add(new V3(0, 0, 2.5)), face: g.pos });
+      stage(m);
+      // the line of the punch (the film after it uses the same one): the god out on the grass, Goku between him and
+      // King Kai's door — so the flick that ends it can send him through the house
+      const L = fingerLine(s);
+      m.space(bs, 'ground', { pos: L.F, face: L.door, pose: 'bs_idle', expr: 'calm' });
+      m.space(g, 'ground', { pos: L.F.clone().addScaledVector(L.d, 6), face: L.F });
       bs.storyEvade = null;
       bs.storyBlock = { from: [g], pose: 'bg_finger', count: 0 };
       m.powerGap(bs, { from: [g], mul: 0, beams: true });
@@ -275,6 +279,14 @@
   };
 
   P.after = K().after('A FRIENDLY SPAR');
+
+  /** Where the one-finger block happens: F (the god), the door behind Goku, d (from the god toward the door). */
+  function fingerLine(s) {
+    const door = s.house.door();
+    const F = door.clone().add(new V3(0, 0, 9));
+    F.y = 0;
+    return { F, door, d: door.clone().sub(F).setY(0).normalize() };
+  }
 
   /* ============================================================================ SCENES */
   const cast = (m) => K().cast(m);
@@ -322,52 +334,72 @@
       {
         call: (ctx) => {
           const s = st(ctx), b = ctx.b;
-          const door = s.house.door();
-          const F = door.clone().add(new V3(0, 0, 9));
-          const d = door.clone().sub(F).setY(0).normalize();
-          ctx.m.space(s.beerus, 'ground', { pos: F, face: door, pose: 'bs_idle', expr: 'calm' });
-          ctx.m.space(s.goku, 'ground', { pos: F.clone().addScaledVector(d, 6.5), face: F, pose: 'dash', expr: 'shout' });
-          const tip = s.beerus.chest().addScaledVector(d, 0.62);
-          pt(ctx, 'tip', tip);
-          pt(ctx, 'stop', F.clone().addScaledVector(d, 1.25));
-          // the lens square to the line between them: the fist from one side, the finger from the other
-          pt(ctx, 'tipCam', tip.clone().add(new V3(-d.z, 0, d.x).multiplyScalar(1.5)).add(new V3(0, 0.12, 0)));
+          const L = fingerLine(s), F = L.F, d = L.d;
+          // the punch the player threw becomes the charge: from where he is on the line (pulled back far enough for
+          // a run-up), never a cut to somewhere else
+          const along = U.clamp(s.goku.pos.clone().sub(F).dot(d), 3.5, 7);
+          ctx.m.space(s.beerus, 'ground', { pos: F, face: L.door, pose: 'bs_idle', expr: 'calm' });
+          ctx.m.space(s.goku, 'air', { pos: F.clone().addScaledVector(d, along), height: 0.25, face: F, pose: 'dash', expr: 'shout' });
+          pt(ctx, 'stop', F.clone().addScaledVector(d, 1.3).add(new V3(0, 0.25, 0)));
           ctx.dir = d;
+          s.goku.auraViewCap = 0.35;
           b.sfx('dash', s.goku, { vol: 1 });
+          b.sfx('kiCharge', s.goku, { vol: 0.9, pitch: 1.3 });
         },
-        space: { who: 'goku', mode: 'flight', to: 'stop', seconds: 0.55, pose: 'bg_stoppedPunch', endPose: 'bg_stoppedPunch' },
+        space: { who: 'goku', mode: 'flight', to: 'stop', seconds: 0.6, pose: 'bg_stoppedPunch', endPose: 'bg_stoppedPunch' },
         tick: (ctx, t) => {
           const s = st(ctx), b = ctx.b;
-          // the finger comes up at the last instant — nothing else moves
-          if (t > 0.38 && s.beerus.anim.name !== 'bg_finger') s.beerus.setState('scripted', { pose: 'bg_finger', expression: 'calm', speed: 30 });
+          // the finger comes up at the last instant — nothing else on him moves
+          if (t > 0.42 && s.beerus.anim.name !== 'bg_finger') s.beerus.setState('scripted', { pose: 'bg_finger', expression: 'calm', speed: 30 });
           b.vfx.trail(s.goku.handPos('R'), 0xffe27a, 0.35, 0.25);
+          if (b.frame % 3 === 0) b.vfx.dust(s.goku.pos.clone().setY(SL.Staging.groundY(b, s.goku.pos.x, s.goku.pos.z)), 0.6, 2);
         },
-        cam: { from: { at: 'goku', local: [1.3, 0.4, 0.4] }, look: { at: 'goku', local: [0, 0.35, 2.2] }, fov: 52, follow: true },
+        // the camera runs alongside the fist, a little ahead of it, the god growing in the frame
+        cam: { from: { at: 'goku', local: [0.75, 0.3, 0.05] }, look: { at: 'goku', local: [0.05, 0.3, 3.4] }, fov: 50, follow: true, raw: true },
       },
       // CONTACT: knuckles on a fingertip, extreme close-up, the world slowing
       {
         call: (ctx) => {
           const s = st(ctx), b = ctx.b, d = ctx.dir;
-          ctx.m.space(s.goku, 'ground', { pos: ctx.cast.stop.pos.clone(), face: s.beerus.pos, pose: 'bg_stoppedPunch', expr: 'shock' });
+          ctx.m.space(s.goku, 'air', { pos: ctx.cast.stop.pos.clone(), height: 0.25, face: s.beerus.pos, pose: 'bg_stoppedPunch', expr: 'shout' });
           s.beerus.setState('scripted', { pose: 'bg_finger', expression: 'calm', speed: 30 });
-          b.slowmo(0.15, 1.4);
-          b.vfx.flash(ctx.cast.tip.pos, 2.6, 0xffffff, 0.3, SL.Toon.tex.glow);
-          b.vfx.sparks(ctx.cast.tip.pos, 0xfff3c0, 26, 10, 0.08);
-          b.vfx.ring(ctx.cast.tip.pos, 2.4, 0xffffff, 0.45);
+          s.goku.auraViewCap = 0.15;
+          // the poses settle in a few frames: put the knuckles on the fingertip now and keep them there (tick)
+          s.beerus.anim.update(0.5);
+          s.goku.anim.update(0.5);
+          const c = K().touch(s.goku, s.beerus);
+          const perp = new V3(-d.z, 0, d.x);
+          pt(ctx, 'tip', c);
+          pt(ctx, 'tipCam', c.clone().addScaledVector(perp, 0.95).addScaledVector(d, 0.12).add(new V3(0, 0.06, 0)));
+          pt(ctx, 'tipCam2', c.clone().addScaledVector(perp, 0.62).addScaledVector(d, 0.08).add(new V3(0, 0.04, 0)));
+          b.slowmo(0.12, 1.6);
+          b.vfx.flash(c, 1.4, 0xffffff, 0.25, SL.Toon.tex.glow);
+          b.vfx.sparks(c, 0xfff3c0, 26, 10, 0.06);
+          // the ring of the impact stands across the line of the punch, round the fingertip
+          b.vfx.ring(c, 1.6, 0xffffff, 0.5, d);
+          b.vfx.ring(c, 0.8, 0xfff2c0, 0.35, d);
           b.sfx('explosionBig', s.beerus, { pitch: 0.55, vol: 1.3 });
           b.sfx('punchHeavy', s.beerus, { pitch: 0.45, vol: 1.3 });
-          SL.ScreenFX.flash(0.3);
-          ctx.boom = 0;
+          SL.ScreenFX.flash(0.22);
         },
-        cam: { from: { at: 'tipCam' }, look: { at: 'tip' }, fov: 26 },
-        hold: 1.4,
+        tick: (ctx) => {
+          const s = st(ctx);
+          const c = K().touch(s.goku, s.beerus);
+          ctx.cast.tip.pos.copy(c);
+        },
+        cam: { from: { at: 'tipCam' }, to: { at: 'tipCam2' }, look: { at: 'tip' }, fov: 24, raw: true, ease: 'out' },
+        hold: 1.5,
       },
       // THE SHOCKWAVE: out across the grass — the house rattling, the tree bent, King Kai off his feet; the god unmoved
       {
         call: (ctx) => {
           const s = st(ctx), b = ctx.b;
+          s.goku.auraViewCap = null;
           K().shockwave(b, s.beerus.pos, { radius: 26, grass: 0x6ab83a });
-          pt(ctx, 'wideW', s.beerus.pos.clone().add(new V3(-ctx.dir.z, 0, ctx.dir.x).multiplyScalar(13)).add(new V3(0, 3.2, 0)));
+          b.vfx.ring(ctx.cast.tip.pos, 9, 0xffffff, 0.7, ctx.dir);
+          // the grass flattened outward in a ring, and a gust of it
+          for (let i = 0; i < 3; i++) b.vfx.ring(s.beerus.pos.clone().add(new V3(0, 0.1 + i * 0.3, 0)), 6 + i * 7, 0xd8f0b0, 0.5 + i * 0.25, new V3(0, 1, 0));
+          pt(ctx, 'wideW', s.beerus.pos.clone().add(new V3(-ctx.dir.z, 0, ctx.dir.x).multiplyScalar(11)).add(new V3(0, 1.6, 0)));
           b.sfx('wind', null, { vol: 1.2, pitch: 0.6 });
         },
         space: [
@@ -377,13 +409,25 @@
         tick: (ctx, t) => {
           const s = st(ctx);
           if (s.house) s.house.shake(Math.max(0, 1 - t / 1.6), s.beerus.pos);
+          ctx.cast.tip.pos.copy(K().touch(s.goku, s.beerus));
         },
-        cam: { from: { at: 'wideW' }, look: { at: 'beerus', off: [0, 0.6, 0] }, fov: 54 },
+        cam: { from: { at: 'wideW' }, look: { at: 'beerus', off: [0, 0.7, 0] }, fov: 50 },
         hold: 1.8,
       },
+      // the contrast: everything he has, his whole body behind it...
       {
-        cam: { subject: 'goku', focus: 'face', angle: 'front' },
-        hold: 1.4,
+        call: (ctx) => (st(ctx).goku.auraViewCap = 0.2),
+        pose: [{ who: 'goku', pose: 'bg_stoppedPunch', face: 'shout', speed: 10 }],
+        tick: (ctx) => ctx.cast.tip.pos.copy(K().touch(st(ctx).goku, st(ctx).beerus)),
+        cam: { subject: 'goku', focus: 'upper', angle: 'three', side: -1, height: -0.05 },
+        sfx: { name: 'roar', vol: 0.7, pitch: 0.9 },
+        hold: 1.2,
+      },
+      // ...and the god, bored, one finger out, not a hair out of place
+      {
+        tick: (ctx) => ctx.cast.tip.pos.copy(K().touch(st(ctx).goku, st(ctx).beerus)),
+        cam: { subject: 'beerus', focus: 'upper', angle: 'three', side: -1 },
+        hold: 1.0,
       },
       {
         cam: { subject: 'beerus', focus: 'closeup', angle: 'three' },
@@ -518,6 +562,7 @@
         hold: 2.2,
       },
       {
+        pose: [{ who: 'whis', pose: 'w_finger', face: 'grin', speed: 6 }],
         cam: { subject: 'whis', focus: 'upper', angle: 'three', side: -1 },
         say: { who: 'whis', line: 'Earth! I hear the food there is wonderful.', duration: 2.4 },
         hold: 2.4,

@@ -467,7 +467,8 @@
     gogeta_broly: {
       slot: 'outfit', name: 'Super Broly', chars: ['gogeta'], era: 'super', kind: 'movie', canon: true, accuracy: 'reference',
       status: 'prototype', unlock: { missionComplete: 'whatif_gogeta' }, base: 'gogeta_reborn',
-      look: { jacket: { color: 0x141418, open: 1.45 }, paddedCollar: { color: 0xf2c43a, size: 1.12 }, belt: 0x2a8a98, boots: 0x2a7f8a },
+      // (colours from the owner's Super Broly model sheet: a charcoal vest, a pale gold collar, light grey trousers)
+      look: { jacket: { color: 0x34363e, open: 2.0, short: true }, paddedCollar: { color: 0xdccf5a, size: 1.12 }, belt: 0x1f7d96, boots: 0x24718a, legs: 0x24718a, wrapLines: 0x164a5c, pants: 0xe8e8e4, wrist: 0x46484f, shoes: 0x2c2e34 },
     },
     gogeta_gt: {
       slot: 'outfit', name: 'Super Saiyan 4 (GT)', chars: ['gogeta'], era: 'super', kind: 'gt', canon: true,

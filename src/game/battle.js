@@ -1285,7 +1285,8 @@
       // the player's own aura under the gameplay camera is see-through enough that whatever it is
       // fighting stays readable behind it (owner's Frieza fairness pass: at close range a Kaioken's
       // flames hid every wind-up); a cinematic shot shows it at full strength
-      for (const f of this.fighters) if (f.aura) f.aura.view = f === p && camTarget && !this.camera.inShot ? 0.45 : 1;
+      // f.auraViewCap: a film's close shots keep a fighter's aura thin so the body inside it reads (a transformation)
+      for (const f of this.fighters) if (f.aura) f.aura.view = Math.min(f === p && camTarget && !this.camera.inShot ? 0.45 : 1, f.auraViewCap === undefined || f.auraViewCap === null ? 1 : f.auraViewCap);
       const focus = p ? p.pos : new V3();
       this.stage.update(frameDt, focus);
       this.vfx.update(frameDt * Math.max(scale, 0.35), this.camera.camera);

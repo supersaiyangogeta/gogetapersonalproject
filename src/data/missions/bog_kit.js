@@ -285,6 +285,19 @@
     const b = Math.sin(t * 2);
     return { root: { y: b * 0.004 }, spine: [2, 0, 0], chest: [0, 0, 0], head: [10, 0, 0], shoulderL: [-14, 0, 52], elbowL: [-8, 0, 0], shoulderR: [-14, 0, -52], elbowR: [-8, 0, 0], thighL: [-2, 0, 8], kneeL: [4, 0, 0], thighR: [-2, 0, -8], kneeR: [4, 0, 0], hands: ['open', 'open'] };
   };
+  // THE CHAIN (the owner's ritual brief): six round the circle, both arms out to the neighbours on either side — for a
+  // ring of six the neighbours stand sixty degrees off straight ahead — heads bowed, eyes shut
+  PZ.bg_ringLink = (t) => {
+    const b = Math.sin(t * 2);
+    return { root: { y: b * 0.004 }, spine: [4, 0, 0], chest: [2, 0, 0], neck: [6, 0, 0], head: [16, 0, 0], shoulderL: [-40, 0, 58], elbowL: [-8, 0, 0], shoulderR: [-40, 0, -58], elbowR: [-8, 0, 0], thighL: [-2, 0, 6], kneeL: [4, 0, 0], thighR: [-2, 0, -6], kneeR: [4, 0, 0], hands: ['open', 'open'] };
+  };
+  // ...lifted off the deck by the God Ki: the same chain, the feet hanging, the head back a little
+  PZ.bg_ringFloat = (t) => Object.assign(PZ.bg_ringLink(t), { root: { y: 0.02 * Math.sin(t * 1.4) }, head: [-6, 0, 0], neck: [-4, 0, 0], thighL: [-8, 0, 8], kneeL: [22, 0, 0], footL: [34, 0, 0], thighR: [-6, 0, -8], kneeR: [18, 0, 0], footR: [34, 0, 0] });
+  // GOKU HELD UP IN THE LIGHT: arms and legs spread wide, the head tilted back, eyes closed — the cross
+  PZ.bg_godFloat = (t) => {
+    const b = Math.sin(t * 1.2);
+    return { root: { y: 0.03 * b, rx: -6 }, spine: [-4, 0, 0], chest: [-6 + b, 0, 0], neck: [-10, 0, 0], head: [-22, 0, 0], shoulderL: [-8, 0, 80], elbowL: [-6, 0, 0], shoulderR: [-8, 0, -80], elbowR: [-6, 0, 0], thighL: [-4, 0, 22], kneeL: [10, 0, 0], footL: [36, 0, 0], thighR: [-4, 0, -22], kneeR: [10, 0, 0], footR: [36, 0, 0], hands: ['open', 'open'] };
+  };
   // VIDEL: a hand on her belly, the other at her chest, a shy little smile
   PZ.bg_belly = { root: { y: 0 }, spine: [2, 0, 0], chest: [0, -6, 0], head: [12, 10, 6], shoulderL: [-24, 34, 14], elbowL: [-80, 0, 0], shoulderR: [-40, -20, -10], elbowR: [-118, 0, 0], thighL: [-4, 0, 6], kneeL: [8, 0, 0], thighR: [2, 0, -6], kneeR: [4, 0, 0], hands: ['open', 'open'] };
   // CHI-CHI: running at the lens, both arms reaching for him
@@ -374,6 +387,10 @@
   PZ.bg_jawDrop = (t) => ({ root: { y: 0 }, spine: [6, 0, 0], chest: [4, 0, 0], neck: [12, 0, 0], head: [8, 0, 0], shoulderL: [-4, 0, 10], elbowL: [-6, 0, 0], shoulderR: [-4, 0, -10], elbowR: [-6, 0, 0], thighL: [-2, 0, 6], kneeL: [4, 0, 0], thighR: [-2, 0, -6], kneeR: [4, 0, 0], hands: ['open', 'open'] });
   // a water gun levelled with both hands
   PZ.bg_aim = (t) => ({ root: { y: -0.06 }, spine: [4, 10, 0], chest: [2, 12, 0], head: [-2, -12, 0], shoulderR: [-86, 0, -6], elbowR: [-6, 0, 0], shoulderL: [-74, 0, 30], elbowL: [-36, 0, 0], thighL: [-20, 0, 12], kneeL: [26, 0, 0], thighR: [10, 0, -12], kneeR: [14, 0, 0], hands: ['fist', 'fist'] });
+  // second-hand embarrassment: a hand over the eyes, the head down
+  PZ.bg_facepalm = { root: { y: 0 }, spine: [8, 0, 0], chest: [6, 0, 0], neck: [10, 0, 0], head: [22, 0, 0], shoulderR: [-112, 20, -20], elbowR: [-128, 0, 0], shoulderL: [-6, 0, 12], elbowL: [-14, 0, 0], thighL: [-2, 0, 6], kneeL: [4, 0, 0], thighR: [-2, 0, -6], kneeR: [4, 0, 0], hands: ['open', 'open'] };
+  // cringing: shoulders up round the ears, both hands at the mouth, leaning away
+  PZ.bg_cringe = (t) => ({ root: { y: -0.03, rx: -6 }, spine: [-4, 0, 0], chest: [-4 + Math.sin(t * 12) * 0.8, 0, 0], neck: [-6, 0, 0], head: [6, 0, 0], shoulderL: [-70, 30, 30], elbowL: [-130, 0, 0], shoulderR: [-70, -30, -30], elbowR: [-130, 0, 0], thighL: [-4, 0, 8], kneeL: [8, 0, 0], thighR: [-4, 0, -8], kneeR: [8, 0, 0], hands: ['open', 'open'] });
   // the god, wet and still: rigid, the eye twitching (the expression does the twitch)
   PZ.bg_freeze = (t) => Object.assign({ root: { y: 0 }, spine: [0, 0, 0], chest: [-2 + Math.sin(t * 40) * 0.6, 0, 0], head: [-4, 0, Math.sin(t * 50) * 1.2], thighL: [-2, 2, 8], kneeL: [5, 0, 0], thighR: [0, -4, -9], kneeR: [9, 0, 0], hands: ['open', 'open'] }, BACK);
 
@@ -398,6 +415,13 @@
       if (f.lockedForms) delete f.lockedForms[id];
       if (f.storyLocks) delete f.storyLocks[id];
       if (f.formIndex !== i) f.applyForm(i);
+    },
+    /**
+     * GOKU OF THE SUPER ERA (the owner, 2026-10-06: "I won't let you hurt anyone else" is Namek's Goku, not this one).
+     * Every Chapter 16 mission calls this in setup: his transformation lines become the later Goku's.
+     */
+    superVoice(b) {
+      b.lineOverride = Object.assign({}, b.lineOverride || {}, { goku_ssj: 'goku_ssj_super', goku_ssj2: 'goku_ssj2_super', goku_ssj3: 'goku_ssj3_super' });
     },
     /** A watcher: present, posed, never part of the fight. */
     watch(f, pose = 'idle', face = 'calm') {
@@ -680,6 +704,22 @@
         group: g,
         pos: base.clone(),
         door: () => g.localToWorld(new V3(0, 0, 5.4)),
+        /** In the doorway itself (somebody peeking out of it stands here). */
+        doorway: () => g.localToWorld(new V3(0.15, 0, 3.75)),
+        /** The door swung open: the dark inside of the dome showing through the frame. */
+        open(on = true) {
+          if (!api._dark) {
+            api._dark = new THREE.Mesh(new THREE.PlaneGeometry(1.25, 1.95), new THREE.MeshBasicMaterial({ color: 0x14100c }));
+            api._dark.position.set(0, 0.99, 4.13);
+            g.add(api._dark);
+            api._leaf = door.clone();
+            api._leaf.position.set(-0.62, 1, 4.6);
+            api._leaf.rotation.y = -1.25;
+            g.add(api._leaf);
+          }
+          door.visible = !on;
+          api._dark.visible = api._leaf.visible = !!on;
+        },
         back: () => g.localToWorld(new V3(0, 0, -6)),
         /** Somebody went in the front and out the back. */
         smash() {
@@ -1014,6 +1054,172 @@
       };
     },
 
+    /**
+     * THE STORM OVER THE SHIP: banks of cloud wheeling round a point high above `centre` — gold at first, then magenta,
+     * then divine red. set(k) how much of it there is; colour(c); collapse(k) — the whole vortex drawn down into a
+     * funnel onto `into` (a point) and gone; dispose().
+     */
+    vortex(b, centre, height = 110) {
+      const T = SL.Toon;
+      const g = new THREE.Group();
+      g.position.copy(centre).add(new V3(0, height, 0));
+      const tex = T.canvasTexture(256, 256, (c, w, h) => {
+        c.clearRect(0, 0, w, h);
+        // a spiral of soft cloud, thinner toward the eye
+        for (let i = 0; i < 900; i++) {
+          const a = i * 0.11, r = 8 + (i / 900) * (w / 2 - 12);
+          const x = w / 2 + Math.cos(a) * r, y = h / 2 + Math.sin(a) * r;
+          const gr = c.createRadialGradient(x, y, 0, x, y, 10 + (i / 900) * 14);
+          gr.addColorStop(0, 'rgba(255,255,255,0.10)');
+          gr.addColorStop(1, 'rgba(255,255,255,0)');
+          c.fillStyle = gr;
+          c.fillRect(x - 26, y - 26, 52, 52);
+        }
+      });
+      const mats = [];
+      const layers = [];
+      for (let i = 0; i < 4; i++) {
+        const mt = new THREE.MeshBasicMaterial({ map: tex, color: 0xffd27a, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide, fog: false });
+        const ring = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mt);
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.y = -i * 5;
+        const sz = 260 - i * 50;
+        ring.scale.set(sz, sz, 1);
+        g.add(ring);
+        mats.push(mt);
+        layers.push(ring);
+      }
+      // the funnel it comes down through at the end
+      const fm = new THREE.MeshBasicMaterial({ color: 0xff3a5a, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false });
+      const funnel = new THREE.Mesh(new THREE.ConeGeometry(1, 1, 24, 1, true), fm);
+      funnel.rotation.x = Math.PI; // the point downward
+      g.add(funnel);
+      b.scene.add(g);
+      let k = 0, n = 0;
+      const base = g.position.clone();
+      const api = {
+        group: g,
+        set(v) {
+          k = U.clamp01(v);
+        },
+        colour(c) {
+          for (const mt of mats) mt.color.set(c);
+          fm.color.set(c);
+        },
+        /** every tick: turn the banks, at different speeds */
+        spin() {
+          n++;
+          layers.forEach((l, i) => (l.rotation.z += (0.002 + i * 0.0015) * (i % 2 ? -1 : 1) * (1 + k)));
+          for (const mt of mats) mt.opacity = Math.min(0.85, k * 0.9);
+        },
+        collapse(v, into) {
+          const c = U.clamp01(v);
+          const to = into || centre;
+          g.position.copy(base).lerp(to, U.easeInCubic(c));
+          const s2 = 1 - c * 0.97;
+          layers.forEach((l, i) => {
+            const sz = (260 - i * 50) * s2;
+            l.scale.set(sz, sz, 1);
+          });
+          fm.opacity = Math.sin(c * Math.PI) * 0.7;
+          const fh = Math.max(1, base.y - to.y) * (1 - c * 0.9);
+          funnel.scale.set(40 * s2 + 1, fh, 40 * s2 + 1);
+          funnel.position.y = -fh / 2;
+        },
+        dispose() {
+          if (g.parent) b.scene.remove(g);
+          layers.forEach((l) => l.geometry.dispose());
+          mats.forEach((mt) => mt.dispose());
+          funnel.geometry.dispose();
+          fm.dispose();
+          tex.dispose();
+        },
+      };
+      return api;
+    },
+
+    /** A sphere of light round a fighter (Goku held up in the God Ki): set(k) its strength, colour(c), dispose(). */
+    shell(b, f, color = 0xdff4ff) {
+      const mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false });
+      const ball = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 20), mat);
+      const glowS = new THREE.Sprite(new THREE.SpriteMaterial({ map: glow(), color, blending: THREE.AdditiveBlending, transparent: true, opacity: 0, depthWrite: false, fog: false }));
+      b.scene.add(ball, glowS);
+      let k = 0, n = 0;
+      const hook = () => {
+        n++;
+        const c = f.chest();
+        ball.position.copy(c);
+        glowS.position.copy(c);
+        const r = 1.35 + Math.sin(n * 0.1) * 0.04;
+        ball.scale.setScalar(r * (f.scale || 1));
+        glowS.scale.setScalar(5 * (f.scale || 1));
+        mat.opacity = k * (0.22 + Math.sin(n * 0.17) * 0.03);
+        glowS.material.opacity = k * 0.55;
+      };
+      b.onTick(() => {
+        if (!ball.parent) return false;
+        hook();
+        return true;
+      });
+      return {
+        set(v) {
+          k = U.clamp01(v);
+        },
+        colour(c) {
+          mat.color.set(c);
+          glowS.material.color.set(c);
+        },
+        dispose() {
+          b.scene.remove(ball, glowS);
+          ball.geometry.dispose();
+          mat.dispose();
+          glowS.material.dispose();
+        },
+      };
+    },
+
+    /** The body thinning toward a form's build (the God's leaner physique) by k (0 own, 1 the form's). */
+    slim(f, k, look) {
+      const mdl = f.model;
+      if (!mdl || !mdl.girth) return;
+      const mus = 1 + ((look.muscle || 1) - 1) * U.clamp01(k);
+      const bulk = 1 + ((look.bulk || 1) - 1) * U.clamp01(k);
+      for (const g of mdl.girth) g.mesh.scale.set(g.x * mus, g.y * (1 + (mus - 1) * g.gy), g.z * mus);
+      const lz = mdl._loose || 1;
+      if (mdl.chestMesh) mdl.chestMesh.scale.set((mdl.b.chestW / 0.2) * bulk * lz, 1 + (bulk - 1) * 0.5, (mdl.b.chestD / 0.2) * 1.02 * bulk * lz);
+      mdl._muscle = null; // the next setForm puts the form's own build back exactly
+    },
+
+    /** The chain of hands: a line of light from each one's hand to the next one's (call every tick). */
+    chain(b, list, color = 0xdff8ff, k = 1) {
+      if (b.frame % 2 || k < 0.05) return;
+      for (let i = 0; i < list.length; i++) {
+        const a = list[i], c = list[(i + 1) % list.length];
+        if (!a || !c || a.hidden || c.hidden) continue;
+        const p = a.handPos('L'), q = c.handPos('R');
+        for (let j = 0; j <= 3; j++) b.vfx.trail(p.clone().lerp(q, j / 3), color, 0.1 + k * 0.12, 0.25);
+      }
+    },
+
+    /** A hairstyle with every lock thrown upward, the way a Super Saiyan's goes (Videl in the ritual). Returns its id. */
+    spikeHair(style) {
+      const H = SL.data.hair, id = style + '_up';
+      if (H[id] || !H[style]) return H[style] ? id : style;
+      const up = (sp) => {
+        const d = sp.d;
+        const v = new V3(d[0] * 0.5, Math.max(0.55, Math.abs(d[1])) + 0.45, d[2] * 0.35).normalize();
+        return Object.assign({}, sp, { d: [v.x, v.y, v.z], l: sp.l * 1.35 + 0.03, r: sp.r * 0.9 });
+      };
+      const src = H[style];
+      H[id] = {
+        cap: src.cap,
+        glow: 0x4a3400,
+        spikes: (src.spikes || []).map(up).concat([{ a: [0, 1, 0.1], d: [0, 1, -0.12], l: 0.15, r: 0.045 }]),
+        mirror: (src.mirror || []).map(up).concat([{ a: [0.42, 0.88, 0.12], d: [0.42, 1, 0], l: 0.13, r: 0.04 }]),
+      };
+      return id;
+    },
+
     /** THE SKY TURNING: from the stage's own sky toward { top, horizon, bottom } by k (0 = its own). */
     skyTo(b, to, k) {
       const st = b.stage, s = st.def.sky, u = st.sky && st.sky.material.uniforms;
@@ -1023,6 +1229,8 @@
       u.horizon.value.set(s.horizon).lerp(new THREE.Color(to.horizon), k);
       u.bottom.value.set(s.bottom).lerp(new THREE.Color(to.bottom), k);
       if (to.fog !== undefined && b.scene.fog && st.def.fog) b.scene.fog.color.set(st.def.fog.color).lerp(new THREE.Color(to.fog), k);
+      // the sea under it takes the light (the ritual's storm: a crimson shadow over the whole ocean)
+      if (st.water && st.def.liner) st.water.material.color.set(st.def.liner.water).lerp(new THREE.Color(to.horizon).multiplyScalar(0.55), k * 0.75);
     },
     skyBack(b) {
       const st = b.stage, s = st.def.sky, u = st.sky && st.sky.material.uniforms;
@@ -1031,6 +1239,7 @@
       u.horizon.value.set(s.horizon);
       u.bottom.value.set(s.bottom);
       if (b.scene.fog && st.def.fog) b.scene.fog.color.set(st.def.fog.color);
+      if (st.water && st.def.liner) st.water.material.color.set(st.def.liner.water);
     },
     SKY: {
       storm: { top: 0x3a2a3a, horizon: 0xc8a050, bottom: 0x5a4a3a, fog: 0x8a7a5a },
@@ -1176,11 +1385,69 @@
       b.scene.remove(v.light, v.key);
       if (restore) for (const [f, h] of v.hidden) f.setHidden(h);
     },
-    /** The line of light across the void, drawn from `from` toward `to` as far as k. */
+    /**
+     * The line of light across the void, drawn from `from` toward `to` as far as k (call every tick): a streak, not
+     * a spark — a blade of blue the length of the dark behind a white-hot head, sparks shed along it, the light it
+     * casts on him growing as it comes.
+     */
     blueLine(b, from, to, k) {
-      const head = from.clone().lerp(to, U.clamp01(k));
-      for (let i = 0; i < 6; i++) b.vfx.trail(from.clone().lerp(head, 1 - i * 0.03 * (1 - k * 0.5)), i ? 0x6ac8ff : 0xe8f8ff, i ? 0.35 : 0.6, 0.6);
+      k = U.clamp01(k);
+      const head = from.clone().lerp(to, k);
+      const tail = from.clone().lerp(to, Math.max(0, k - 0.55));
+      b.vfx.slash(tail, head, 0x3a9cff, 0.07, 0.55);
+      b.vfx.slash(tail.clone().lerp(head, 0.35), head, 0x9ad8ff, 0.07, 0.22);
+      b.vfx.slash(tail.clone().lerp(head, 0.7), head, 0xffffff, 0.07, 0.08);
+      b.vfx.flash(head, 2.6, 0xbfe8ff, 0.08, SL.Toon.tex.glow);
+      for (let i = 0; i < 4; i++) b.vfx.trail(tail.clone().lerp(head, 0.55 + i * 0.12), i < 3 ? 0x6ac8ff : 0xe8f8ff, 0.3 + i * 0.1, 0.5);
+      if (b._void && b._void.key) b._void.key.color.set(0xdfe8ff).lerp(new THREE.Color(0x6ac8ff), k);
       return head;
+    },
+
+    /**
+     * VOICES IN THE DARK (the void, the owner's "overlapping chorus"): the friends' lines layered over each other —
+     * each one surfacing somewhere on the screen, faint, echoing, sinking away while the next is already there.
+     * lines: [[who, text]]; gap: seconds between them. Each is still a spoken line (a voice pack gets the cue).
+     * Returns dispose().
+     */
+    whispers(m, lines, gap = 0.5) {
+      const b = m.battle;
+      let layer = null;
+      try {
+        const sub = document.getElementById('subtitles');
+        layer = document.createElement('div');
+        layer.className = 'void-voices';
+        ((sub && sub.parentNode) || document.body).appendChild(layer);
+      } catch (e) {
+        layer = null;
+      }
+      const spots = [[22, 30], [70, 24], [30, 64], [74, 60], [48, 42], [14, 48], [84, 40], [56, 74], [38, 20]];
+      lines.forEach(([who, text], i) => {
+        b.after(1 + Math.round(i * gap * 60), () => {
+          const f = b.story && b.story[who];
+          const name = (f && f.def && f.def.name) || who;
+          if (SL.Voice && SL.Voice.cue) SL.Voice.cue({ speakerId: (f && f.def && f.def.id) || who, line: text, style: 'echo' });
+          if (!layer) return;
+          try {
+            const [x, y] = spots[i % spots.length];
+            const node = document.createElement('div');
+            node.className = 'vv';
+            node.style.left = x + '%';
+            node.style.top = y + '%';
+            const nm = document.createElement('span');
+            nm.className = 'who';
+            nm.textContent = name;
+            node.appendChild(nm);
+            node.appendChild(document.createTextNode(text));
+            layer.appendChild(node);
+          } catch (e) {
+            /* a page without a HUD: the cue was enough */
+          }
+        });
+      });
+      return () => {
+        if (layer && layer.parentNode) layer.parentNode.removeChild(layer);
+        layer = null;
+      };
     },
 
     /**
@@ -1287,39 +1554,50 @@
           p.y = b.stage.heightAt(p.x, p.z);
           b.vfx.rock(p, new V3(0, 2 + fx * 7 * rng(), 0), 0.08 + rng() * 0.22, b.stage.rockColor);
         }
-        if (b.frame % 6 === 0) b.vfx.dust(f.pos, 1 + fx * 2.5, 3, (b.stage.def.terrain && b.stage.def.terrain.sand) || 0xc8b890);
+        // pale dust low round the feet (the terrain's 'sand' is grass green on King Kai's planet: a green fog round him)
+        if (b.frame % 8 === 0) b.vfx.dust(f.pos, 0.8 + fx * (f.auraViewCap && f.auraViewCap < 0.5 ? 0.6 : 1.8), 2, 0xe2d8c0);
         if ((kind !== 'ssj' || fx > 0.6) && b.frame % (big ? 4 : 7) === 0) b.vfx.bolt(f.chest().add(new V3((rng() - 0.5) * 1.6, (rng() - 0.5) * 1.8, (rng() - 0.5) * 1.6)), 0.6 + rng() * 0.8);
         b.camera.addTrauma(0.012 + fx * (big ? 0.05 : 0.03));
       };
       m.tickHooks.push(fxHook);
-      b.stage.setMood(big ? 0.7 : 0.45, big ? 0x08080f : 0x141428, 1.4);
+      // the sky darkens toward a cold violet (toward black, a yellow sky like King Kai's turns olive-green)
+      b.stage.setMood(big ? 0.5 : 0.35, big ? 0x1a1030 : 0x1c1838, 1.4);
       if (o.music !== undefined) m.music(null, o.music);
       const shot = (spec, s) => SL.Cinema.shotOn(m, cast, spec, s + 0.5);
-      const manual = (fn, s) => m.shot(fn, s + 0.5, { cut: true, blendIn: 0, subject: f });
+      const manual = (fn, s) => m.shot(fn, s + 0.5, { cut: true, blendIn: 0, subject: f, aimFree: true });
       const fwd = () => f.forward.clone().setY(0).normalize();
       const side = () => {
         const v = fwd();
         return new V3(v.z, 0, -v.x);
       };
+      // the close shots keep the aura thin (the camera is inside it otherwise: a gold-green fog, no Goku); it only
+      // erupts at the wide burst
+      const thin = (v) => (f.auraViewCap = v);
+      m.onDispose(() => (f.auraViewCap = null));
       // A — WIDE: the two of them, the watcher calm
       if (o.lineBefore) m.say('goku', o.lineBefore, 2.6);
       shot(w ? { subject: 'f', with: 'w', focus: 'full' } : { subject: 'f', focus: 'wide', angle: 'three', room: 3 }, 2);
       f.setState('scripted', { pose: 'g_ssjClench', expression: 'grit', speed: 6, aura: 0.25 });
+      thin(0.6);
       b.sfx('heartbeat', f);
       yield* m.cine(big ? 2 : 1.4);
-      // B — FEET: the ground starts to answer
+      // B — FEET: the ground starts to answer (a lens at shin height looking down at the boots and the grass —
+      //     never up the body)
+      thin(0.22);
+      f.setState('scripted', { pose: 'g_ssjClench', expression: 'grit', speed: 6, aura: 0.18 });
       manual((tt, out) => {
         const p = f.pos;
-        out.pos.copy(p).addScaledVector(fwd(), 1.5).addScaledVector(side(), 0.7).add(new V3(0, 0.22, 0));
-        out.look.copy(p).add(new V3(0, 0.3, 0));
-        out.fov = 50;
+        out.pos.copy(p).addScaledVector(fwd(), 1.7).addScaledVector(side(), 0.9).add(new V3(0, 0.55 - tt * 0.1, 0));
+        out.look.copy(p).add(new V3(0, 0.12, 0));
+        out.fov = 46;
       }, 1.4);
       if (b.stage.crater && b.stage.hasGround) b.stage.crater(f.pos, 1.6, 0.06, null);
       b.sfx('rumble', f, { vol: 0.8 });
       yield* m.cine(big ? 1.5 : 1.1);
       // C — TORSO: the aura climbs him
+      thin(0.3);
       shot({ subject: 'f', focus: 'upper', angle: 'three', side: -1 }, 1.6);
-      f.setState('scripted', { pose: 'g_ssjClench', expression: 'grit', speed: 6, aura: 0.6 });
+      f.setState('scripted', { pose: 'g_ssjClench', expression: 'grit', speed: 6, aura: 0.3 });
       b.sfx('kiCharge', f, { vol: 0.9 });
       yield* m.cine(big ? 1.6 : 1.2);
       // D — HANDS: the fists close
@@ -1332,18 +1610,28 @@
       }, 1.1);
       b.sfx('block', f, { pitch: 0.5, vol: 0.6 });
       yield* m.cine(1.05);
-      // E — FACE: the head goes back, the roar
-      f.setState('scripted', { pose: big ? 'bg_ssj3Roar' : 'g_ssjRage', expression: 'shout', speed: 7, aura: 0.85 });
-      shot({ subject: 'f', focus: 'closeup', angle: 'front' }, 1.4);
+      // E — FACE: the head goes back, the roar — the lens below and in front of the face, the sky behind it
+      thin(0.28);
+      f.setState('scripted', { pose: big ? 'bg_ssj3Roar' : 'g_ssjRage', expression: 'shout', speed: 7, aura: 0.3 });
+      manual((tt, out) => {
+        const h = f.headPos();
+        out.pos.copy(h).addScaledVector(fwd(), 1.0 - tt * 0.15).addScaledVector(side(), 0.35).add(new V3(0, -0.3, 0));
+        out.look.copy(h).add(new V3(0, 0.12, 0));
+        out.fov = 38;
+      }, 1.4);
       b.sfx('roar', f, { vol: 1, pitch: big ? 0.8 : 1 });
       b.sfx('ssjRise', f, { vol: 1 });
       yield* m.cine(big ? 1.4 : 1.1);
-      // F — HAIR: the camera over his head as the hair comes out of the scalp
+      // F — HAIR: in profile against the sky, the head thrown back — the hair coming out of the scalp and down his
+      //     back in stages; the lens drifts back as it grows so the whole mane stays in the frame
+      thin(0.12);
+      if (f.aura) f.aura.target = 0.15;
       manual((tt, out) => {
         const h = f.headPos();
-        out.pos.copy(h).addScaledVector(fwd(), -0.9).addScaledVector(side(), 0.85).add(new V3(0, 0.75, 0));
-        out.look.copy(h).add(new V3(0, 0.05, 0)).addScaledVector(fwd(), -0.25);
-        out.fov = 44;
+        const back = big ? tt * 0.9 : 0;
+        out.pos.copy(h).addScaledVector(side(), 1.5 + back).addScaledVector(fwd(), 0.35).add(new V3(0, 0.05 - back * 0.3, 0));
+        out.look.copy(h).addScaledVector(fwd(), -0.3).add(new V3(0, -0.15 - back * 0.45, 0));
+        out.fov = 42;
       }, big ? 2.6 : 1.2);
       if (big) {
         const stages = ['goku_ssj3_g1', 'goku_ssj3_g2', 'goku_ssj3_g3'];
@@ -1361,6 +1649,7 @@
         }
       }
       // G — WIDE: the burst
+      thin(null);
       K.toForm(f, formId);
       f.setState('scripted', { pose: 'powerUp', expression: 'shout', speed: 16, aura: 1 });
       shot({ subject: 'f', focus: 'wide', angle: 'three', room: big ? 7 : 5 }, 1.6);
@@ -1394,6 +1683,28 @@
       }
       b.stage.clearMood(1);
       m.endShot();
+    },
+
+    /**
+     * THE CONTACT (the owner: the fist must hit the fingertip, not land "near" it). Slides `a` along the line between
+     * them — and up or down, a lunging body is off the ground anyway — until a's knuckles touch b's fingertip (or
+     * fist: opts.reachB 0.04). Call it every tick while a pose settles. Returns the contact point.
+     */
+    touch(a, bb, opts = {}) {
+      const fist = a.handPos(opts.handA || 'R').addScaledVector(a.forward, opts.reachA === undefined ? 0.06 : opts.reachA);
+      const tip = bb.handPos(opts.handB || 'R').addScaledVector(bb.forward, opts.reachB === undefined ? 0.085 : opts.reachB);
+      const dir = bb.pos.clone().sub(a.pos).setY(0);
+      if (dir.lengthSq() < 1e-6) return tip;
+      dir.normalize();
+      const gap = tip.clone().sub(fist);
+      const along = gap.dot(dir);
+      a.pos.addScaledVector(dir, along);
+      if (opts.vertical !== false) {
+        a.pos.y += U.clamp(gap.y, -0.35, 0.35);
+        a.grounded = false;
+      }
+      a.prevPos.copy(a.pos);
+      return tip;
     },
 
     /** A god's blow meeting the world: a ring along the ground, grass and grit thrown outward, dust. */

@@ -20,6 +20,7 @@
 (function () {
   'use strict';
   const V3 = THREE.Vector3;
+  const U = SL.util;
   const K = () => SL.data.bogKit;
   const S = (SL.data.scenes = SL.data.scenes || {});
 
@@ -34,6 +35,8 @@
 
   /** The party on the ship: everyone, in their places. Shared by every mission on the liner. */
   function setup(b, opts = {}) {
+    // Goku of the Super era: his own transformation lines, not Namek's
+    K().superVoice(b);
     const P = opts.player || 'vegeta';
     const sp = (charId, key, extra = {}) => b.spawn(Object.assign({ charId, team: 0, pos: v(key), player: charId === P }, extra));
     const s = {
@@ -147,9 +150,10 @@
     id: 'party',
     run: function* (m) {
       m.lock(true);
-      const h = life(m);
+      const h = (m.battle.story._life = life(m));
       yield* SL.Cinema.play(m, 'bgp_party');
       h.stop();
+      m.battle.story._life = null;
     },
   };
 
@@ -192,16 +196,40 @@
       m.limits({ light: false, heavy: false, blast: false, s1: false, s2: false, ult: false, transform: false, charge: false, up: false, upPressed: false, guard: false, target: false });
       const tray = K().tray(b, BUFFET.clone().add(new V3(-1.6, 1.0, 0)));
       m.onDispose(() => tray.dispose());
+      // the tray waiting at the buffet glows and pulses, so the eye goes to it before the marker is even read
+      const glowT = new THREE.Sprite(new THREE.SpriteMaterial({ map: SL.Toon.tex.glow, color: 0xffd24a, blending: THREE.AdditiveBlending, transparent: true, opacity: 0.8, depthWrite: false }));
+      glowT.scale.setScalar(1.4);
+      b.scene.add(glowT);
+      m.onDispose(() => {
+        if (glowT.parent) glowT.parent.remove(glowT);
+        glowT.material.dispose();
+      });
       const markFood = K().marker(m, { at: () => BUFFET.clone().add(new V3(-1.4, 0, 0)), label: 'FOOD', color: 0xffd24a, height: 2.2 });
       const markGod = K().marker(m, { at: () => s.beerus.pos, label: 'LORD BEERUS', color: 0xc89aff, height: 2.9 });
       markGod.show(false);
       // carrying: the arms hold the tray out front, and he cannot run at full tilt with it
       const prevPoses = veg.anim.poses, prevScale = veg.moveScale;
+      const LIM = { light: false, heavy: false, blast: false, s1: false, s2: false, ult: false, transform: false, charge: false, up: false, upPressed: false, guard: false, target: false };
       const carryOn = (on) => {
-        veg.moveScale = on ? 0.62 : prevScale;
+        // with a tray in both hands there is no dashing about: he walks it, carefully
+        m.limits(on ? Object.assign({ boost: false, boostPressed: false, dodge: false }, LIM) : LIM);
+        veg.moveScale = on ? 0.5 : prevScale;
         veg.anim.poses = on ? Object.assign({}, prevPoses, { run: SL.data.poses.bg_trayWalk, idle: SL.data.poses.bg_trayIdle }) : prevPoses;
       };
       m.onDispose(() => carryOn(false));
+      // WHAT, WHERE, TO WHOM — said by the camera before a word is read: the tray on the buffet (glowing, the FOOD
+      // marker over it), then across the deck to the god at his table (his marker), then back to Vegeta
+      m.shot((tt, out) => {
+        const food = BUFFET.clone().add(new V3(-1.6, 1.0, 0));
+        const god = s.beerus.pos.clone().add(new V3(0, 1.3, 0));
+        const k = U.smooth(U.clamp01((tt - 0.3) / 0.45));
+        out.pos.copy(veg.pos).add(new V3(0, 3.4, 0)).addScaledVector(food.clone().sub(veg.pos).setY(0).normalize(), -3.5);
+        out.look.copy(food).lerp(god, k);
+        out.fov = 50;
+      }, 3.2, { blendIn: 0.3 });
+      m.say('vegeta', '(Food. He wants food. The buffet — NOW.)', 2.8, { style: 'quiet' });
+      yield* m.cine(3.1);
+      m.endShot();
       m.lock(false);
       b.aiLocked = true;
       m.music('peaceful', 2);
@@ -209,8 +237,7 @@
       const moodText = () => 'Lord Beerus\' mood  ·  ' + Math.round(mood) + '%';
       m.objective('dishes', 'Bring Lord Beerus food from the buffet', { icon: 'target', target: HOST.dishes });
       m.objective('mood', moodText());
-      m.prompt('hostWalk', 'boost', 'Hurry', { until: () => delivered > 0 });
-      m.say('vegeta', '(Food. He wants food. The buffet — NOW.)', 2.8, { style: 'quiet' });
+      m.prompt('hostWalk', 'boost', 'Hurry (not with a tray)', { until: () => delivered > 0 });
       const hook = () => {
         if (b.inputLocked) return;
         t += 1 / 60;
@@ -227,6 +254,13 @@
         }
         // the way to go: gold footsteps on the deck from Vegeta to the target
         if (b.frame % 24 === 0) K().path(b, veg.pos, carrying ? s.beerus.pos : BUFFET, carrying ? 0xc89aff : 0xffd24a);
+        // the tray at the buffet breathes while it waits
+        glowT.visible = !carrying && tray.carrier !== veg && delivered < HOST.dishes;
+        if (glowT.visible) {
+          glowT.position.copy(tray.group.position).add(new V3(0, 0.15, 0));
+          glowT.material.opacity = 0.45 + 0.35 * Math.sin(b.frame * 0.12);
+        }
+
         // PICK UP
         if (!carrying && veg.pos.distanceTo(new V3(BUFFET.x - 1.4 + 1.4, 0, BUFFET.z)) < 2.4) {
           carrying = true;
@@ -307,23 +341,61 @@
   };
 
   /**
+   * THE AUDIENCE: the deck gathers in front of the stage (an arc of faces, the god and his attendant front and
+   * centre) so the crowd shots are faces, not a deck with dots on it. places() puts everyone back afterwards.
+   */
+  function gather(m) {
+    const b = m.battle, s = b.story;
+    const st = b.stage.landmarks.stage || new V3(-4, 0.5, -13);
+    const c = new V3(st.x, 0, st.z + 7.5);
+    const put = (f, x, z, pose = 'idle', expr = 'shock') => {
+      if (!f || f.hidden) return;
+      const p = new V3(c.x + x, 0, c.z + z);
+      SL.Staging.place(f, new V3(p.x, SL.Staging.groundY(b, p.x, p.z), p.z));
+      f.storySpace = 'ground';
+      K().faceTo(f, new V3(st.x, 0, st.z));
+      f.setState('scripted', { pose, expression: expr, speed: 6 });
+    };
+    // the front row: the god (still seething), Whis beside him, Bulma
+    put(s.beerus, 0.6, -1.2, 'bg_freeze', 'angry');
+    put(s.whis, 2.4, -0.6, 'w_idle', 'calm');
+    put(s.bulma, -2.2, -0.4, 'idle', 'shock');
+    // the arc behind them
+    put(s.krillin, -4.4, 0.8);
+    put(s.c18, -5.6, 2.2, 'armsCrossed', 'calm');
+    put(s.yamcha, -2.8, 1.8);
+    put(s.tien, 4.6, 1.6, 'armsCrossed', 'shock');
+    put(s.piccolo, 6, 3.2, 'armsCrossed', 'calm');
+    put(s.gohan, -0.6, 2.6);
+    put(s.videl, 0.8, 3);
+    put(s.chichi, 3.2, 3.2);
+    put(s.satan, -3.8, 3.6);
+    put(s.buu, 5.2, 4.4, 'bg_eat', 'grin');
+    put(s.goten, -1.2, 0.9, 'idle', 'shock');
+    put(s.trunks, 1.9, 1, 'idle', 'shock');
+    return { stage: st, centre: c };
+  }
+
+  /**
    * BINGO! The dance, on the beat: twelve steps, each one a move (the clapping hop left/right, the rigid spin, the
    * squatting kicks, a panic glance at the god, the final pose) and each one cut to a new angle — the stage low,
    * his terrified face, the god's aura going out, Whis, Bulma, the crowd's jaws.
    */
+  // (the owner's beat list: clapping hop L/R → rigid spin → squatting kicks, with the panic glances at the god in between,
+  //  the forced grin and the red cheeks at the end, the final pose; a new camera every beat)
   const BINGO = [
     { key: 'light', label: 'BIN-', pose: 'bg_hopL', line: 'BIN-', cam: 'wide' },
     { key: 'heavy', label: '-GO!', pose: 'bg_hopR', line: '-GO!', cam: 'stageLow' },
-    { key: 'light', label: 'BIN-', pose: 'bg_hopL', line: 'BIN-', cam: 'face' },
+    { key: 'light', label: 'BIN-', pose: 'bg_glance', line: 'BIN-...', cam: 'face', glance: true },
     { key: 'heavy', label: '-GO!', pose: 'bg_hopR', line: '-GO!', cam: 'beerus' },
     { key: 'light', label: 'FUN TIME', pose: 'bg_rigidSpin', line: 'Fun time...', cam: 'medium', spin: true },
     { key: 'heavy', label: 'BINGO!', pose: 'bg_rigidSpin', line: '...BINGO!', cam: 'crowd', spin: true },
     { key: 'light', label: 'EARTH IS', pose: 'bg_kickL', line: 'Earth is...', cam: 'stageLow' },
-    { key: 'heavy', label: 'A FUN', pose: 'bg_kickR', line: '...a fun...', cam: 'whis' },
+    { key: 'heavy', label: 'A FUN', pose: 'bg_kickR', line: '...a fun...', cam: 'gohan', glanceHead: true },
     { key: 'light', label: 'PLACE', pose: 'bg_kickL', line: '...place...', cam: 'bulma' },
-    { key: 'heavy', label: 'TO BE!', pose: 'bg_glance', line: '...to be!', cam: 'face', glance: true },
+    { key: 'heavy', label: 'TO BE!', pose: 'bg_glance', line: '...to be!', cam: 'whis', glance: true },
     { key: 'light', label: 'YEA-', pose: 'bg_hopL', line: 'YEA-', cam: 'smile', smile: true },
-    { key: 'heavy', label: '-HUUH!', pose: 'bg_finalPose', line: '-HUUUH!', cam: 'final' },
+    { key: 'heavy', label: '-HUUH!', pose: 'bg_finalPose', line: '-HUUUH!', cam: 'final', smile: true },
   ];
   P.bingo = {
     id: 'bingo',
@@ -334,14 +406,15 @@
       m.clearObjectives();
       const st = b.stage.landmarks.stage || new V3(-4, 0.5, -13);
       const spot = new V3(st.x, st.y, st.z + 0.6);
+      gather(m);
       SL.Staging.place(veg, spot);
       K().faceTo(veg, new V3(st.x, 0, 10));
       veg.model.addProp({ id: 'mic', shape: 'bottle', joint: 'handR', pos: [0, 0.02, 0.03], rot: [-0.4, 0, 0], color: 0x2a2a30, cap: 0x101012, scale: 1.3 });
       K().sweat(veg, true);
-      watch(m, spot, (k) => (k === 'mc' || k === 'dancer' ? 'knockdown' : 'idle'), 'shock');
+      watch(m, spot, (k) => (k === 'mc' || k === 'dancer' ? 'knockdown' : k === 'buu' ? 'bg_eat' : 'idle'), (k) => (k === 'buu' ? 'grin' : 'shock'));
       s.beerus.aura.setStyle({ color: 0xb87aff, core: 0xf2e0ff, particles: 0xd8b8ff, speed: 1.6 });
       s.beerus.setState('scripted', { pose: 'bg_freeze', expression: 'angry', speed: 6, aura: 0.8 });
-      const cast = { vegeta: veg, beerus: s.beerus, whis: s.whis, bulma: s.bulma, krillin: s.krillin, yamcha: s.yamcha, piccolo: s.piccolo, gohan: s.gohan };
+      const cast = { vegeta: veg, beerus: s.beerus, whis: s.whis, bulma: s.bulma, krillin: s.krillin, yamcha: s.yamcha, piccolo: s.piccolo, gohan: s.gohan, videl: s.videl };
       const front = new V3(st.x, 0, 10);
       const CAMS = {
         wide: { subject: 'vegeta', focus: 'wide', angle: 'front', room: 6 },
@@ -353,9 +426,15 @@
         beerus: { subject: 'beerus', focus: 'upper', angle: 'three' },
         whis: { subject: 'whis', focus: 'upper', angle: 'three' },
         bulma: { subject: 'bulma', focus: 'upper', angle: 'front' },
-        crowd: { subject: 'krillin', with: 'yamcha', focus: 'full' },
+        // the reverse angle: from beside the stage, over the crowd's faces
+        crowd: (tt, out) => {
+          out.pos.set(st.x + 3.2, 2.1, st.z + 2.4);
+          out.look.set(st.x - 0.4, 1.2, st.z + 9.5);
+          out.fov = 50;
+        },
+        gohan: { subject: 'gohan', with: 'videl', focus: 'upper' },
       };
-      const shot = (k) => SL.Cinema.shotOn(m, cast, CAMS[k] || CAMS.wide, 1.6);
+      const shot = (k) => (typeof CAMS[k] === 'function' ? m.shot(CAMS[k], 1.6, { cut: true, blendIn: 0 }) : SL.Cinema.shotOn(m, cast, CAMS[k] || CAMS.wide, 1.6));
       shot('wide');
       m.music('light_battle', 4);
       let spinT = 0, anger = 1;
@@ -376,19 +455,35 @@
         lead: 1.2,
         onBeat: (i) => {
           const x = BINGO[i];
-          veg.setState('scripted', { pose: x.pose, expression: x.smile ? 'grin' : x.glance ? 'shock' : i % 3 === 2 ? 'grin' : 'shout', speed: 16 });
+          // the face: shouting the song, the eyes always going back to the god; at the end the forced grin
+          veg.setState('scripted', { pose: x.pose, expression: x.smile ? 'forced' : x.glance ? 'shock' : i % 3 === 2 ? 'forced' : 'shout', speed: 16 });
           if (x.spin) spinT = 0.6;
-          if (x.glance) SL.Cinema.turnTo({ m }, veg, s.beerus.pos, 6);
+          // a panic glance: the whole head snaps round to him mid-move, then back to the crowd
+          if (x.glance) {
+            SL.Cinema.turnTo({ m }, veg, s.beerus.pos, 5);
+            b.after(26, () => SL.Cinema.turnTo({ m }, veg, front, 5));
+          }
           if (x.smile) K().blush(veg, true);
           m.say('vegeta', x.line, 0.75, { style: 'shout' });
           b.sfx('punchLight', veg, { pitch: 0.8 + (i % 2) * 0.4, vol: 0.45 });
+          // the stage boards answering every hop and kick, the sweat flying off him
           b.vfx.dust(veg.pos, 0.6, 3, 0xc8a070);
+          const hp = veg.headPos();
+          for (let k = 0; k < 3; k++) b.vfx.rock(hp, new V3((k - 1) * 1.6, 2 + k, ((i + k) % 2 ? 1 : -1) * 1.2), 0.03, 0xbfe8ff);
           anger = Math.max(0, 1 - (i + 1) / BINGO.length * 1.15);
-          // the watchers react as it goes on
+          // the watchers react as it goes on: shock, then the jaws, then the second-hand embarrassment
           if (i === 3) s.whis.setState('scripted', { pose: 'w_shock', expression: 'shock', speed: 6 });
+          if (i === 5) for (const f of [s.krillin, s.yamcha, s.tien]) f.setState('scripted', { pose: 'bg_jawDrop', expression: 'shock', speed: 6 });
+          if (i === 6) {
+            s.gohan.setState('scripted', { pose: 'bg_facepalm', expression: 'nervous', speed: 6 });
+            s.videl.setState('scripted', { pose: 'bg_cringe', expression: 'nervous', speed: 6 });
+          }
           if (i === 7) s.whis.setState('scripted', { pose: 'w_laugh', expression: 'smirk', speed: 6 });
           if (i === 8) s.bulma.setState('scripted', { pose: 'bg_jawDrop', expression: 'shock', speed: 6 });
-          if (i === 5) for (const f of [s.krillin, s.yamcha, s.piccolo, s.gohan, s.tien]) f.setState('scripted', { pose: 'bg_jawDrop', expression: 'shock', speed: 6 });
+          if (i === 9) {
+            s.piccolo.setState('scripted', { pose: 'bg_facepalm', expression: 'nervous', speed: 6 });
+            for (const f of [s.krillin, s.yamcha]) f.setState('scripted', { pose: 'bg_cringe', expression: 'nervous', speed: 6 });
+          }
           shot(x.cam);
         },
       });
@@ -434,7 +529,7 @@
         hold: 2.6,
       },
       {
-        cam: { subject: 'goten', focus: 'full', angle: 'three' },
+        cam: { subject: 'trunks', with: 'goten', focus: 'full' },
         say: { who: 'kid_trunks', line: 'Last one to the front of the boat is a Saibaman!', duration: 2.4, style: 'shout' },
         hold: 2.6,
       },
@@ -484,6 +579,7 @@
           ctx.m.space(s.beerus, 'ground', { pos: L.clone().add(new V3(-0.8, 0, 0)), face: v('bulma'), pose: 'bs_idle', expr: 'calm' });
           ctx.m.space(s.whis, 'ground', { pos: L.clone().add(new V3(1.2, 0, 0.6)), face: v('bulma'), pose: 'w_idle', expr: 'calm' });
           pt(ctx, 'land', L);
+          if (s._life) for (const f of [s.bulma, s.krillin, s.c18, s.chichi, s.satan]) s._life.pause(f);
           watch(ctx.m, L, 'idle', 'shock');
         },
         tick: (ctx, t) => st(ctx).travel && st(ctx).travel.set(t < 0.4 ? t / 0.4 : Math.max(0, 1 - (t - 0.4) / 1.2)),
@@ -493,21 +589,21 @@
       },
       // Bulma walks up to them — facing them
       {
-        space: { who: 'bulma', mode: 'ground', at: 'land', off: [0, 0, -3], face: 'beerus' },
+        space: { who: 'bulma', mode: 'ground', at: 'land', off: [2, 0, -3.1], face: 'beerus' },
         pose: [{ who: 'bulma', pose: 'bg_hips', face: 'smirk' }],
         cam: { subject: 'bulma', with: 'beerus', focus: 'full' },
         say: { who: 'bulma', to: 'beerus', line: 'Hey! I don\'t remember inviting you two. ...Well, anyone who shows up at my party is a guest!', duration: 4 },
         hold: 4,
       },
       {
-        pose: [{ who: 'whis', pose: 'w_bow', face: 'calm' }],
+        pose: [{ who: 'whis', pose: 'w_bow', face: 'soft' }],
         cam: { subject: 'whis', focus: 'upper', angle: 'three' },
         say: { who: 'whis', to: 'bulma', line: 'How kind. My name is Whis, and this is Lord Beerus. We heard there might be... food?', duration: 3.6 },
         hold: 3.6,
       },
       // Vegeta skids in and bows — TO Beerus
       {
-        space: { who: 'vegeta', mode: 'ground', at: 'beerus', off: [0, 0, -2.3], face: 'beerus' },
+        space: { who: 'vegeta', mode: 'ground', at: 'beerus', off: [-0.9, 0, -2.2], face: 'beerus' },
         pose: [{ who: 'vegeta', pose: 'bg_hostBow', face: 'nervous', speed: 10 }],
         call: (ctx) => K().sweat(st(ctx).vegeta, true),
         cam: { subject: 'vegeta', with: 'beerus', focus: 'full' },
@@ -703,6 +799,8 @@
           b.cameraTraumaAt(L.to, 0.8);
           b.sfx('groundImpact', s.vegeta, { vol: 1.1 });
           for (const f of [s.mc, s.dancer]) if (f) f.setState('scripted', { pose: 'stagger', expression: 'shock', speed: 10 });
+          // the whole party comes to see what just landed on the stage
+          gather(ctx.m);
         },
         cam: { subject: 'vegeta', focus: 'full', angle: 'three' },
         hold: 0.9,
@@ -729,8 +827,9 @@
           const s = st(ctx);
           K().faceTo(s.vegeta, new V3(s.vegeta.pos.x, 0, 10));
         },
-        pose: [{ who: 'vegeta', pose: 'bg_finalPose', face: 'shout', speed: 14 }],
-        cam: { subject: 'vegeta', focus: 'upper', angle: 'low' },
+        pose: [{ who: 'vegeta', pose: 'bg_bingo', face: 'forced', speed: 14 }],
+        // from the front, a little under him: the mic at his mouth, the fist punching the air, the terror in his eyes
+        cam: { subject: 'vegeta', focus: 'upper', focus2: 'closeup', angle: 'front', height: -0.06 },
         say: { who: 'vegeta', line: 'YEEAAAHHH! IT\'S TIME FOR BINGO!', duration: 2.6, style: 'shout' },
         music: { song: 'light_battle', level: 4 },
         shake: { at: 'vegeta', amount: 0.3 },
@@ -763,11 +862,19 @@
         sfx: { name: 'wind', vol: 0.4, pitch: 0.5 },
         hold: 2,
       },
+      // the crowd from the stage: every jaw on the floor
       {
-        cam: { subject: 'krillin', with: 'yamcha', focus: 'full' },
-        hold: 1.6,
+        call: (ctx) => {
+          const st2 = ctx.b.stage.landmarks.stage || new V3(-4, 0.5, -13);
+          pt(ctx, 'crowdCam', new V3(st2.x + 3.2, 2.1, st2.z + 2.4));
+          pt(ctx, 'crowdLook', new V3(st2.x - 0.4, 1.2, st2.z + 9.5));
+          for (const f of [st(ctx).krillin, st(ctx).yamcha, st(ctx).tien, st(ctx).satan]) f.setState('scripted', { pose: 'bg_jawDrop', expression: 'shock', speed: 6 });
+        },
+        cam: { from: { at: 'crowdCam' }, to: { at: 'crowdCam', off: [-0.8, -0.2, 0.6] }, look: { at: 'crowdLook' }, fov: 48, raw: true },
+        hold: 1.8,
       },
       {
+        pose: [{ who: 'piccolo', pose: 'bg_facepalm', face: 'nervous' }],
         cam: { subject: 'piccolo', focus: 'upper', angle: 'front' },
         hold: 1.2,
       },
@@ -841,6 +948,7 @@
           s.tray.on(s.buu);
           ctx.m.onDispose(() => s.tray && s.tray.dispose());
         },
+        pose: [{ who: 'whis', pose: 'w_eat', face: 'grin', speed: 6 }],
         cam: { subject: 'whis', focus: 'upper', angle: 'three' },
         say: { who: 'whis', to: 'beerus', line: 'Lord Beerus! You simply must try this — Earth\'s cooking is extraordinary!', duration: 3.4 },
         hold: 3.4,

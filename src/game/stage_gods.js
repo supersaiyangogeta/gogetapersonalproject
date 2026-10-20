@@ -216,6 +216,13 @@
     for (const z of [1.45, -1.45]) this._gMesh(new THREE.BoxGeometry(4.6, 1.1, 0.06), I.cloth2, { parent: bed, pos: [0, 3.6, z], outline: 0 });
     this.obstacles.push({ shape: 'cyl', x: 0, z: BZ, y: 0, r: 2, h: 0.9, top: 0.9, hp: 1e9, maxHp: 1e9, alive: true, group: bed, color: I.stone2 });
     this.landmarks.bed = new V3(0, 0.9, BZ);
+    // what the story camera has to see round (Cinema.occluded): the posts, the canopy and its two curtains — the
+    // posts never push anybody, they only keep a lens from parking behind them (the owner: Whis hidden by the bed)
+    this.occluders = this.occluders || [];
+    for (const [x, z] of [[2.1, 1.3], [-2.1, 1.3], [2.1, -1.3], [-2.1, -1.3]]) this.occluders.push({ shape: 'cyl', x, z: BZ + z, r: 0.2, bottom: 0, top: 4.3 });
+    this.occluders.push({ shape: 'box', min: new V3(-2.3, 3.0, BZ - 1.55), max: new V3(2.3, 4.32, BZ + 1.55) });
+    this.occluders.push({ shape: 'box', min: new V3(-2.25, 0, BZ - 1.45), max: new V3(2.25, 0.95, BZ + 1.45) });
+    this.landmarks.bedFront = new V3(0, 0, BZ + 1.4);
 
     // stone lanterns along the path, each with a violet flame
     for (const z of [-8, -14, -20]) {
@@ -533,6 +540,39 @@
       this.scene.add(l);
     }
     this.landmarks.center = new V3(0, 0, 0);
+    // a closed room: nobody (and no camera) goes up through the rock of the roof — see keepInDome
+    this.dome = { r: R + 22, sy: C.domeScale, y0: -2, inner: 0.93 };
+  };
+
+  /**
+   * THE DOME (the crystal cavern is a closed room under the sea floor). The roof is an ellipsoid of rock: radius r,
+   * squashed to sy, standing at y0, rough on the inside by about 6 % (inner keeps clear of the roughest of it).
+   * domeOut(p) is how far outside the inside surface p is (< 0: inside); keepInDome pulls a point (a fighter, the
+   * lens) back in with `margin` to spare and takes the outward part out of its velocity.
+   */
+  P.domeOut = function (p, margin = 0) {
+    const D = this.dome;
+    if (!D) return -1;
+    const y = (p.y - D.y0) / D.sy;
+    return Math.sqrt(p.x * p.x + p.z * p.z + y * y) - (D.r * D.inner - margin);
+  };
+  P.keepInDome = function (p, margin = 0, vel) {
+    const D = this.dome;
+    if (!D || p.y < D.y0) return false;
+    const y = (p.y - D.y0) / D.sy;
+    const q = Math.sqrt(p.x * p.x + p.z * p.z + y * y);
+    const lim = D.r * D.inner - margin;
+    if (q <= lim || q < 1e-6) return false;
+    const k = lim / q;
+    p.x *= k;
+    p.z *= k;
+    p.y = D.y0 + y * k * D.sy;
+    if (vel) {
+      const n = new V3(p.x, (p.y - D.y0) / (D.sy * D.sy), p.z).normalize();
+      const vn = vel.dot(n);
+      if (vn > 0) vel.addScaledVector(n, -vn);
+    }
+    return true;
   };
 
   /**

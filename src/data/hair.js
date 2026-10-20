@@ -117,9 +117,9 @@
   H.goku_ssj3 = {
     cap: { tilt: -0.5, sy: 1.06 },
     glow: 0x4a3400,
-    // a mane this long hangs: when the head goes back it swings back with gravity instead of turning
-    // with the skull into the shoulders (Animator, hair gravity)
-    gravity: 0.75,
+    // a mane this long hangs: when the head goes back each long lock swings back about its own root
+    // instead of turning with the skull into the shoulders (Animator, hair gravity; the scalp stays put)
+    gravity: 0.95,
     spikes: [
       { a: [0, 1, 0], d: [0.05, 1, -0.3], l: 0.3, r: 0.08 },
       { a: [0, 0.2, -1], d: [0, -1, -0.3], l: 1.28, r: 0.17 },
@@ -152,7 +152,7 @@
    */
   for (const [id, k] of [['goku_ssj3_g1', 0.25], ['goku_ssj3_g2', 0.5], ['goku_ssj3_g3', 0.78]]) {
     const grow = (sp) => (sp.l > 0.3 ? Object.assign({}, sp, { l: 0.3 + (sp.l - 0.3) * k, r: sp.r * (0.62 + 0.38 * k) }) : sp);
-    H[id] = { cap: H.goku_ssj3.cap, glow: H.goku_ssj3.glow, gravity: 0.75 * k, spikes: H.goku_ssj3.spikes.map(grow), mirror: H.goku_ssj3.mirror.map(grow) };
+    H[id] = { cap: H.goku_ssj3.cap, glow: H.goku_ssj3.glow, gravity: 0.95 * (0.5 + 0.5 * k), spikes: H.goku_ssj3.spikes.map(grow), mirror: H.goku_ssj3.mirror.map(grow) };
   }
   SL.data.ssj3Stage = (k) => (k < 0.12 ? null : k < 0.4 ? 'goku_ssj3_g1' : k < 0.65 ? 'goku_ssj3_g2' : k < 0.9 ? 'goku_ssj3_g3' : 'goku_ssj3');
 
@@ -548,6 +548,10 @@
       { a: [-0.42, 0.88, 0.3], d: [-0.55, 0.95, 0.04], l: 0.18, r: 0.058 },
       { a: [0.3, -0.1, -0.9], d: [0.34, -0.55, -0.8], l: 0.12, r: 0.05 },
       { a: [-0.3, -0.12, -0.9], d: [-0.36, -0.55, -0.78], l: 0.12, r: 0.05 },
+      // two short front locks over the temples, framing the peak (the bare forehead corners on either side of it
+      // read as pale holes in the hair)
+      { a: [0.36, 0.72, 0.58], d: [0.32, -0.62, 0.62], l: 0.11, r: 0.05, depth: 0.98, flat: 0.55 },
+      { a: [-0.36, 0.72, 0.58], d: [-0.32, -0.62, 0.62], l: 0.11, r: 0.05, depth: 0.98, flat: 0.55 },
       GOGETA_BANG,
     ],
   };

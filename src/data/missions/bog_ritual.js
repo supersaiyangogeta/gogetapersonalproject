@@ -21,12 +21,18 @@
   const BP = () => SL.data.bogParty;
   const S = (SL.data.scenes = SL.data.scenes || {});
 
-  const RIT = { centre: new V3(0, 0, 21), radius: 2.7, dragon: new V3(-27, 0, 24), attemptCap: 0.7, attemptSeconds: 3.2, seconds: 5.2 };
-  // the five (and the one inside Videl) round Goku
-  const RING = ['vegeta', 'gohan', 'videl', 'goten', 'trunks'];
+  // THE CIRCLE (the owner's ritual brief): the six stand in ONE tight ring facing inward, Goku a link in it like the
+  // others, hands reaching to the neighbours — not five round a sixth. radius 1.5 m: close enough for the hands.
+  const RIT = { centre: new V3(0, 0, 21), radius: 1.5, dragon: new V3(-27, 0, 24), attemptCap: 0.7, attemptSeconds: 3.2, seconds: 5.2, rise: 9 };
+  // round the ring from Goku (at the far side, facing the god across the circle): his sons, Videl, Trunks, Vegeta
+  const RING = ['goku', 'goten', 'gohan', 'videl', 'trunks', 'vegeta'];
+  const FIVE = ['goku', 'goten', 'gohan', 'trunks', 'vegeta'];
+  const DONORS = RING.slice(1);
 
   function setup(battle) {
     const b = battle;
+    // Goku of the Super era: his own transformation lines, not Namek's
+    K().superVoice(b);
     const s = BP().setup(b, { player: 'goku', godsHere: true });
     s.goku.lockedForms = { kaioken: true, god: true, godki: true };
     // after the god's temper: a few of them still a little worse for wear
@@ -35,16 +41,17 @@
     return s;
   }
 
-  /** The circle: Goku in the middle, the others round him holding hands. GROUND. */
+  /** The circle: everyone in it evenly round one ring, facing in, hands out to the next. GROUND. */
   function circle(m, who) {
     const b = m.battle, s = b.story;
     const list = who.map((k) => s[k]);
-    m.space(s.goku, 'ground', { pos: RIT.centre.clone(), face: new V3(0, 0, 40), pose: 'charge', expr: 'focused' });
     list.forEach((f, i) => {
-      const a = (i / Math.max(5, list.length)) * Math.PI * 2;
-      const p = RIT.centre.clone().add(new V3(Math.sin(a) * RIT.radius, 0, Math.cos(a) * RIT.radius));
+      const a = (i / list.length) * Math.PI * 2;
+      // the children stand a step further in, so their shorter arms still reach
+      const r = RIT.radius * (f === s.goten || f === s.trunks ? 0.88 : 1);
+      const p = RIT.centre.clone().add(new V3(Math.sin(a) * r, 0, Math.cos(a) * r));
       f.setHidden(false);
-      m.space(f, 'ground', { pos: p, face: RIT.centre, pose: 'bg_ring', expr: 'closed' });
+      m.space(f, 'ground', { pos: p, face: RIT.centre, pose: 'bg_ringLink', expr: 'closed' });
     });
     // everybody else watches from the rails
     const watch = { bulma: [-8, 14], chichi: [-9.6, 15.6], krillin: [8.6, 14], c18: [9.8, 15.6], piccolo: [10.6, 26], tien: [9.6, 29], yamcha: [7.6, 30],
@@ -56,24 +63,40 @@
       support.push({ f, at: new V3(watch[k][0], 0, watch[k][1]), pose: k === 'whis' ? 'w_idle' : k === 'beerus' ? 'bs_idle' : 'idle', face: k === 'beerus' || k === 'whis' ? 'calm' : 'shock' });
     }
     m.cast({ active: [s.goku], support }, { centre: RIT.centre.clone(), supportClear: 3 });
-    for (const f of list) f.setState('scripted', { pose: 'bg_ring', expression: 'closed' });
+    for (const f of list) f.setState('scripted', { pose: 'bg_ringLink', expression: 'closed' });
     return list;
   }
 
-  /** White hair and a white glow on the ones pouring their hearts in (k 0 gives them their own back). */
+  /** THE GLOW: a calm, harmonic blue-white light off each of them — not the jagged gold of a Super Saiyan. */
   function whiten(list, on) {
     for (const f of list) {
-      const mdl = f.model;
       if (on) {
-        const style = mdl.currentHair ? mdl.currentHair.split('|')[0] : mdl.app.hair && mdl.app.hair.style;
-        if (style) mdl.setHair(style, 0xf6f8ff);
-        f.aura.setStyle({ color: 0xffffff, core: 0xffffff, particles: 0xe8faff, speed: 1.2 });
+        f.aura.setStyle({ color: 0xcfeeff, core: 0xffffff, particles: 0xe8faff, speed: 0.8 });
         f.rimLight = { color: 0xeaf8ff, strength: 0.7 };
       } else {
-        mdl.setForm(f.form);
+        f.model.setForm(f.form);
         f.aura.setStyle(f.form.aura || { color: 0xffffff });
         f.rimLight = null;
       }
+    }
+  }
+
+  /**
+   * VIDEL'S RESONANCE: the child inside her is a Saiyan, and the ki goes through her — her hair stands up and burns
+   * gold, a Saiyan's gold aura round a human, the light on her face (on false gives her back her own).
+   */
+  function resonance(f, on) {
+    const mdl = f.model;
+    if (on) {
+      if (f._ownHair === undefined) f._ownHair = mdl.currentHair ? mdl.currentHair.split('|')[0] : mdl.app.hair && mdl.app.hair.style;
+      if (f._ownHair) mdl.setHair(K().spikeHair(f._ownHair), 0xffd23a);
+      f.aura.setStyle({ color: 0xffd23a, core: 0xfff6c8, particles: 0xffe27a, speed: 1.3, lightning: false });
+      f.rimLight = { color: 0xffe08a, strength: 0.9 };
+    } else if (f._ownHair !== undefined) {
+      mdl.setForm(f.form);
+      f._ownHair = undefined;
+      f.aura.setStyle(f.form.aura || { color: 0xffffff });
+      f.rimLight = null;
     }
   }
 
@@ -109,7 +132,7 @@
       m.lock(true);
       m.clearObjectives();
       ensureDragon(m);
-      const ring = circle(m, ['vegeta', 'gohan', 'goten', 'trunks']);
+      const ring = circle(m, FIVE);
       s.ritual = s.ritual || K().ritual(b, RIT.centre, RIT.radius + 0.5);
       m.onDispose(() => s.ritual && s.ritual.dispose());
       s.ritual.colour(0xffe27a);
@@ -127,8 +150,8 @@
         tick: (mm, k) => {
           s.ritual.set(k);
           s.ritual.stream();
-          g.setState('scripted', { pose: 'charge', expression: 'focused', aura: k });
-          for (const f of ring) f.setState('scripted', { pose: 'bg_ring', expression: 'closed', aura: k * 0.6 });
+          for (const f of ring) f.setState('scripted', { pose: 'bg_ringLink', expression: f === g ? 'focused' : 'closed', aura: k * 0.6 });
+          K().chain(b, ring, 0xffe9a8, k);
           if (b.frame % 8 === 0) b.camera.addTrauma(0.02 + k * 0.03);
         },
       });
@@ -140,7 +163,8 @@
         t += 1 / 60;
         const k = RIT.attemptCap * Math.max(0, 1 - t / 1.8) * (0.7 + Math.sin(t * 40) * 0.3);
         s.ritual.set(k);
-        g.setState('scripted', { pose: 'charge', expression: 'shock', aura: k });
+        for (const f of ring) f.setState('scripted', { pose: 'bg_ringLink', expression: f === g ? 'shock' : 'closed', aura: k * 0.5 });
+        K().chain(b, ring, 0xffe9a8, k);
       };
       m.tickHooks.push(fade);
       yield* m.cine(1.9);
@@ -164,13 +188,19 @@
       m.clearObjectives();
       ensureDragon(m);
       const ring = circle(m, RING);
-      s.ritual = s.ritual || K().ritual(b, RIT.centre, RIT.radius + 0.5);
+      s.ritual = s.ritual || K().ritual(b, RIT.centre, RIT.radius + 0.6);
       m.onDispose(() => s.ritual && s.ritual.dispose());
       s.ritual.colour(0x8ae8ff);
       m.onDispose(() => whiten(ring, false));
+      m.onDispose(() => resonance(s.videl, false));
+      m.onDispose(() => ring.forEach((f) => (f.auraViewCap = null)));
+      s.vortex = s.vortex || K().vortex(b, RIT.centre);
+      m.onDispose(() => s.vortex && s.vortex.dispose());
+      s.vortex.colour(0xffd27a);
+      // the circle from above (a clean ring of six), Videl, Goku across from the god
       SL.Cinema.shotOn(m, { goku: g, videl: s.videl, vegeta: s.vegeta }, (t, el) => {
         const c = el % 9;
-        return c < 3 ? { subject: 'goku', focus: 'wide', angle: 'high', room: 4 } : c < 6 ? { subject: 'videl', focus: 'upper', angle: 'three' } : { subject: 'goku', focus: 'full', angle: 'three' };
+        return c < 3 ? { subject: 'goku', focus: 'wide', angle: 'high', room: 3 } : c < 6 ? { subject: 'videl', focus: 'upper', angle: 'three' } : { subject: 'goku', focus: 'upper', angle: 'front' };
       }, 60);
       m.say('goku', 'Okay. One more time — everybody!', 2.2);
       m.music('ssj_god', 2);
@@ -184,6 +214,13 @@
             b.sfx('ssjRise', g, { vol: 0.7, pitch: 1.3 });
           } },
           { at: 0.3, run: () => m.say('gohan', 'It\'s working, Dad!', 1.8, { style: 'shout' }) },
+          // the light goes through Videl: the Saiyan inside her answers
+          { at: 0.38, run: () => {
+            resonance(s.videl, true);
+            b.vfx.flash(s.videl.headPos(), 1.6, 0xffe27a, 0.3, SL.Toon.tex.glow);
+            b.sfx('kiUp', s.videl, { vol: 0.8, pitch: 1.2 });
+            m.say('videl', '...!', 1.2, { style: 'quiet' });
+          } },
           { at: 0.5, run: () => {
             b.sfx('rumble', null, { vol: 0.9 });
             m.say('whis', 'Oh my. Look at the sky.', 2);
@@ -201,8 +238,15 @@
             K().skyTo(b, K().SKY.divine, (k - 0.55) / 0.45);
             s.ritual.colour(new THREE.Color(0x8ae8ff).lerp(new THREE.Color(0xff5a7a), (k - 0.55) / 0.45).getHex());
           }
-          g.setState('scripted', { pose: 'charge', expression: 'focused', aura: 0.3 + k * 0.7 });
-          for (const f of ring) f.setState('scripted', { pose: 'bg_ring', expression: 'closed', aura: 0.3 + k * 0.6 });
+          for (const f of ring) {
+            f.setState('scripted', { pose: 'bg_ringLink', expression: f === s.videl && k > 0.38 ? 'shout' : f === g ? 'focused' : 'closed', aura: f === s.videl && k > 0.38 ? 0.55 : 0.15 + k * 0.3 });
+            f.auraViewCap = 0.45;
+          }
+          K().chain(b, ring, k < 0.55 ? 0xdff8ff : 0xffb0c0, k);
+          // the storm wheeling over the ship: gold, then magenta, then divine red
+          s.vortex.set(Math.max(0, (k - 0.15) / 0.6));
+          s.vortex.spin();
+          s.vortex.colour(k < 0.55 ? 0xffd27a : new THREE.Color(0xffd27a).lerp(new THREE.Color(0xe0306a), (k - 0.55) / 0.45).getHex());
           if (b.frame % 6 === 0) b.camera.addTrauma(0.02 + k * 0.05);
           if (k > 0.6 && b.frame % 20 === 0) b.vfx.skyBolt(RIT.centre.clone().add(new V3(Math.sin(b.frame) * 40, 0, Math.cos(b.frame) * 40)), 90, 0xff8aa0);
         },
@@ -490,86 +534,223 @@
   };
 
   /* ---------------------------------------------------------------- THE SUPER SAIYAN GOD */
+  // (rebuilt 2026-10-06 to the owner's breakdown: the donors lifted off the deck, Goku breaking the chain and rising
+  //  into the sky in a sphere of blue-white light, arms and legs spread, his body thinning, his hair going red, the red
+  //  storm collapsing into his chest, a flash, silence — and the red eyes opening; then down onto the deck.)
+  const GOD_LOOK = () => (SL.data.characters.goku.forms.find((x) => x.id === 'god') || {}).look || {};
   S.bgr_god = {
     id: 'bgr_god',
     cast,
     clearMood: false,
     music: { song: 'ssj_god', level: 3 },
     events: [
-      // from high above: the pillar into the storm, the little ship under it
+      // 1. from high above: the pillar of light into the storm, the red vortex wheeling over the little ship
       {
         call: (ctx) => {
           const s = st(ctx);
           K().skyTo(ctx.b, K().SKY.divine, 1);
           if (s.ritual) s.ritual.set(1);
+          if (!s.vortex) s.vortex = K().vortex(ctx.b, RIT.centre);
+          s.vortex.set(1);
+          s.vortex.colour(0xe0306a);
+          ctx.m.onDispose(() => s.vortex && s.vortex.dispose());
           pt(ctx, 'circ', RIT.centre.clone());
         },
-        tick: (ctx) => st(ctx).ritual && st(ctx).ritual.stream(),
-        cam: { from: { at: 'circ', off: [40, 46, 52] }, to: { at: 'circ', off: [30, 58, 40] }, look: { at: 'circ', off: [0, 12, 0] }, fov: 52 },
+        tick: (ctx) => {
+          const s = st(ctx);
+          if (s.ritual) s.ritual.stream();
+          if (s.vortex) s.vortex.spin();
+        },
+        cam: { from: { at: 'circ', off: [40, 46, 52] }, to: { at: 'circ', off: [30, 58, 40] }, look: { at: 'circ', off: [0, 14, 0] }, fov: 54, raw: true },
         sfx: { name: 'wind', vol: 1, pitch: 0.5 },
-        hold: 3.2,
+        hold: 3,
       },
-      // the hands joined, low
+      // 2. the chain of hands, low across the deck: six of them, the light running from one to the next
       {
-        tick: (ctx) => st(ctx).ritual && st(ctx).ritual.stream(),
-        cam: { from: { at: 'circ', off: [3.8, 0.5, 3.8] }, look: { at: 'circ', off: [0, 1.4, 0] }, fov: 50 },
-        hold: 2,
-      },
-      // the faces: the prince, the son, the mother
-      { cam: { subject: 'vegeta', focus: 'closeup', angle: 'front' }, hold: 1.3 },
-      { cam: { subject: 'gohan', focus: 'closeup', angle: 'front' }, hold: 1.3 },
-      { cam: { subject: 'videl', focus: 'closeup', angle: 'three' }, hold: 1.4 },
-      // it comes down: the light pours out of the sky into the one in the middle
-      {
-        call: (ctx) => {
-          const s = st(ctx), b = ctx.b;
-          b.sfx('ssjRise', s.goku, { vol: 1.1, pitch: 0.8 });
-          b.cameraTraumaAt(s.goku.pos, 0.6);
+        tick: (ctx) => {
+          const s = st(ctx);
+          if (s.ritual) s.ritual.stream();
+          if (s.vortex) s.vortex.spin();
+          K().chain(ctx.b, RING.map((k) => s[k]), 0xffb0c0, 1);
         },
-        pose: [{ who: 'goku', pose: 'g_godCalm', face: 'closed', speed: 4, aura: 1 }],
-        tick: (ctx, t) => {
-          const s = st(ctx), b = ctx.b;
-          if (s.ritual) s.ritual.set(1 - t * 0.35);
-          const top = s.goku.chest().add(new V3(0, 40 - t * 30, 0));
-          for (let i = 0; i < 4; i++) b.vfx.trail(top.clone().lerp(s.goku.chest(), i / 4 + (b.frame % 4) * 0.05), 0xff8aa0, 1.2, 0.35);
-          b.camera.addTrauma(0.03);
-        },
-        cam: { subject: 'goku', focus: 'full', angle: 'low', dist: 6 },
+        cam: { from: { at: 'circ', off: [3.4, 0.55, 3.4] }, to: { at: 'circ', off: [3.9, 0.5, 2.6] }, look: { at: 'circ', off: [0, 1.15, 0] }, fov: 50, raw: true },
         hold: 2.2,
       },
-      // the flash — and a silence full of mist
+      // 3. the faces: the prince, the son — and Videl, gold, the light on her face
+      { cam: { subject: 'vegeta', focus: 'closeup', angle: 'front' }, tick: (ctx) => st(ctx).vortex && st(ctx).vortex.spin(), hold: 1.2 },
+      { cam: { subject: 'gohan', focus: 'closeup', angle: 'front' }, tick: (ctx) => st(ctx).vortex && st(ctx).vortex.spin(), hold: 1.2 },
+      { cam: { subject: 'videl', focus: 'closeup', angle: 'three' }, tick: (ctx) => st(ctx).vortex && st(ctx).vortex.spin(), hold: 1.6 },
+      // 4. THE LEVITATION: the God Ki warps the weight out of them — the five lift off the planks, white-blue light
       {
         call: (ctx) => {
           const s = st(ctx), b = ctx.b;
-          whiten(RING.map((k) => s[k]), false);
-          if (s.ritual) s.ritual.set(0);
-          K().toForm(s.goku, 'god');
-          SL.ScreenFX.flash(0.55, '#ffd0d8');
-          b.vfx.ring(s.goku.pos.clone().add(new V3(0, 0.2, 0)), 16, 0xff6a8a, 1, new V3(0, 1, 0));
-          // a thin mist round his feet (a thick one at this distance is a white frame)
-          b.vfx.dust(s.goku.pos, 2.4, 10, 0xf0d8dc);
-          b.sfx('transformBurst', s.goku, { vol: 1.2, pitch: 0.8 });
-          for (const k of RING) s[k].setState('scripted', { pose: 'idle', expression: 'shock' });
+          b.sfx('rumble', null, { vol: 0.9, pitch: 0.7 });
+          b.sfx('kiUp', s.goku, { vol: 0.8, pitch: 0.7 });
         },
-        pose: [{ who: 'goku', pose: 'g_godCalm', face: 'closed', speed: 4, aura: 0.25 }],
-        music: { song: null, level: 0 },
-        cam: { subject: 'goku', focus: 'full', angle: 'three', focus2: 'face', dist2: 1.2 },
-        hold: 3.6,
+        space: DONORS.map((k) => ({ who: k, mode: 'flight', to: { at: k + ':feet', off: [0, 0.9, 0] }, seconds: 1.6, pose: 'bg_ringFloat', endPose: 'bg_ringFloat' })),
+        tick: (ctx) => {
+          const s = st(ctx);
+          if (s.vortex) s.vortex.spin();
+          K().chain(ctx.b, RING.map((k) => s[k]), 0xdff8ff, 1);
+        },
+        cam: { from: { at: 'circ', off: [5.2, 0.45, -5.2] }, look: { at: 'circ', off: [0, 1.7, 0] }, fov: 46, raw: true },
+        hold: 0.5,
       },
-      // the eyes open: red
+      // 5. Goku lets go: the chain breaks at his hands
       {
-        pose: [{ who: 'goku', pose: 'g_godCalm', face: 'calm', speed: 4, aura: 0.5 }],
+        pose: [{ who: 'goku', pose: 'g_godCalm', face: 'closed', speed: 5, aura: 0.6 }],
+        call: (ctx) => {
+          const s = st(ctx), b = ctx.b;
+          s.shell = K().shell(b, s.goku, 0xdff4ff);
+          ctx.m.onDispose(() => s.shell && s.shell.dispose());
+          s.goku.aura.setStyle({ color: 0xcfeeff, core: 0xffffff, particles: 0xe8faff, speed: 0.8 });
+          b.vfx.flash(s.goku.chest(), 2, 0xdff8ff, 0.3, SL.Toon.tex.glow);
+        },
+        tick: (ctx, t) => {
+          const s = st(ctx);
+          if (s.vortex) s.vortex.spin();
+          if (s.shell) s.shell.set(t / 1.1);
+        },
+        cam: { subject: 'goku', focus: 'upper', angle: 'front' },
+        hold: 1.1,
+      },
+      // 6. UP: he rises out of the circle into the sky — the camera on the deck looking up after him
+      {
+        space: { who: 'goku', mode: 'flight', to: { at: 'circ', off: [0, RIT.rise, 0] }, seconds: 2.6, pose: 'bg_godFloat', endPose: 'bg_godFloat' },
+        tick: (ctx) => {
+          const s = st(ctx), b = ctx.b;
+          if (s.vortex) s.vortex.spin();
+          if (s.shell) s.shell.set(1);
+          if (b.frame % 3 === 0) b.vfx.trail(s.goku.pos.clone(), 0xdff8ff, 0.5, 0.5);
+        },
+        cam: { from: { at: 'circ', off: [4.6, 1.1, 4.6] }, look: { at: 'goku' }, fov: 48, raw: true },
+        sfx: { name: 'ssjRise', vol: 0.9, pitch: 0.7 },
+      },
+      // 7. from above him: the ship small beneath, the five still floating in their circle of light
+      {
+        tick: (ctx) => {
+          const s = st(ctx);
+          if (s.vortex) s.vortex.spin();
+        },
+        cam: { from: { at: 'goku', off: [2.2, 5.5, -5] }, to: { at: 'goku', off: [2.8, 8, -6.4] }, look: { at: 'circ' }, fov: 52, raw: true },
+        hold: 2.2,
+      },
+      // 8. held up in the light: eyes shut, the hair still black — the divine energy going into him, his body thinning;
+      //    the camera turning slowly round him
+      {
+        tick: (ctx, t) => {
+          const s = st(ctx), b = ctx.b;
+          if (s.vortex) s.vortex.spin();
+          if (b.frame % 3 === 0) b.vfx.streamInward(s.goku.chest(), 2.6, 0xe8f8ff, 3, 0.16, 0.5);
+          K().slim(s.goku, Math.min(0.5, t / 2.8 * 0.5), GOD_LOOK());
+        },
+        cam: { from: { at: 'goku' }, orbit: { at: 'goku', radius: 3.4, from: 0.4, to: 1.5, y: 0.4, y2: 0.2 }, look: { at: 'goku' }, fov: 42, raw: true },
+        hold: 2.8,
+      },
+      // 9. the change: the hair darkening toward red in three breaths, red light in the white, the body leaner still
+      {
+        call: (ctx) => {
+          ctx.hairSteps = [0x3a1418, 0x7a1424, 0xb8162e];
+          ctx.hairAt = 0;
+        },
+        tick: (ctx, t) => {
+          const s = st(ctx), b = ctx.b;
+          if (s.vortex) s.vortex.spin();
+          K().slim(s.goku, 0.5 + Math.min(0.5, t / 2.6 * 0.5), GOD_LOOK());
+          const step = Math.min(2, Math.floor(t / 0.8));
+          if (step >= ctx.hairAt) {
+            s.goku.model.setHair('goku', ctx.hairSteps[step]);
+            ctx.hairAt = step + 1;
+            b.vfx.flash(s.goku.headPos(), 1.4, 0xff5a7a, 0.18, SL.Toon.tex.glow);
+          }
+          // red energy creeping into the white light
+          if (s.shell) s.shell.colour(new THREE.Color(0xdff4ff).lerp(new THREE.Color(0xff6a8a), Math.min(1, t / 2.6)).getHex());
+          if (b.frame % 3 === 0) b.vfx.streamInward(s.goku.chest(), 2.4, t > 1.2 ? 0xff5a7a : 0xe8f8ff, 3, 0.16, 0.5);
+          if (t > 1.2 && b.frame % 5 === 0) b.vfx.trail(s.goku.chest().add(new V3(Math.sin(t * 9) * 0.5, -0.4, Math.cos(t * 9) * 0.5)), 0xff6a2a, 0.5, 0.4);
+        },
+        cam: { from: { at: 'goku' }, orbit: { at: 'goku', radius: 3.0, radius2: 2.4, from: 1.5, to: 2.7, y: 0.2, y2: 0.4 }, look: { at: 'goku', off: [0, 0.3, 0] }, fov: 40, raw: true },
+        sfx: { name: 'heartbeat', vol: 0.9 },
+        hold: 2.6,
+      },
+      // 10. behind him and below: the red storm collapses — the whole vortex drawn down in a funnel onto his chest
+      {
+        tick: (ctx, t) => {
+          const s = st(ctx), b = ctx.b;
+          if (s.vortex) {
+            s.vortex.spin();
+            s.vortex.collapse(Math.min(1, t / 2), s.goku.chest());
+          }
+          b.camera.addTrauma(0.02 + t * 0.03);
+          if (b.frame % 2 === 0) b.vfx.streamInward(s.goku.chest(), 3.4, 0xff4a6a, 4, 0.2, 0.4);
+        },
+        cam: { from: { at: 'goku', local: [0.9, -1.2, -3.4] }, look: { at: 'goku', off: [0, 4, 0] }, fov: 52, raw: true },
+        sfx: { name: 'rumble', vol: 1.1, pitch: 0.6 },
+        hold: 2.1,
+      },
+      // 11. the flash
+      {
+        call: (ctx) => {
+          const s = st(ctx), b = ctx.b;
+          whiten(DONORS.map((k) => s[k]), false);
+          resonance(s.videl, false);
+          if (s.ritual) s.ritual.set(0);
+          if (s.vortex) {
+            s.vortex.dispose();
+            s.vortex = null;
+          }
+          K().toForm(s.goku, 'god');
+          SL.ScreenFX.flash(0.95, '#ffd8e8');
+          b.vfx.ring(s.goku.chest(), 14, 0xff6a8a, 1, new V3(0, 1, 0));
+          b.vfx.flash(s.goku.chest(), 9, 0xffe8f0, 0.6, SL.Toon.tex.glow);
+          b.sfx('transformBurst', s.goku, { vol: 1.2, pitch: 0.8 });
+          if (s.shell) s.shell.set(0);
+        },
+        music: { song: null, level: 0 },
+        pose: [{ who: 'goku', pose: 'bg_godFloat', face: 'closed', speed: 4, aura: 0.15 }],
+        cam: { subject: 'goku', focus: 'full', angle: 'front' },
+        hold: 0.5,
+      },
+      // 12. silence: the light thins away; the camera comes slowly in to his face, the eyes still shut
+      {
+        pose: [{ who: 'goku', pose: 'g_godCalm', face: 'closed', speed: 3, aura: 0.15 }],
+        cam: { subject: 'goku', focus: 'upper', focus2: 'face', angle: 'front', ease: 'inOut' },
+        sfx: { name: 'wind', vol: 0.25, pitch: 0.5 },
+        hold: 2.6,
+      },
+      // 13. the eyes open: crimson
+      {
+        pose: [{ who: 'goku', pose: 'g_godCalm', face: 'calm', speed: 3, aura: 0.3 }],
+        call: (ctx) => {
+          const s = st(ctx);
+          ctx.b.vfx.flash(s.goku.headPos(), 0.7, 0xff2a4a, 0.25, SL.Toon.tex.glow);
+          ctx.b.sfx('kiUp', s.goku, { vol: 0.6, pitch: 0.6 });
+        },
         cam: { subject: 'goku', focus: 'face', angle: 'front' },
         music: { song: 'ssj_god', level: 4 },
-        hold: 2,
+        hold: 1.8,
       },
+      // 14. down: the others settle back onto the planks, he drifts down after them — his boots touch the deck, silent
       {
         call: (ctx) => {
           const s = st(ctx);
+          if (s.shell) {
+            s.shell.dispose();
+            s.shell = null;
+          }
+        },
+        space: [{ who: 'goku', mode: 'landing', to: { at: 'circ' }, seconds: 2.2, pose: 'g_godCalm', endPose: 'g_godStance', expr: 'calm' }].concat(DONORS.map((k) => ({ who: k, mode: 'landing', to: { at: k + ':feet' }, seconds: 1.2, pose: 'bg_ringFloat', endPose: 'idle', expr: 'shock' }))),
+        cam: { from: { at: 'circ', off: [Math.sin(Math.PI / 6) * 2.3, 0.32, Math.cos(Math.PI / 6) * 2.3] }, look: { at: 'circ', off: [0, 0.3, 0] }, fov: 42, raw: true },
+      },
+      // 15. the Super Saiyan God: slimmer, red hair, red eyes, a flame for an aura — calm
+      {
+        call: (ctx) => {
+          const s = st(ctx), b = ctx.b;
+          b.vfx.ring(s.goku.pos.clone().add(new V3(0, 0.15, 0)), 9, 0xff6a3a, 0.8, new V3(0, 1, 0));
           ctx.m.space(s.goku, 'ground', { pos: s.goku.pos.clone(), face: s.beerus.pos, pose: 'g_godStance', expr: 'calm' });
         },
-        cam: { subject: 'goku', focus: 'wide', angle: 'low', room: 2 },
-        hold: 2.4,
+        pose: [{ who: 'goku', pose: 'g_godStance', face: 'calm', speed: 4, aura: 0.9 }],
+        cam: { subject: 'goku', focus: 'full', focus2: 'upper', angle: 'three', ease: 'inOut' },
+        hold: 2.6,
       },
       {
         pose: [{ who: 'whis', pose: 'w_shock', face: 'smirk' }],
@@ -615,6 +796,14 @@
     end(ctx) {
       const s = st(ctx), b = ctx.b;
       whiten(RING.map((k) => s[k]), false);
+      resonance(s.videl, false);
+      for (const k of RING) s[k].auraViewCap = null;
+      for (const k of ['shell', 'vortex']) if (s[k]) {
+        s[k].dispose();
+        s[k] = null;
+      }
+      for (const k of DONORS) if (s[k].pos.y > 0.2) ctx.m.space(s[k], 'ground', { pos: s[k].pos.clone(), pose: 'idle', expr: 'shock' });
+      if (s.goku.pos.y > 0.2) ctx.m.space(s.goku, 'ground', { pos: RIT.centre.clone(), face: s.beerus.pos, pose: 'g_godStance', expr: 'calm' });
       K().toForm(s.goku, 'god');
       ctx.m.teach(s.goku, 'form:god');
       if (s.ritual) {

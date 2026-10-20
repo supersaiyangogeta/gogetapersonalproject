@@ -23,11 +23,26 @@
 
   // King Kai's planet: where things are (the planet curves away from the middle: ground() follows it)
   const KKP = { house: new V3(0, 0, -16), goku: new V3(0, 0, 6), land: new V3(13, 0, 3), kk: new V3(-5, 0, -9), rocks: 5 };
-  // Beerus' world: the bed is in front of the temple
-  const BW = { bed: new V3(0, 0, -4), whis: new V3(6, 0, 9), byBed: new V3(1.3, 0, -1.0), beerusUp: new V3(-0.7, 0, -1.5) };
+  // Beerus' world: the bed is in front of the temple. Everything said here is said on the OPEN side of the bed (+z,
+  // the court): Whis stands there, Beerus sits up on the bed's front edge facing him, and every lens stays on that
+  // side — the posts, the canopy and the back curtain are never between a lens and a face (the owner, 2026-10-06).
+  const BW = { bed: new V3(0, 0, -4), whis: new V3(6, 0, 9), byBed: new V3(1.5, 0, -0.9), sitAt: new V3(0.2, 0, -3.15), beerusUp: new V3(-0.6, 0, -1.3) };
+  /** A lens hung over a face that is lying down, looking along the body from the chest so the face reads upright. */
+  function overFace(ctx, f, name, dist = 1.1, side = 0.35) {
+    const B = SL.Cinema.body(f);
+    const along = B.up.clone().setY(0);
+    if (along.lengthSq() < 1e-6) along.set(-1, 0, 0);
+    along.normalize();
+    const right = new V3(-along.z, 0, along.x);
+    K().pt(ctx, name + 'Face', B.face.clone());
+    // nearly straight down onto the face (his broad collar would stand between a lens further down the body and it)
+    K().pt(ctx, name + 'Cam', B.face.clone().addScaledVector(along, -0.3 * dist).addScaledVector(right, side * 0.5 * dist).add(new V3(0, 1.0 * dist, 0)));
+  }
 
   function setup(battle) {
     const b = battle;
+    // Goku of the Super era: his own transformation lines, not Namek's
+    K().superVoice(b);
     const goku = b.spawn({ charId: 'goku', player: true, team: 0, pos: new V3(0, 0, 30), startKi: 80 });
     const beerus = b.spawn({ charId: 'beerus', team: 0, pos: new V3(0, 0, 2) });
     const whis = b.spawn({ charId: 'whis', team: 0, pos: BW.whis.clone() });
@@ -153,7 +168,52 @@
     },
   };
 
-  P.arrival = K().scene('arrival', 'bga_arrival');
+  /**
+   * THE ARRIVAL owns its world (it can be reached from the dev menu, or after a training minute that left rocks
+   * standing): King Kai's planet, the house, Goku and King Kai on the grass, the gods not here yet.
+   */
+  P.arrival = {
+    id: 'arrival',
+    run: function* (m) {
+      const b = m.battle, st = b.story;
+      m.lock(true);
+      m.clearObjectives();
+      if (b.stage.def.id !== 'kingkai') {
+        m.fade('black', 0.3);
+        yield* m.cine(0.35);
+        b.changeStage('kingkai');
+        m.endShot();
+        st.rocks = null;
+      }
+      if (!st.house) {
+        st.house = K().kkHouse(b, KKP.house);
+        m.onDispose(() => st.house && st.house.dispose());
+      }
+      for (const f of [st.goku, st.kingkai]) {
+        f.setHidden(false);
+        f.controller = K().scripted();
+        f.untargetable = f.intangible = true;
+      }
+      K().hide([st.beerus, st.whis, st.bubbles]);
+      yield* SL.Cinema.play(m, 'bga_arrival');
+    },
+  };
+  /** Whatever training rocks are still standing go to pieces: the gods' ki rolling over the little planet. */
+  function crumbleRocks(b, rocks) {
+    let i = 0;
+    for (const pr of rocks || []) {
+      if (!pr.alive) continue;
+      pr.alive = false;
+      pr.group.visible = false;
+      for (let k = 0; k < 10; k++) {
+        const a = (k / 10) * Math.PI * 2 + i;
+        b.vfx.rock(pr.pos, new V3(Math.cos(a) * 3, 1.5 + (k % 3), Math.sin(a) * 3), 0.18 + (k % 4) * 0.08, pr.debrisColor || 0x9a8a6a);
+      }
+      b.vfx.dust(pr.pos.clone().setY(pr.pos.y - pr.r * 0.5), pr.r * 1.6, 16, b.stage.def.terrain && b.stage.def.terrain.sand);
+      i++;
+    }
+    if (i) b.sfx('rockBreak', null, { vol: 0.9, pitch: 0.7 });
+  }
   P.after = K().after('THE GOD OF DESTRUCTION');
 
   /* ============================================================================ SCENES */
@@ -210,55 +270,58 @@
         say: { who: 'whis', line: 'Lord Beerus. Lord Beerus — it is time to wake up.', duration: 3 },
         hold: 3.1,
       },
-      // asleep: a close look at the god of destruction, snoring
+      // asleep: a close look at the god of destruction, snoring — the lens over his chest, the face upright in it
       {
         pose: [{ who: 'whis', pose: 'w_idle', face: 'calm' }],
-        cam: { subject: 'beerus', focus: 'closeup', angle: 'three' },
+        call: (ctx) => overFace(ctx, st(ctx).beerus, 'sleep', 1.25, 0.4),
+        cam: { from: { at: 'sleepCam' }, to: { at: 'sleepCam', off: [0, -0.18, 0] }, look: { at: 'sleepFace' }, fov: 36, raw: true },
         sfx: { name: 'growl', pitch: 0.5, vol: 0.35 },
         hold: 2.4,
       },
       {
         pose: [{ who: 'beerus', pose: 'bg_sleep', face: 'calm', speed: 6 }],
-        cam: { subject: 'beerus', focus: 'face', angle: 'three' },
+        call: (ctx) => overFace(ctx, st(ctx).beerus, 'wake', 0.85, -0.25),
+        cam: { from: { at: 'wakeCam' }, look: { at: 'wakeFace' }, fov: 30, raw: true },
         say: { who: 'beerus', line: '...Whis. How long was I asleep?', duration: 2.8, style: 'quiet' },
         music: { song: 'beerus_theme', level: 1 },
         hold: 3,
       },
-      // he sits up and stretches
+      // he sits up and stretches — on the FRONT edge of the bed, facing Whis on the open side
       {
         call: (ctx) => {
           const s = st(ctx);
-          s.beerus.setPosition(new V3(0.6, (ctx.b.stage.landmarks.bed || new V3(0, 0.9, 0)).y + 0.02, BW.bed.z));
+          s.beerus.setPosition(new V3(BW.sitAt.x, (ctx.b.stage.landmarks.bed || new V3(0, 0.9, 0)).y + 0.02, BW.sitAt.z));
           s.beerus.prevPos.copy(s.beerus.pos);
           s.beerus.yaw = s.beerus.prevYaw = Math.atan2(s.whis.pos.x - s.beerus.pos.x, s.whis.pos.z - s.beerus.pos.z);
         },
-        pose: [{ who: 'beerus', pose: 'bg_sitStretch', face: 'closed', speed: 4 }],
-        cam: { subject: 'whis', with: 'beerus', focus: 'full' },
+        pose: [{ who: 'beerus', pose: 'bg_sitStretch', face: 'closed', speed: 4 }, { who: 'whis', pose: 'w_idle', face: 'smirk' }],
+        // over Beerus' shoulder onto Whis: the god in the corner of the frame, his attendant whole and in the open
+        cam: { subject: 'whis', angle: 'ots', over: 'beerus', focus: 'upper' },
         say: { who: 'whis', to: 'beerus', line: 'Thirty-nine years, my lord. A little longer than usual.', duration: 3.2 },
         hold: 3.4,
       },
       {
         pose: [{ who: 'beerus', pose: 'bg_sitYawn', face: 'closed', speed: 5 }],
-        cam: { subject: 'beerus', focus: 'upper', angle: 'front' },
+        cam: { subject: 'beerus', focus: 'upper', angle: 'three' },
         say: { who: 'beerus', to: 'whis', line: 'I had a dream. A Super Saiyan God... someone who could give me a real fight.', duration: 4 },
         hold: 4.1,
       },
       {
-        pose: [{ who: 'whis', pose: 'w_finger', face: 'calm', speed: 6 }],
+        pose: [{ who: 'whis', pose: 'w_finger', face: 'calm', speed: 6 }, { who: 'beerus', pose: 'bg_sitYawn', face: 'serious', speed: 5 }],
         cam: { subject: 'whis', focus: 'upper', angle: 'three' },
         say: { who: 'whis', to: 'beerus', line: 'A Super Saiyan God? I\'ve never heard of such a thing.', duration: 2.8 },
         hold: 2.9,
       },
       {
-        pose: [{ who: 'beerus', pose: 'bg_sitYawn', face: 'serious', speed: 5 }],
+        pose: [{ who: 'beerus', pose: 'bg_sitYawn', face: 'serious', speed: 5 }, { who: 'whis', pose: 'w_idle', face: 'calm' }],
         cam: { subject: 'beerus', focus: 'closeup', angle: 'three' },
-        say: { who: 'beerus', line: 'The Oracle Fish said it too, years ago. A Saiyan. Frieza was supposed to be keeping an eye on them for me.', duration: 4.4 },
+        say: { who: 'beerus', to: 'whis', line: 'The Oracle Fish said it too, years ago. A Saiyan. Frieza was supposed to be keeping an eye on them for me.', duration: 4.4 },
         hold: 4.5,
       },
-      // up off the bed, onto the stones: GROUND
+      // up off the bed, onto the stones: GROUND (the lens in the court, in front of the bed)
       {
         space: { who: 'beerus', mode: 'landing', at: [BW.beerusUp.x, 0, BW.beerusUp.z], seconds: 0.5, face: 'whis', endPose: 'bs_idle', expr: 'calm' },
-        cam: { subject: 'beerus', focus: 'full', focus2: 'upper', angle: 'front' },
+        cam: { subject: 'beerus', focus: 'full', focus2: 'upper', angle: 'three' },
         hold: 1.6,
       },
       // WHAT THE STAFF KNOWS: Namek
@@ -282,7 +345,7 @@
           }
           s.vision.fade(Math.min(1, t / 0.8));
         },
-        cam: { from: { at: 'whis', local: [-1.4, 0.5, 2.8] }, look: { at: 'orb' }, fov: 40, subject: 'whis' },
+        cam: { from: { at: 'whis', local: [1.6, 0.6, 2.4] }, look: { at: 'orb' }, fov: 42, subject: 'whis' },
         say: { who: 'whis', to: 'beerus', line: 'Frieza was defeated, my lord. On the planet Namek.', duration: 3.2 },
         hold: 3.4,
       },
@@ -294,14 +357,14 @@
         hold: 4.3,
       },
       {
-        cam: { subject: 'beerus', focus: 'closeup', angle: 'three', side: -1 },
-        pose: [{ who: 'beerus', pose: 'bs_idle', face: 'smirk' }],
+        cam: { subject: 'beerus', focus: 'closeup', angle: 'three' },
+        pose: [{ who: 'beerus', pose: 'bg_tilt', face: 'smirk' }],
         say: { who: 'beerus', to: 'whis', line: 'A Super Saiyan. Not a god — but close enough to ask about one. Where is he?', duration: 3.8 },
         hold: 3.9,
       },
       {
         call: (ctx) => st(ctx).vision && st(ctx).vision.kind('kingkai'),
-        cam: { from: { at: 'whis', local: [-1.4, 0.5, 2.8] }, look: { at: 'orb' }, fov: 38, subject: 'whis' },
+        cam: { from: { at: 'whis', local: [1.6, 0.6, 2.4] }, look: { at: 'orb' }, fov: 40, subject: 'whis' },
         say: { who: 'whis', line: 'Right now? Training with the North Kai, on his little planet at the end of Snake Way.', duration: 4 },
         hold: 4.1,
       },
@@ -314,11 +377,13 @@
           }
         },
         pose: [{ who: 'whis', pose: 'w_bow', face: 'calm', speed: 6 }],
-        cam: { subject: 'beerus', with: 'whis', focus: 'full' },
+        // over the bowing attendant's shoulder: the god giving the order
+        cam: { subject: 'beerus', angle: 'ots', over: 'whis', focus: 'upper' },
         say: { who: 'beerus', to: 'whis', line: 'Then we\'ll pay the North Kai a visit.', duration: 2.6 },
         hold: 2.4,
       },
       {
+        pose: [{ who: 'whis', pose: 'w_idle', face: 'smirk' }, { who: 'beerus', pose: 'bs_idle', face: 'calm' }],
         cam: { subject: 'whis', focus: 'upper', angle: 'three', side: -1 },
         say: { who: 'whis', to: 'beerus', line: 'As you wish. Hold on to me, my lord.', duration: 2.4 },
         hold: 2.4,
@@ -401,7 +466,7 @@
   // (rebuilt 2026-10-06, the owner: Beerus did not appear, the camera found the house instead of the gods.)
   // GROUND. The landing point is out on the open grass, well clear of the house, the car and the tree; King Kai
   // stands between it and his house; Goku is pushed inside and peeks out of the door.
-  const ARR = { land: new V3(5, 0, 1), kk: new V3(-1.5, 0, -6.5) };
+  const ARR = { land: new V3(5, 0, 1), kk: new V3(0.5, 0, -4.5) };
   S.bga_arrival = {
     id: 'bga_arrival',
     cast,
@@ -419,12 +484,29 @@
           pt(ctx, 'houseP', KKP.house.clone().add(new V3(0, 2.4, 0)));
           pt(ctx, 'planet', new V3(0, 0, -6));
         },
-        cam: { from: { at: 'planet', off: [34, 16, 34] }, to: { at: 'planet', off: [26, 10, 26] }, look: { at: 'planet', off: [0, 1.5, 0] }, fov: 44 },
-        sfx: { name: 'tinnitus', vol: 0.45 },
-        hold: 2.8,
+        cam: { from: { at: 'planet', off: [34, 16, 34] }, to: { at: 'planet', off: [26, 10, 26] }, look: { at: 'planet', off: [0, 1.5, 0] }, fov: 44, raw: true },
+        hold: 2.4,
       },
-      // 2. King Kai's antennae stand straight up
+      // 2. the house, the car, the tree — quiet; Goku catching his breath on the grass
       {
+        call: (ctx) => pt(ctx, 'yard', KKP.house.clone().add(new V3(0, 1.6, 7))),
+        cam: { from: { at: 'yard', off: [-10, 1.2, 9] }, to: { at: 'yard', off: [-7, 1.6, 7] }, look: { at: 'yard', off: [0, 0.6, -3] }, fov: 46, raw: true },
+        sfx: { name: 'tinnitus', vol: 0.45 },
+        hold: 1.8,
+      },
+      // 3. something is coming: the god's ki rolls over the little planet — what is left of the training rocks goes to
+      //    pieces, the tree shivers, King Kai's antennae stand straight up
+      {
+        call: (ctx) => {
+          const s = st(ctx), b = ctx.b;
+          crumbleRocks(b, s.rocks);
+          // the landing spot, now that nothing stands on the grass but the house
+          pt(ctx, 'land', SL.Staging.clearSpot(b, ARR.land, 3));
+          b.cameraTraumaAt(s.kingkai.pos, 0.35);
+          if (s.house) s.house.shake(0.6, ctx.cast.land.pos);
+        },
+        tick: (ctx, t) => st(ctx).house && st(ctx).house.shake(Math.max(0, 0.6 - t * 0.4), ctx.cast.land.pos),
+        sfx: { name: 'rumble', vol: 0.7, pitch: 0.5 },
         cam: { subject: 'kingkai', focus: 'closeup', angle: 'front' },
         say: { who: 'king_kai', to: 'goku', line: '...!? That ki... No. No, no, no — it can\'t be HIM!', duration: 3.2, style: 'shout' },
         hold: 3.2,
@@ -454,9 +536,10 @@
           const s = st(ctx);
           s.goku.setHidden(true);
           ctx.m.space(s.kingkai, 'ground', { pos: ARR.kk.clone(), face: ctx.cast.land.pos, pose: 'bg_kkPanic', expr: 'nervous' });
-          pt(ctx, 'behindKK', ARR.kk.clone().add(ARR.kk.clone().sub(ctx.cast.land.pos).setY(0).normalize().multiplyScalar(4)).add(new V3(1.2, 1.7, 0)));
+          const back = ARR.kk.clone().sub(ctx.cast.land.pos).setY(0).normalize();
+          pt(ctx, 'behindKK', ARR.kk.clone().addScaledVector(back, 2.6).addScaledVector(new V3(back.z, 0, -back.x), 0.9).add(new V3(0, 1.45, 0)));
         },
-        cam: { from: { at: 'behindKK' }, look: { at: 'land', off: [0, 4, 0] }, fov: 50 },
+        cam: { from: { at: 'behindKK' }, look: { at: 'land', off: [0, 3, 0] }, fov: 40 },
         sfx: { name: 'rumble', vol: 0.8, pitch: 0.6 },
         hold: 1.2,
       },
@@ -475,17 +558,18 @@
           s.beerus.setHidden(false);
           s.whis.setHidden(false);
           m.space(s.beerus, 'ground', { pos: L.clone(), face: ARR.kk, pose: 'bs_idle', expr: 'calm' });
-          m.space(s.whis, 'ground', { pos: L.clone().addScaledVector(toKK, -1.3).addScaledVector(left, 1.4), face: ARR.kk, pose: 'w_idle', expr: 'calm' });
+          m.space(s.whis, 'ground', { pos: L.clone().addScaledVector(toKK, -0.9).addScaledVector(left, 2.1), face: ARR.kk, pose: 'w_idle', expr: 'calm' });
           s.beerus.untargetable = s.beerus.intangible = true;
           s.whis.untargetable = s.whis.intangible = true;
         },
         tick: (ctx, t) => st(ctx).travel && st(ctx).travel.set(t < 0.4 ? t / 0.4 : Math.max(0, 1 - (t - 0.4) / 1.4)),
-        cam: { from: { at: 'behindKK' }, look: { at: 'land', off: [0, 1.4, 0] }, fov: 46 },
+        cam: { from: { at: 'behindKK' }, to: { at: 'behindKK', off: [0, -0.1, 0] }, look: { at: 'land', off: [0, 1.3, 0] }, fov: 32 },
         hold: 2,
       },
-      // 4. the god, dominant: a slow rise from his shoes to his face — he is the subject of this shot
+      // 4. the god, dominant: a controlled push from his chest into his face, the lens a little under his eyes (a
+      //    deity looked up at — never a waist-height frame on his belt: the owner, 2026-10-06)
       {
-        cam: { subject: 'beerus', focus: 'full', focus2: 'closeup', angle: 'front', ease: 'inOut' },
+        cam: { subject: 'beerus', focus: 'upper', focus2: 'closeup', angle: 'front', height: -0.08, ease: 'inOut' },
         music: { song: 'beerus_theme', level: 1 },
         hold: 3,
       },
@@ -495,10 +579,18 @@
         cam: { subject: 'whis', with: 'beerus', focus: 'full' },
         hold: 1.8,
       },
-      // 6. King Kai: on his face in the grass
+      // 6. King Kai scurries up to the god — and throws himself down in front of him
+      {
+        move: { who: 'kingkai', at: 'beerus', local: [0.5, 0, 3], seconds: 0.9, face: 'beerus' },
+        pose: [{ who: 'kingkai', pose: 'bg_kkPanic', face: 'nervous', speed: 14 }],
+        cam: { subject: 'beerus', with: 'kingkai', focus: 'full' },
+        sfx: { name: 'uiMove', vol: 0.4, pitch: 1.6 },
+      },
       {
         pose: [{ who: 'kingkai', pose: 'bg_kkBow', face: 'nervous', speed: 8 }],
-        cam: { subject: 'kingkai', focus: 'full', angle: 'three', side: -1 },
+        call: (ctx) => SL.Cinema.turnTo(ctx, st(ctx).kingkai, st(ctx).beerus.pos, 6),
+        // from behind the god's shoulder: King Kai on his face in the grass in front of him
+        cam: { subject: 'kingkai', angle: 'ots', over: 'beerus', focus: 'full' },
         say: { who: 'king_kai', to: 'beerus', line: 'L-L-Lord Beerus! What an honor! Welcome — welcome to my humble little planet!', duration: 3.6 },
         hold: 3.6,
       },
@@ -507,11 +599,11 @@
         call: (ctx) => {
           const s = st(ctx);
           s.goku.setHidden(false);
-          const d = ctx.cast.door.pos.clone();
-          const out = d.clone().sub(KKP.house).setY(0).normalize();
-          ctx.m.space(s.goku, 'ground', { pos: d.clone().addScaledVector(out, -0.2).add(new V3(0.5, 0, 0)), face: ctx.cast.land.pos, pose: 'bg_peek', expr: 'grin' });
+          if (s.house) s.house.open(true);
+          const d = s.house ? s.house.doorway() : ctx.cast.door.pos.clone();
+          ctx.m.space(s.goku, 'ground', { pos: d, face: ctx.cast.land.pos, pose: 'bg_peek', expr: 'grin' });
         },
-        cam: { subject: 'goku', focus: 'closeup', angle: 'three' },
+        cam: { subject: 'goku', focus: 'upper', angle: 'front' },
         sfx: { name: 'uiMove', vol: 0.3 },
         hold: 1.8,
       },
@@ -537,7 +629,7 @@
       },
       // Goku walks out anyway — he cannot help himself
       {
-        move: { who: 'goku', at: 'beerus', off: [-3.2, 0, -1.6], seconds: 2, face: 'beerus' },
+        move: { who: 'goku', at: 'beerus', local: [-1.7, 0, 2.5], seconds: 2, face: 'beerus' },
         pose: [{ who: 'goku', pose: 'ez_walk', face: 'grin', speed: 7 }],
         cam: { subject: 'goku', focus: 'full', angle: 'three' },
         say: { who: 'goku', to: 'beerus', line: 'Heh. So YOU\'RE the one King Kai\'s so scared of.', duration: 2.6 },
@@ -550,8 +642,9 @@
         hold: 2.4,
       },
       {
-        pose: [{ who: 'goku', pose: 'bg_bowScratch', face: 'grin', speed: 8 }],
-        cam: { subject: 'goku', focus: 'upper', angle: 'three' },
+        pose: [{ who: 'goku', pose: 'bg_bowScratch', face: 'grin', speed: 8 }, { who: 'beerus', pose: 'bs_idle', face: 'calm' }],
+        // over Beerus' shoulder: Goku asking the god for a fight, the god's head in the corner of the frame
+        cam: { subject: 'goku', angle: 'ots', over: 'beerus', focus: 'upper' },
         say: { who: 'goku', to: 'beerus', line: 'I\'m Goku. You\'re the God of Destruction, right? I\'ve never felt a ki like yours... Would you spar with me? Just a friendly match.', duration: 4.8 },
         hold: 4.8,
       },

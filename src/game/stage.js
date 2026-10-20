@@ -2048,6 +2048,8 @@
       for (const pr of this.props) {
         if (pr.alive && p.distanceTo(pr.pos) < pr.r + r) return { type: 'prop', prop: pr };
       }
+      // a blast that reaches the roof of a cavern bursts on the rock
+      if (this.dome && this.domeOut(p, 0) > 0) return { type: 'ground' };
       const hr = Math.hypot(p.x, p.z);
       if (hr > this.arenaRadius + 60 || p.y > this.ceiling + 60 || p.y < this.floor - 60) return { type: 'bounds' };
       return null;
@@ -2125,6 +2127,8 @@
         p.y = this.ceiling;
         if (vel && vel.y > 0) vel.y = 0;
       }
+      // under a roof of rock (the crystal cavern): the roof is the ceiling, low at the walls, high in the middle
+      if (this.dome) this.keepInDome(p, 2.5, vel);
       if (p.y < this.floor) {
         p.y = this.floor;
         if (vel && vel.y < 0) vel.y = 0;
@@ -2184,6 +2188,8 @@
           }
         }
       }
+      // inside a cavern the lens stays under its roof: never up in the rock looking down through it
+      if (this.dome) this.keepInDome(cam, 1.4);
     }
 
     /* ---------------- destruction ---------------- */

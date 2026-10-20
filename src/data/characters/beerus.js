@@ -1,13 +1,15 @@
 /*
- * BEERUS — the God of Destruction of Universe 7. Free Battle character (not in the story: his
- * awakening is after the Buu Saga). Level 1 functional prototype, built from memory (no owner
- * reference sheet yet — the look is the first thing to check against one).
+ * BEERUS — the God of Destruction of Universe 7. Free Battle character and the story's god (Chapter 16, Battle
+ * of Gods). Level 1 functional prototype, built to the owner's Battle of Gods reference board.
  *
- *   LOOK    lean and tall, lavender skin, a cat's head: two tall pointed ears (headExtras), big
- *           pale-gold eyes lined in black, no hair. The Egyptian-style god's clothes: a dark top
- *           under a broad gold collar (model collarStyle 'usekh'), gold bands at the wrists and
- *           ankles, a sash with an orange tabard hanging in front (model outfit.apron), black
- *           trousers, dark pointed shoes.
+ *   LOOK    (rebuilt 2026-10-06 to the owner's reference image) lean and wiry, greyish-mauve skin, bare-chested;
+ *           a sphinx cat's head — a tall skull tapering to a small chin, big gold eyes lined in black, a brow
+ *           ridge, a small muzzle; tall pointed ears across the crown, dark inside, a gold cuff near each tip; a
+ *           gold choker on a long thin neck. The Egyptian-style god's clothes: a broad usekh collar on the bare
+ *           shoulders (black, teal bars, a white rim, an orange stone in a white diamond at the front), gold
+ *           armlets and wide gold cuffs, a navy sash, a black tabard edged in gold and cut to a point (two white
+ *           diamonds and an orange one down it), wide sky-blue harem trousers (pantsStyle 'harem') ballooning
+ *           over the shins, brown pointed ankle boots with gold bands, a long thin tail.
  *   ACTING  bored. He stands with his hands behind his back and fights with one hand while the
  *           other stays there; he yawns; he flicks people away with a finger. When something
  *           finally interests him, both hands come out.
@@ -29,12 +31,53 @@
 (function () {
   'use strict';
 
-  // REBUILT 2026-10-06 from the owner's Battle of Gods reference board: a sphinx cat, not a purple humanoid —
-  // tall ears set high with gold hoops, narrow gold eyes lined in black like kohl, high cheekbones over a small
-  // muzzle, a long thin neck, a lean body; the black top under a broad banded USEKH collar (gold, blue and teal
-  // bands, orange stones on the rim); a white sash over the waist, a short blue cloth panel hanging from it; wide
-  // navy trousers gathered at the ankle over gold bands; pointed shoes; and a long thin tail
-  const SKIN = 0x9f84cc, DARK = 0x15131c, GOLD = 0xe8b83c, TRIM = 0x2a62c8, TEAL = 0x1fa0b8, GEM = 0xe8642a, PANTS = 0x1b2458, SASH = 0xf0ece2, PANEL = 0x1f4fa8, SHOE = 0x1c1a2a, INNER = 0xc89ac8;
+  // REBUILT 2026-10-06 to the owner's reference image (Beerus in the air, full figure, Super): the colours are
+  // sampled from it. Bare-chested — no top; the usekh lies on bare shoulders. Skin a greyish mauve (lit #a98597),
+  // the collar black with teal bars and a thick white rim, an orange stone in a white diamond at its front; gold
+  // choker, armlets and cuffs (#ffec58); a navy sash; the tabard black, edged in gold, cut to a point, white /
+  // white / orange diamonds; sky-blue trousers (#02abec lit); brown boots with gold bands
+  // (second pass, after a four-lens review against the image: skin redder and duskier, red above blue; the collar's
+  // bars the same azure as the trousers; the sash a near-black navy; the ear insides darker)
+  const SKIN = 0x9c7c8e, TAIL = 0x8c6e80, GOLD = 0xf2d244, WHITE = 0xf6f4ea, BLACK = 0x17141c, BAR = 0x1a9fe0, GEM = 0xf07812, SASH = 0x0a1754, PANEL = 0x17131a, PANTS = 0x1f9ade, BOOT = 0x6e4626, INNER = 0x5a3a52, LINE = 0x2a1426;
+
+  /*
+   * THE HEAD (to the owner's reference image). A sphinx cat: broad at the temples, the cranium lifted off a long jaw
+   * that narrows to a small pointed chin (face.skullY / jaw / jawLine); narrow, heavy-lidded gold eyes, slanted, ringed
+   * in black (eyeTilt, eyeRim) with a short kohl wing; a dark brow ridge lying on the lid, not floating brows; a small
+   * dark nose and a short dark mouth close under it — no cheek or whisker lumps. The ears are the silhouette: huge
+   * leaves taller than the head, flaring out past the temples, dark inside, a gold cuff high on each.
+   */
+  const HR = 0.14; // build.headR, in metres (the extras are placed in it)
+  const norm = (v) => {
+    const l = Math.hypot(v[0], v[1], v[2]);
+    return [v[0] / l, v[1] / l, v[2] / l];
+  };
+  // huge and pointed, taller than the head, leaning out, their bases across the whole crown
+  const EAR = (s) => ({ a: [s * 0.54, 0.8, -0.08], d: [s * 0.32, 1, -0.05], l: 0.48, r: 0.108, flat: 0.42, depth: 0.85 });
+  // a ring k of the way up an ear: an extra centred on that point of the ear's axis, as wide as the ear is there
+  const ring = (s, k) => {
+    const e = EAR(s), n = norm(e.a), d = norm(e.d);
+    const p = [n[0] * HR * e.depth + d[0] * e.l * k, n[1] * HR * e.depth + d[1] * e.l * k, n[2] * HR * e.depth + d[2] * e.l * k];
+    return { shape: 'ball', a: p, d: e.d, l: 0.02, r: e.r * (1 - k) * 1.1, flat: e.flat * 1.5, depth: Math.hypot(p[0], p[1], p[2]) / HR, color: GOLD, outline: 0.4 };
+  };
+  const HEAD = [
+    EAR(1),
+    EAR(-1),
+    // the insides, dark, on the front of each ear and along its length (a lighter rim of skin shows round them)
+    { a: [0.46, 0.86, 0.16], d: [0.28, 1, -0.11], l: 0.4, r: 0.07, flat: 0.26, depth: 0.9, color: INNER, outline: 0 },
+    { a: [-0.46, 0.86, 0.16], d: [-0.28, 1, -0.11], l: 0.4, r: 0.07, flat: 0.26, depth: 0.9, color: INNER, outline: 0 },
+    // a gold cuff high on each ear
+    ring(1, 0.66),
+    ring(-1, 0.66),
+    // a small dark nose
+    { shape: 'ball', a: [0, -0.435, 1], d: [0, -0.25, 1], l: 0.008, r: 0.011, flat: 0.6, depth: 0.985, color: 0x4e2e44, outline: 0 },
+    // the kohl: a short black wing from the outer corner of each eye, up and back (seated on his deeper skull)
+    { shape: 'line', a: [0.55, 0.2, 0.82], d: [1, 0.45, -0.3], l: 0.04, r: 0.0075, depth: 0.975, color: 0x0c0a10 },
+    { shape: 'line', a: [-0.55, 0.2, 0.82], d: [-1, 0.45, -0.3], l: 0.04, r: 0.0075, depth: 0.975, color: 0x0c0a10 },
+    // two faint creases over the bridge of the nose
+    { shape: 'line', a: [0.07, 0.2, 1], d: [0.3, 1, 0], l: 0.022, r: 0.0035, depth: 0.97, color: LINE },
+    { shape: 'line', a: [-0.07, 0.2, 1], d: [-0.3, 1, 0], l: 0.022, r: 0.0035, depth: 0.97, color: LINE },
+  ];
 
   // THE WAIT: both hands clasped behind the small of his back
   const BACK = { shoulderL: [46, -86, -4], elbowL: [-68, 0, 0], shoulderR: [46, 86, 4], elbowR: [-68, 0, 0] };
@@ -168,43 +211,44 @@
       height: 1.05,
       skin: SKIN,
       build: {
-        chestW: 0.185, chestD: 0.12, chestTop: 0.27, shoulderX: 0.2, delt: 0.058, waistW: 0.112, waistD: 0.1, pelvisW: 0.122,
-        upperArmR: 0.047, foreArmR: 0.043, fist: 0.052, thighR: 0.078, shinR: 0.058, neckR: 0.05, neckLen: 0.095, headR: 0.138, footLen: 1.12,
+        // lanky (to the reference: legs over half his height, a short wiry torso, a small head for the shoulders):
+        // long thighs and shins, the hips raised to match, a short belly; the head scaled down whole (headScale) so
+        // every face value keeps its tuning; rootScale sinks his sitting and lying poses as far as the longer legs need
+        chestW: 0.178, chestD: 0.112, chestTop: 0.27, shoulderX: 0.2, delt: 0.054, waistW: 0.098, waistD: 0.092, pelvisW: 0.116,
+        upperArmR: 0.044, foreArmR: 0.04, fist: 0.05, thighR: 0.074, shinR: 0.05, neckR: 0.043, neckLen: 0.116, headR: HR, footLen: 1.18,
+        thighLen: 0.5, shinLen: 0.48, hipY: 1.12, absLen: 0.14, headScale: 0.86, rootScale: 1.14,
       },
-      headExtras: [
-        // THE EARS: tall, broad at the base, set high on the skull and leaning out — the silhouette
-        { a: [0.52, 0.84, -0.1], d: [0.42, 1, -0.12], l: 0.27, r: 0.105, flat: 0.32, depth: 0.86 },
-        { a: [-0.52, 0.84, -0.1], d: [-0.42, 1, -0.12], l: 0.27, r: 0.105, flat: 0.32, depth: 0.86 },
-        // their pale insides
-        { a: [0.52, 0.86, -0.02], d: [0.42, 1, -0.06], l: 0.21, r: 0.068, flat: 0.16, depth: 0.92, color: INNER, outline: 0 },
-        { a: [-0.52, 0.86, -0.02], d: [-0.42, 1, -0.06], l: 0.21, r: 0.068, flat: 0.16, depth: 0.92, color: INNER, outline: 0 },
-        // high cheekbones and a small cat's muzzle under the eyes
-        { shape: 'ball', a: [0.44, -0.12, 0.88], d: [0.4, 0.2, 1], l: 0.03, r: 0.034, flat: 0.6, depth: 0.9, outline: 0 },
-        { shape: 'ball', a: [-0.44, -0.12, 0.88], d: [-0.4, 0.2, 1], l: 0.03, r: 0.034, flat: 0.6, depth: 0.9, outline: 0 },
-        { shape: 'ball', a: [0, -0.4, 1], d: [0, -0.1, 1], l: 0.032, r: 0.05, flat: 0.55, depth: 0.9, outline: 0.25 },
-        // the kohl: a black wing from the outer corner of each eye, up and back
-        { shape: 'line', a: [0.47, 0.04, 0.88], d: [1, 0.42, -0.25], l: 0.042, r: 0.007, depth: 1.012, color: 0x0c0a10 },
-        { shape: 'line', a: [-0.47, 0.04, 0.88], d: [-1, 0.42, -0.25], l: 0.042, r: 0.007, depth: 1.012, color: 0x0c0a10 },
-      ],
-      face: { noEars: true, pupil: 0x0c0c0c, sclera: 0xf8e070, eyeW: 1.34, eyeH: 1.02, lashWing: true, lash: 0x0a080c, brow: 0x7a5aa6, browThick: 0.3, browW: 0.8, jaw: 0.94, jawW: 0.88, cheeks: 0.75, nose: 0.4 },
+      headExtras: HEAD,
+      // the brow is the ridge: no hair, a heavy dark line lying on the lid
+      face: {
+        noEars: true, skull: [1, 1.02, 0.96], skullY: 0.15, jaw: 1.15, jawW: 0.8, jawLine: 0.8, cheeks: 0,
+        eyeX: 0.058, eyeW: 1.15, eyeH: 0.75, eyeTilt: 0.3, eyeRim: 0x0a080c, pupil: 0x0c0c0c, sclera: 0xf6de62, lashWing: false, lash: 0x0a080c,
+        brow: LINE, browThick: 0.8, browW: 1.1, browY: -0.009, nose: 0.001, mouthY: -0.02, mouthZ: 0.85, mouthColor: 0x2a1622,
+      },
       outfit: {
-        topStyle: 'shirt', top: DARK, abs: DARK, arms: SKIN,
-        collar: GOLD, collarStyle: 'usekh', collarTrim: TRIM, collarBands: [GOLD, TRIM, GOLD, TEAL, GOLD], collarGems: GEM, collarReach: 0.236,
-        wrist: GOLD, wristLen: 0.1,
-        belt: GOLD, beltStyle: 'sash',
-        apron: { color: PANEL, trim: GOLD, len: 0.3, width: 0.14 },
-        pants: PANTS, pantsStyle: 'gi',
-        // the trousers gathered at the ankle by a gold band, pointed dark shoes
-        boots: PANTS, bootTrim: GOLD, shoes: SHOE, bootStyle: 'gi',
-        // the tail: long and thin, out from under the sash, curling up at the end
-        longTail: { length: 0.86, radius: 0.026, segments: 10, color: SKIN, lift: 0.55, curl: 0.3 },
+        // bare-chested: the skin is the top (pecs and the lean belly in skin)
+        topStyle: 'bare', top: SKIN, arms: SKIN, pecs: SKIN,
+        choker: GOLD, chokerAt: 0.86,
+        // the usekh on the bare shoulders, draped deep over the chest and capping the shoulders: a thin white edge at
+        // the neck, the black field with azure bars set across it like rungs (none at the front), a thick white rim;
+        // the orange stone straight on the black
+        collar: WHITE, collarStyle: 'usekh', collarBands: [WHITE, BLACK, BLACK, BLACK, BLACK, BLACK, WHITE, WHITE], collarReach: 0.265, collarDrop: 0.115, collarDropBack: 0.5,
+        collarStripes: { color: BAR, count: 10, bands: [1, 2, 3], width: 0.34, phase: 0.5 },
+        collarJewel: { color: GEM, size: 0.032, band: 2, tilt: 0.44 },
+        // gold armlets at mid upper arm, clear of the biceps; long gold bracers widening to the hand
+        armBands: GOLD, armBandAt: 0.42, armBandW: 0.04, armBandR: 1.38,
+        wrist: GOLD, wristLen: 0.13, wristFlare: true,
+        // the near-black navy sash; the black tabard hanging from it to just below the knee, gold-edged, cut to a point
+        belt: SASH, beltStyle: 'sash',
+        apron: { color: PANEL, trim: GOLD, len: 0.53, width: 0.16, edge: 0.015, point: true, tip: 0.09, motif: [WHITE, WHITE, GEM], motifSize: 0.32, motifDrop: 0 },
+        // sky-blue harem trousers: one bell from the hip to a huge balloon over the knee, gathered in a cuff at mid-shin;
+        // bare shin under it; brown ankle boots with a gold band a little way down the shaft, pointed toes
+        pants: PANTS, pantsStyle: 'harem', harem: { thigh: 1.6, balloon: 3.2, at: 0.25, cuff: 0.55 }, legs: SKIN,
+        boots: BOOT, bootTop: 0.22, bootTrim: GOLD, bootTrimAt: 0.03, shoes: BOOT, bootTip: BOOT, bootPoint: true, bootStyle: 'shoe',
+        // the tail: thick, a long gentle sweep out to his right (not a hook behind him), a little darker than his body
+        longTail: { length: 1.0, radius: 0.034, segments: 10, color: TAIL, lift: 0.95, curl: 0.12, side: -0.7 },
       },
-      props: [
-        // gold hoops hanging from the base of each ear
-        { id: 'hoopL', shape: 'hoop', joint: 'head', pos: [0.104, 0.172, -0.01], radius: 0.019, thick: 0.2, color: GOLD },
-        { id: 'hoopR', shape: 'hoop', joint: 'head', pos: [-0.104, 0.172, -0.01], radius: 0.019, thick: 0.2, color: GOLD },
-      ],
-      portraitColor: '#9f84cc',
+      portraitColor: '#9c7c8e',
     },
     vfx: { ghost: 0xd8b0ff, trail: 0xe8d0ff },
     audio: { strikePitch: 1.0, heavyPitch: 0.86 },
@@ -212,6 +256,8 @@
       {
         id: 'base', name: 'Base',
         aura: { color: 0xc89aff, core: 0xf2e0ff, particles: 0xd8b8ff, speed: 0.9 },
+        // narrow, bored eyes: small pupils
+        look: { pupilScale: 0.7 },
         mult: {},
       },
     ],

@@ -13,7 +13,8 @@
  *                              silence, the pupils, the teeth, the trembling, the aura, the planks — "THAT'S...
  *                              MY... BULMAAAAA!"
  *   RAGE *    (play)           Super Saiyan 2 Vegeta, out of his mind: his blows LAND (the god takes them, the god
- *                              gets knocked about) while the rage lasts; then the GALICK GUN on a cue
+ *                              gets knocked about) while the rage lasts; then the GALICK GUN, played: Vegeta's own
+ *                              special, charged and fired by the player (the story fires it only if nobody does)
  *   SMOKE     (scene)          the smoke clears; not a mark; one chop; "I think I've had enough of this planet" —
  *                              and Goku, by Instant Transmission, standing in the way
  *   AFTER
@@ -36,6 +37,8 @@
 
   function setup(battle) {
     const b = battle;
+    // Goku of the Super era: his own transformation lines, not Namek's
+    K().superVoice(b);
     const s = BP().setup(b, { player: 'vegeta', godsHere: true });
     s.gotenks = null;
     s.goku.setHidden(true);
@@ -276,14 +279,54 @@
       if (away.lengthSq() < 0.01) away.set(0, 0, -1);
       away.normalize();
       m.space(veg, 'air', { pos: bs.pos.clone().addScaledVector(away, 9), height: 3.5, face: bs.pos, pose: 'v_galickCharge', expr: 'shout' });
-      bs.setState('scripted', { pose: 'bs_idle', expression: 'calm' });
-      SL.Cinema.shotOn(m, { vegeta: veg, beerus: bs }, { subject: 'vegeta', focus: 'upper', angle: 'three' }, 30);
-      m.say('vegeta', 'GALICK...', 1.6, { style: 'shout' });
-      const cue = yield* m.cue('s1', 'Galick Gun!', { auto: 3, slow: 0.4 });
-      m.flags.galick = cue.pressed ? 'player' : 'story';
+      bs.setState('scripted', { pose: 'bs_idle', expression: 'smirk' });
+      SL.Cinema.shotOn(m, { vegeta: veg, beerus: bs }, { subject: 'vegeta', focus: 'upper', angle: 'three' }, 1.8);
+      m.say('vegeta', 'Take THIS!', 1.6, { style: 'shout' });
+      yield* m.cine(1.8);
+      m.endShot();
+      // THE GALICK GUN, PLAYED (the owner: the rage stays playable, the Galick Gun through gameplay): Vegeta's own
+      // special — hold to charge, let go to fire — at a god who stands there and lets him
+      veg.ki = Math.max(veg.ki, veg.kiMax * 0.9);
+      if (veg._playerController) veg.controller = veg._playerController;
+      if (b.player === veg && veg.setState) veg.setState('free');
+      const lim = Object.assign({}, SL.Mission.ALL_OFF);
+      for (const k of ['s1', 'mx', 'my', 'up', 'upPressed', 'down', 'guard', 'target', 'charge']) delete lim[k];
+      m.limits(lim);
+      m.lock(false);
+      b.aiLocked = true;
+      m.objective('galick', 'Galick Gun — point blank', { icon: 'beam' });
+      m.prompt('galickGun', 'special1', 'GALICK GUN — hold to charge, let go to fire', { required: true, always: true, until: () => veg.state === 'beamFire' });
+      let fired = false, landed = false, wait = 0;
+      const offG = b.on('damage', (e) => {
+        if (e.attacker === veg && e.target === bs && e.type === 'beam') landed = true;
+      });
+      m.onDispose(offG);
+      const gHook = () => {
+        if (b.inputLocked) return;
+        wait += 1 / 60;
+        if (veg.state === 'beamFire') fired = true;
+        // he stands there and takes it, arms behind his back
+        bs.vel.set(0, 0, 0);
+        if (veg.ki < 40 && veg.state === 'free') veg.ki = Math.min(veg.kiMax, veg.ki + 1);
+      };
+      m.tickHooks.push(gHook);
+      // played: until the beam reaches him (or has run out); never pressed in 12 s: the story fires it for him
+      yield () => (fired && (landed || (veg.state !== 'beamFire' && veg.state !== 'beamCharge'))) || (!fired && wait > 12 && veg.state !== 'beamCharge');
+      K().unhook(m, gHook);
+      offG();
+      m.limits(null);
+      m.flags.galick = fired ? 'player' : 'story';
+      m.complete('galick');
       K().unhook(m, deck);
       auraBack();
-      yield* SL.Cinema.play(m, 'bgw_galick');
+      m.lock(true);
+      if (fired) {
+        // his beam, all the way into the god: hold on it a moment, then the smoke
+        SL.Cinema.shotOn(m, { vegeta: veg, beerus: bs }, { subject: 'beerus', focus: 'wide', angle: 'three', room: 4 }, 1.2);
+        yield* m.cine(landed ? 1 : 0.4);
+      } else yield* SL.Cinema.play(m, 'bgw_galick');
+      bs.controller = K().scripted();
+      yield* SL.Cinema.play(m, 'bgw_smoke');
     },
   };
 
@@ -852,6 +895,17 @@
         },
         hold: 1.4,
       },
+    ],
+    end(ctx) {
+      K().clearCombat(ctx.b);
+    },
+  };
+
+  /* ---------------------------------------------------------------- the smoke, the chop, Goku */
+  S.bgw_smoke = {
+    id: 'bgw_smoke',
+    cast,
+    events: [
       // the smoke
       {
         call: (ctx) => {

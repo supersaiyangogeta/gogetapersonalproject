@@ -318,7 +318,8 @@
       const st = this.battle.stage;
       // opts.subject (a fighter; opts.face for a talking or close shot): the Cinema safety pass on this shot
       // too — the lens out of rock, the subject seen, his face kept in the frame (see Cinema FRAMING)
-      const guard = opts.subject ? { f: opts.subject, face: !!opts.face } : null;
+      // opts.aimFree: a deliberate detail (the feet, a fist, the hair): kept out of rock and unblocked, never re-aimed
+      const guard = opts.subject ? { f: opts.subject, face: !!opts.face, aimFree: !!opts.aimFree } : null;
       const gst = {};
       const ctx = { b: this.battle };
       const safe = (t, out, el) => {
